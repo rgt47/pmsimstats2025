@@ -1,0 +1,80 @@
+name: Render Paper
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'analysis/**'
+      - 'R/**'
+      - 'renv.lock'
+      - 'Dockerfile'
+      - '.github/workflows/render-paper.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'analysis/**'
+      - 'R/**'
+      - 'renv.lock'
+      - 'Dockerfile'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          echo "Building computational environment..."
+          docker build -t compendium-env .
+
+      - name: Restore R packages
+        run: |
+          echo "Restoring R package environment..."
+          docker run --rm -v ${{ github.workspace }}:/project -w /project \
+            compendium-env Rscript -e 'renv::restore()'
+
+      - name: Render paper
+        run: |
+          echo "Rendering manuscript..."
+          docker run --rm -v ${{ github.workspace }}:/project -w /project \
+            compendium-env Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+
+      - name: Check for paper output
+        run: |
+          if [ -f analysis/paper/paper.pdf ]; then
+            echo "✅ Paper rendered successfully"
+            ls -lh analysis/paper/paper.pdf
+          else
+            echo "❌ Paper rendering failed - no PDF generated"
+            echo "Check logs above for errors"
+            exit 1
+          fi
+
+      - name: Upload paper PDF
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload even if rendering fails (for debugging)
+        with:
+          name: rendered-paper
+          path: |
+            analysis/paper/paper.pdf
+            analysis/paper/paper.html
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Add workflow summary
+        if: success()
+        run: |
+          echo "## ✅ Paper Rendered Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The manuscript was rendered successfully in a fresh computational environment." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Download the PDF**: Click 'Summary' above → 'Artifacts' section → 'rendered-paper'" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**File size**: $(ls -lh analysis/paper/paper.pdf | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
+          echo "**Computational environment**: rocker/verse:4.4.0" >> $GITHUB_STEP_SUMMARY

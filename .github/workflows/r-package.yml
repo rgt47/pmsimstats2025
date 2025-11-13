@@ -1,0 +1,53 @@
+name: R Package Check (Container)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: rocker/r-ver:latest  # Smaller image (800 MB vs 2.5 GB)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq for validation
+        run: |
+          apt-get update && apt-get install -y jq
+
+      - name: Validate package dependencies (shell)
+        run: |
+          bash modules/validation.sh
+          # Fast validation (0.5s) catches missing packages before expensive operations
+
+      - name: Cache renv packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/R/renv
+          key: renv-${{ hashFiles('renv.lock') }}
+          restore-keys: |
+            renv-
+          # Cache speeds up subsequent runs by ~2-3 minutes
+
+      - name: Restore packages from renv.lock
+        run: |
+          Rscript -e "renv::restore()"
+          # Installs exact package versions for reproducible testing
+
+      - name: Run R CMD check
+        run: |
+          Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
+
+      - name: Run tests
+        run: |
+          Rscript -e "testthat::test_dir('tests')"
+
+      - name: Validate project structure
+        run: |
+          Rscript -e "if (file.exists('DESCRIPTION')) cat('✅ DESCRIPTION found\n')"
+          Rscript -e "if (dir.exists('R')) cat('✅ R/ directory found\n')"
+          Rscript -e "if (file.exists('renv.lock')) cat('✅ renv.lock found\n')"
+          Rscript -e "cat('✅ Project structure validated\n')"

@@ -1,0 +1,761 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{tikz}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\newtheorem{intuition}{Intuition}
+
+% R code styling
+\lstset{
+  language=R,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray}
+}
+
+\title{Understanding Correlation Parameters in N-of-1 Trial Simulations:\\
+A Practical Guide}
+\author{Technical Documentation}
+\date{November 12, 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides a comprehensive guide to understanding and selecting the six correlation parameters that define the covariance structure in N-of-1 trial simulations. We explain what each parameter represents, provide intuitive interpretations, and give practical guidance for choosing appropriate values. This guide complements the theoretical treatment in \texttt{correlation\_structure\_design.pdf}.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{The Six Correlation Parameters}
+
+\subsection{Overview}
+
+The correlation structure for N-of-1 trial simulations is completely specified by \textbf{six parameters}. These parameters control how measurements relate to each other across time and across the three response components (time-variant, pharmacologic/expectancy, and biological response).
+
+\subsection{Parameter Definitions}
+
+\begin{table}[h]
+\centering
+\caption{The Six Correlation Parameters}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Name} & \textbf{Meaning} & \textbf{Hendrickson} & \textbf{PDF Rec.} \\
+\midrule
+\texttt{c.tv} & TV autocorrelation & Corr(tv$_t$, tv$_s$) for $t \neq s$ & 0.8 & 0.65 \\
+\texttt{c.pb} & PB autocorrelation & Corr(pb$_t$, pb$_s$) for $t \neq s$ & 0.8 & 0.65 \\
+\texttt{c.br} & BR autocorrelation & Corr(br$_t$, br$_s$) for $t \neq s$ & 0.8 & 0.65 \\
+\texttt{c.cf1t} & Same-time cross & Corr(comp1$_t$, comp2$_t$) & 0.2 & 0.18 \\
+\texttt{c.cfct} & Diff-time cross & Corr(comp1$_t$, comp2$_s$) for $t \neq s$ & 0.1 & 0.09 \\
+\texttt{c.bm} & Biomarker & Corr(biomarker, br$_t$) & 0--0.6 & 0--0.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent where:
+\begin{itemize}
+\item \textbf{tv} = time-variant factor (natural disease progression)
+\item \textbf{pb} = pharmacologic/biomarker factor (expectancy/placebo effect)
+\item \textbf{br} = biological response factor (true drug effect)
+\item \textbf{comp1, comp2} = any pair of different components (tv, pb, or br)
+\end{itemize}
+
+\subsection{Visual Structure}
+
+For a design with 3 timepoints (t1, t2, t3), the correlation matrix has this structure:
+
+\begin{equation}
+\mathbf{R} = \begin{bmatrix}
+\mathbf{I}_2 & \mathbf{0} & \mathbf{0} & \mathbf{0} & \mathbf{0} \\
+\mathbf{0} & \mathbf{R}_{\text{tv}} & \mathbf{C}_{12} & \mathbf{C}_{13} \\
+\mathbf{0} & \mathbf{C}_{21} & \mathbf{R}_{\text{pb}} & \mathbf{C}_{23} \\
+\mathbf{0} & \mathbf{C}_{31} & \mathbf{C}_{32} & \mathbf{R}_{\text{br}}
+\end{bmatrix}
+\end{equation}
+
+where:
+\begin{itemize}
+\item $\mathbf{I}_2$ represents biomarker and baseline (uncorrelated by construction)
+\item $\mathbf{R}_{\text{tv}}$ has \texttt{c.tv} in all off-diagonal positions
+\item $\mathbf{C}_{ij}$ has \texttt{c.cf1t} on diagonal, \texttt{c.cfct} off-diagonal
+\item Biomarker row/column has \texttt{c.bm} for BR positions only
+\end{itemize}
+
+\subsection{Expanded Example}
+
+For 3 timepoints, the full correlation matrix looks like:
+
+\begin{small}
+\[
+\begin{array}{c|ccccccccccc}
+ & \text{bm} & \text{BL} & \text{tv}_1 & \text{tv}_2 & \text{tv}_3 & \text{pb}_1 & \text{pb}_2 & \text{pb}_3 & \text{br}_1 & \text{br}_2 & \text{br}_3 \\
+\hline
+\text{bm} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & c.bm & c.bm & c.bm \\
+\text{BL} & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\text{tv}_1 & 0 & 0 & 1 & c.tv & c.tv & c.cf1t & c.cfct & c.cfct & c.cf1t & c.cfct & c.cfct \\
+\text{tv}_2 & 0 & 0 & c.tv & 1 & c.tv & c.cfct & c.cf1t & c.cfct & c.cfct & c.cf1t & c.cfct \\
+\text{tv}_3 & 0 & 0 & c.tv & c.tv & 1 & c.cfct & c.cfct & c.cf1t & c.cfct & c.cfct & c.cf1t \\
+\text{pb}_1 & 0 & 0 & c.cf1t & c.cfct & c.cfct & 1 & c.pb & c.pb & c.cf1t & c.cfct & c.cfct \\
+\text{pb}_2 & 0 & 0 & c.cfct & c.cf1t & c.cfct & c.pb & 1 & c.pb & c.cfct & c.cf1t & c.cfct \\
+\text{pb}_3 & 0 & 0 & c.cfct & c.cfct & c.cf1t & c.pb & c.pb & 1 & c.cfct & c.cfct & c.cf1t \\
+\text{br}_1 & c.bm & 0 & c.cf1t & c.cfct & c.cfct & c.cf1t & c.cfct & c.cfct & 1 & c.br & c.br \\
+\text{br}_2 & c.bm & 0 & c.cfct & c.cf1t & c.cfct & c.cfct & c.cf1t & c.cfct & c.br & 1 & c.br \\
+\text{br}_3 & c.bm & 0 & c.cfct & c.cfct & c.cf1t & c.cfct & c.cfct & c.cf1t & c.br & c.br & 1 \\
+\end{array}
+\]
+\end{small}
+
+\subsection{What Each Parameter Controls}
+
+\subsubsection{Within-Component Autocorrelations (Parameters 1--3)}
+
+\begin{lstlisting}[language=R]
+# c.tv controls ALL these correlations:
+Corr(tv_1, tv_2) = 0.8
+Corr(tv_1, tv_3) = 0.8
+Corr(tv_2, tv_3) = 0.8
+# Same pattern for c.pb and c.br
+\end{lstlisting}
+
+\textbf{Key Point}: Same correlation regardless of time lag (not AR(1)-style decay).
+
+\subsubsection{Cross-Component, Same Time (Parameter 4)}
+
+\begin{lstlisting}[language=R]
+# c.cf1t controls same-time cross-component correlations:
+Corr(tv_1, pb_1) = 0.2  # time 1
+Corr(tv_2, pb_2) = 0.2  # time 2
+Corr(tv_3, pb_3) = 0.2  # time 3
+Corr(tv_1, br_1) = 0.2
+Corr(pb_1, br_1) = 0.2
+# etc. for all same-time pairs
+\end{lstlisting}
+
+\subsubsection{Cross-Component, Different Times (Parameter 5)}
+
+\begin{lstlisting}[language=R]
+# c.cfct controls different-time cross-component correlations:
+Corr(tv_1, pb_2) = 0.1  # tv at time 1, pb at time 2
+Corr(tv_1, br_3) = 0.1  # tv at time 1, br at time 3
+Corr(pb_1, br_2) = 0.1  # pb at time 1, br at time 2
+# etc. for all different-time pairs
+\end{lstlisting}
+
+\subsubsection{Biomarker-Response (Parameter 6)}
+
+\begin{lstlisting}[language=R]
+# c.bm controls ONLY biomarker-BR correlations:
+Corr(biomarker, br_1) = 0.3
+Corr(biomarker, br_2) = 0.3
+Corr(biomarker, br_3) = 0.3
+
+# NOT correlated with tv or pb:
+Corr(biomarker, tv_1) = 0
+Corr(biomarker, pb_1) = 0
+\end{lstlisting}
+
+\subsection{Critical Hierarchy Constraint}
+
+For the correlation matrix to be positive definite, you \textbf{must maintain}:
+
+\begin{equation}
+\boxed{c.cfct < c.cf1t < \min(c.tv, c.pb, c.br)}
+\end{equation}
+
+\begin{example}[Valid Hierarchy]
+\begin{lstlisting}
+c.tv = 0.8, c.pb = 0.8, c.br = 0.8    # autocorrelations
+c.cf1t = 0.2                           # 0.2 < 0.8 (checkmark)
+c.cfct = 0.1                           # 0.1 < 0.2 (checkmark)
+\end{lstlisting}
+\end{example}
+
+\begin{example}[Invalid Hierarchy - FAILS!]
+\begin{lstlisting}
+c.tv = 0.5                             # autocorrelation
+c.cf1t = 0.1                           # same-time cross
+c.cfct = 0.4                           # 0.4 > 0.1 VIOLATION!
+\end{lstlisting}
+
+This violates temporal coherence: measurements at \textbf{different times} cannot be more correlated than measurements at the \textbf{same time}.
+\end{example}
+
+\section{Recommended Parameter Values}
+
+\subsection{Three Standard Configurations}
+
+\subsubsection{Hendrickson Exact (for direct comparison)}
+
+\begin{lstlisting}
+model_params <- list(
+  c.tv = 0.8,
+  c.pb = 0.8,
+  c.br = 0.8,
+  c.cf1t = 0.2,
+  c.cfct = 0.1,
+  c.bm = 0.3      # or vary: 0, 0.3, 0.6
+)
+\end{lstlisting}
+
+\textbf{Properties}:
+\begin{itemize}
+\item Empirically validated (Hendrickson et al., 2020)
+\item Represents strong individual-level stability
+\item Works for $T = 8$ timepoints (hybrid design)
+\item Best for direct comparison with published results
+\end{itemize}
+
+\subsubsection{Intermediate (PDF Section 9.1 recommendation)}
+
+\begin{lstlisting}
+model_params <- list(
+  c.tv = 0.65,
+  c.pb = 0.65,
+  c.br = 0.65,
+  c.cf1t = 0.18,  # 0.28 * 0.65
+  c.cfct = 0.09,  # 0.50 * 0.18
+  c.bm = 0.3      # or vary
+)
+\end{lstlisting}
+
+\textbf{Properties}:
+\begin{itemize}
+\item Guaranteed PD for $T \leq 20$ with $c.bm \leq 0.6$
+\item Maintains proper correlation hierarchy
+\item Interpretable: moderate individual-level stability
+\item Allows moderate parameter variation
+\end{itemize}
+
+\subsubsection{Conservative (always works)}
+
+\begin{lstlisting}
+model_params <- list(
+  c.tv = 0.5,
+  c.pb = 0.5,
+  c.br = 0.5,
+  c.cf1t = 0.15,  # 0.30 * 0.5
+  c.cfct = 0.08,  # 0.50 * 0.15
+  c.bm = 0.3
+)
+\end{lstlisting}
+
+\textbf{Properties}:
+\begin{itemize}
+\item Guaranteed PD for $T \leq 30$
+\item Very stable across parameter variations
+\item Lower power for interaction detection
+\item Represents moderate temporal persistence
+\end{itemize}
+
+\subsection{Recommended Ratios (PDF Guideline 2)}
+
+To ensure positive definiteness, use these ratios:
+
+\begin{align}
+c.cf1t &\approx 0.2 \text{ to } 0.4 \times c_{\text{autocorr}} \\
+c.cfct &\approx 0.5 \text{ to } 0.7 \times c.cf1t
+\end{align}
+
+\section{Intuitive Understanding of Within-Component Autocorrelations}
+
+\subsection{What Does Autocorrelation Represent?}
+
+Within-component autocorrelation (e.g., \texttt{c.tv = 0.8}) measures how consistent an individual's \textbf{deviation from the mean} is across time.
+
+\begin{intuition}[High Autocorrelation]
+\textbf{High autocorrelation (0.8)} means:
+
+``If someone is above average at time 1, they'll probably be above average at times 2, 3, 4...''
+
+\textbf{Implication}: People have stable ``types'' or consistent individual characteristics.
+\end{intuition}
+
+\begin{intuition}[Low Autocorrelation]
+\textbf{Low autocorrelation (0.3)} means:
+
+``If someone is above average at time 1, they might be anywhere at time 2---above, below, who knows.''
+
+\textbf{Implication}: People's measurements fluctuate randomly; no stable individual characteristics.
+\end{intuition}
+
+\subsection{Component-Specific Interpretations}
+
+\subsubsection{Time-Variant Factor (c.tv)}
+
+\textbf{What it represents}: Natural disease trajectory, independent of treatment
+
+\paragraph{High c.tv = 0.8 (``Stable disease trajectory'')}
+
+\begin{itemize}
+\item \textbf{Interpretation}: People have consistent symptom patterns over time
+\item \textbf{Example}: Person A always has severe symptoms, Person B always has mild symptoms, regardless of treatment
+\item \textbf{Real-world analogy}: Chronic pain with stable severity
+\item \textbf{Data pattern}: If you plot symptoms over time, each person's line stays in their ``lane'' (high/medium/low)
+\end{itemize}
+
+\begin{verbatim}
+Symptoms over time with c.tv = 0.8:
+
+High severity |  *---*---*---*---*  (Person A: consistently high)
+              |
+Medium        |      o---o---o---o  (Person B: consistently medium)
+              |
+Low severity  |          .---.---.  (Person C: consistently low)
+              +---------------------
+              t1   t2  t3  t4  t5
+\end{verbatim}
+
+\paragraph{Low c.tv = 0.3 (``Fluctuating disease'')}
+
+\begin{itemize}
+\item \textbf{Interpretation}: Disease severity bounces around unpredictably
+\item \textbf{Example}: Person A might be severe at t1, mild at t2, severe again at t3
+\item \textbf{Real-world analogy}: Episodic conditions (migraines, flare-ups)
+\item \textbf{Data pattern}: Spaghetti plot---lines cross each other constantly
+\end{itemize}
+
+\begin{verbatim}
+Symptoms over time with c.tv = 0.3:
+
+High severity |  *       o---.
+              |   \     /     \
+Medium        |    o---*       *
+              |   /     \     /
+Low severity  |  .       .---o
+              +---------------------
+              t1   t2  t3  t4  t5
+              (lots of crossing!)
+\end{verbatim}
+
+\subsubsection{Pharmacologic/Expectancy Factor (c.pb)}
+
+\textbf{What it represents}: Placebo/expectancy response
+
+\paragraph{High c.pb = 0.8 (``Consistent placebo responders'')}
+
+\begin{itemize}
+\item \textbf{Interpretation}: Some people always have strong placebo response, others never do
+\item \textbf{Example}: Person A always gets 5-point boost from placebo, Person B always gets 1-point boost
+\item \textbf{Real-world analogy}: Trait-like ``suggestibility''---stable individual characteristic
+\item \textbf{Implication}: Placebo response is a person-specific trait
+\end{itemize}
+
+\paragraph{Low c.pb = 0.3 (``Variable placebo response'')}
+
+\begin{itemize}
+\item \textbf{Interpretation}: Placebo effectiveness varies within same person across trials
+\item \textbf{Example}: Person A gets 5-point boost on Monday, 1-point boost on Friday
+\item \textbf{Real-world analogy}: Context-dependent placebo effects (mood, stress, etc.)
+\item \textbf{Implication}: Placebo response depends on state, not trait
+\end{itemize}
+
+\subsubsection{Biological Response Factor (c.br)}
+
+\textbf{What it represents}: True drug effect (beyond placebo)
+
+\paragraph{High c.br = 0.8 (``Stable drug responders'')}
+
+\begin{itemize}
+\item \textbf{Interpretation}: If drug works well for you at t1, it'll work well at t2, t3...
+\item \textbf{Example}: Person A always gets 10-point improvement from drug, Person B always gets 3-point improvement
+\item \textbf{Real-world analogy}: Pharmacogenetics---your genetics determine drug response consistently
+\item \textbf{Implication}: ``Responders'' vs ``non-responders'' is a stable classification
+\end{itemize}
+
+\paragraph{Low c.br = 0.3 (``Inconsistent drug response'')}
+
+\begin{itemize}
+\item \textbf{Interpretation}: Same person responds differently at different times
+\item \textbf{Example}: Person A: 10-point improvement week 1, 2-point improvement week 3
+\item \textbf{Real-world analogy}: Tolerance, receptor saturation, or environmental interactions
+\item \textbf{Implication}: No stable ``responder'' types---response varies within person
+\end{itemize}
+
+\subsection{Mathematical Intuition}
+
+\subsubsection{What the Correlation Measures}
+
+For person $i$, let their TV component at time $t$ be: $\text{tv}_{it}$
+
+The \textbf{autocorrelation} is:
+\begin{equation}
+c.tv = \text{Corr}(\text{tv}_{i1}, \text{tv}_{i2}) = \text{Corr}(\text{tv}_{i1}, \text{tv}_{i3}) = \cdots
+\end{equation}
+
+This measures: \textbf{Do individual differences persist over time?}
+
+\subsubsection{Decomposing the Variance}
+
+Each measurement can be decomposed as:
+\begin{equation}
+\text{tv}_{it} = \underbrace{\mu_t}_{\text{overall mean}} + \underbrace{\alpha_i}_{\substack{\text{stable} \\ \text{person effect}}} + \underbrace{\epsilon_{it}}_{\substack{\text{random} \\ \text{fluctuation}}}
+\end{equation}
+
+\textbf{High autocorrelation} $\Rightarrow$ Large $\alpha_i$, small $\epsilon_{it}$
+\begin{itemize}
+\item Variance mostly \textit{between} people (stable differences)
+\item Little variance \textit{within} people over time
+\end{itemize}
+
+\textbf{Low autocorrelation} $\Rightarrow$ Small $\alpha_i$, large $\epsilon_{it}$
+\begin{itemize}
+\item Variance mostly \textit{within} people over time
+\item Little stable individual difference
+\end{itemize}
+
+\subsubsection{Variance Partition}
+
+If $c.tv = 0.8$:
+\begin{equation}
+\text{Total Variance} = \underbrace{80\%}_{\text{between-person}} + \underbrace{20\%}_{\text{within-person}}
+\end{equation}
+
+If $c.tv = 0.3$:
+\begin{equation}
+\text{Total Variance} = \underbrace{30\%}_{\text{between-person}} + \underbrace{70\%}_{\text{within-person}}
+\end{equation}
+
+This is closely related to the \textbf{Intraclass Correlation Coefficient (ICC)}:
+\begin{equation}
+\text{ICC} = \frac{\sigma^2_{\text{between}}}{\sigma^2_{\text{between}} + \sigma^2_{\text{within}}} \approx c.\text{tv}
+\end{equation}
+
+\section{Effect on Statistical Power}
+
+\subsection{High Autocorrelation (c.tv = 0.8)}
+
+\subsubsection{Advantages}
+\begin{itemize}
+\item[\checkmark] \textbf{Better power to detect between-person effects} (biomarker $\times$ treatment interaction)
+\item[\checkmark] Stable individual differences are easy to detect
+\item[\checkmark] Biomarker can predict who responds well (if \texttt{c.bm} is also high)
+\end{itemize}
+
+\subsubsection{Disadvantages}
+\begin{itemize}
+\item[$\times$] \textbf{Harder to see within-person treatment effects} (less room for change)
+\item[$\times$] If someone starts high, they tend to stay high even with treatment
+\end{itemize}
+
+\subsubsection{Best For}
+Detecting \textbf{moderators} (who benefits?) rather than main effects
+
+\subsection{Low Autocorrelation (c.tv = 0.3)}
+
+\subsubsection{Advantages}
+\begin{itemize}
+\item[\checkmark] \textbf{More room for treatment effects} to show through
+\item[\checkmark] Measurements are more independent $\Rightarrow$ more effective sample size
+\item[\checkmark] Can see within-person changes more clearly
+\end{itemize}
+
+\subsubsection{Disadvantages}
+\begin{itemize}
+\item[$\times$] \textbf{Noisy baseline measurements} make biomarker prediction harder
+\item[$\times$] Hard to identify stable ``responder'' types
+\item[$\times$] Lower power for interaction detection
+\end{itemize}
+
+\subsubsection{Best For}
+Detecting \textbf{main effects} (does treatment work overall?)
+
+\section{Why Hendrickson Chose High Autocorrelations}
+
+\subsection{Hendrickson's Choice: c.tv = c.pb = c.br = 0.8}
+
+\subsubsection{Theoretical Justification}
+
+\begin{enumerate}
+\item \textbf{N-of-1 trials assume stable individual characteristics}
+\begin{itemize}
+\item The whole point is: ``Find what works for THIS person''
+\item Requires that ``this person'' has stable trait-like responses
+\end{itemize}
+
+\item \textbf{Interaction detection requires between-person variance}
+\begin{itemize}
+\item Testing biomarker $\times$ treatment needs people to differ consistently
+\item If everyone's bouncing around randomly, you can't predict who responds
+\end{itemize}
+
+\item \textbf{Realistic for chronic conditions}
+\begin{itemize}
+\item Chronic pain, depression: fairly stable severity within person
+\item Treatment response often shows stable individual differences
+\end{itemize}
+\end{enumerate}
+
+\subsubsection{Practical Impact}
+
+\begin{lstlisting}
+c.tv = 0.8 means:
+- ICC (Intraclass Correlation) ~ 0.8
+- 80% of variance is between-person
+- Only 20% is random within-person fluctuation
+\end{lstlisting}
+
+This creates \textbf{strong individual signatures} that persist across time.
+
+\subsection{Visual Comparison}
+
+\subsubsection{High Autocorrelation (c.br = 0.8): ``Responder Types''}
+
+\begin{verbatim}
+Drug Response by Person (each line = 1 person):
+
+Strong      |  =========== Person A (consistent strong responder)
+Responder   |  ===========
+            |
+Moderate    |      -------  Person B (consistent moderate)
+            |      -------
+            |
+Weak        |          ...  Person C (consistent weak)
+Responder   |          ...
+            +------------------------
+            t1  t2  t3  t4  t5  t6
+
+-> You can classify people into types
+-> Biomarker can predict these stable types
+-> Good for precision medicine
+\end{verbatim}
+
+\subsubsection{Low Autocorrelation (c.br = 0.3): ``Variable Response''}
+
+\begin{verbatim}
+Drug Response by Person:
+
+Strong      |  =     .   -   =
+            |    -   =   .     .
+Moderate    |  .   =   =   .   -
+            |    .   -   =   -   =
+Weak        |  -   -   .   -   .
+            +------------------------
+            t1  t2  t3  t4  t5  t6
+
+-> Same person bounces between strong/weak
+-> Hard to classify people into types
+-> Biomarker can't predict (response is unstable)
+-> Bad for precision medicine, but realistic for some drugs
+\end{verbatim}
+
+\section{Connection to Study Design}
+
+\subsection{Crossover Designs (N-of-1)}
+
+\textbf{High autocorrelation is NECESSARY}:
+\begin{itemize}
+\item You're comparing drug vs placebo \textbf{within the same person}
+\item Requires that person's \textbf{baseline tendency} is stable
+\item Otherwise you can't tell if change is due to treatment vs random fluctuation
+\end{itemize}
+
+\begin{example}[Crossover Data with Different Autocorrelations]
+Person A's symptoms across alternating drug/placebo periods:
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+& \textbf{Drug} & \textbf{Placebo} & \textbf{Drug} & \textbf{Placebo} \\
+Week: & 1 & 2 & 3 & 4 \\
+\midrule
+\textbf{Low c} (0.3): & 7 & 5 & 9 & 3 \\
+\textbf{High c} (0.8): & 7 & 9 & 7 & 9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Analysis}:
+\begin{itemize}
+\item With \textbf{low autocorrelation}: Can't tell drug effect from noise (baseline bouncing 3--9)
+\item With \textbf{high autocorrelation}: Clear drug effect---person's baseline is stable around 8, drug consistently causes $-2$ point reduction
+\end{itemize}
+\end{example}
+
+\subsection{Practical Implications for Your Simulation}
+
+\subsubsection{What c.tv = 0.8 means for your results}
+
+\begin{enumerate}
+\item \textbf{Biomarker interactions will be easier to detect}
+\begin{itemize}
+\item Stable individual differences $\Rightarrow$ biomarker can predict them
+\item $c.bm = 0.6$ will have strong effect on power
+\end{itemize}
+
+\item \textbf{Designs with more participants will do better than more timepoints}
+\begin{itemize}
+\item Between-person variance is where the action is
+\item 70 participants better than 35 with more measurements per person
+\end{itemize}
+
+\item \textbf{Carryover effects are more problematic}
+\begin{itemize}
+\item Person's baseline is stable, so carryover ``sticks around''
+\item Washout periods are more important
+\end{itemize}
+\end{enumerate}
+
+\subsubsection{What c.tv = 0.3 would mean}
+
+\begin{enumerate}
+\item \textbf{Harder to detect interactions}
+\begin{itemize}
+\item Biomarker can't predict unstable responses
+\item $c.bm$ effects would be diluted
+\end{itemize}
+
+\item \textbf{More timepoints per person helps}
+\begin{itemize}
+\item Within-person variance is where the action is
+\item Repeated measures improve precision
+\end{itemize}
+
+\item \textbf{Carryover less problematic}
+\begin{itemize}
+\item Random fluctuation swamps carryover signal
+\item But also swamps treatment signal!
+\end{itemize}
+\end{enumerate}
+
+\section{Choosing Values for Your Simulation}
+
+\subsection{Autocorrelation Guidelines}
+
+\begin{table}[h]
+\centering
+\caption{Autocorrelation Value Interpretations}
+\begin{tabular}{@{}llp{6cm}@{}}
+\toprule
+\textbf{Value} & \textbf{Interpretation} & \textbf{When Realistic} \\
+\midrule
+0.3--0.5 & Conservative & Moderate stability; episodic conditions \\
+0.5--0.7 & Moderate & Most chronic conditions; typical temporal stability \\
+0.7--0.9 & High & Very stable traits; pharmacogenetics; N-of-1 context \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Conservative (c = 0.5)}
+\begin{itemize}
+\item \textbf{Interpretation}: ``Half the variance is stable individual differences, half is random''
+\item \textbf{When realistic}: Moderate stability conditions
+\item \textbf{Power implications}: Moderate power for interactions
+\end{itemize}
+
+\subsubsection{Moderate-High (c = 0.65)}
+\begin{itemize}
+\item \textbf{Interpretation}: ``2/3 stable, 1/3 random''
+\item \textbf{When realistic}: Most chronic conditions
+\item \textbf{Power implications}: Good power for interactions
+\end{itemize}
+
+\subsubsection{High (c = 0.8---Hendrickson)}
+\begin{itemize}
+\item \textbf{Interpretation}: ``4/5 stable, 1/5 random''
+\item \textbf{When realistic}: Very stable traits, pharmacogenetics
+\item \textbf{Power implications}: High power for interactions
+\end{itemize}
+
+\subsection{Summary Table}
+
+\begin{table}[h]
+\centering
+\caption{Configuration Comparison}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Conservative} & \textbf{Intermediate} & \textbf{Hendrickson} \\
+\midrule
+Autocorrelations & 0.5 & 0.65 & 0.8 \\
+Variance partition & 50-50 & 65-35 & 80-20 \\
+Individual types & Moderate & Clear & Very clear \\
+Interaction power & Moderate & Good & High \\
+Main effect power & High & Moderate & Lower \\
+Stability & Very high & High & Moderate \\
+Use case & Exploration & Balanced & Comparison \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Key Takeaways}
+
+\subsection{The Six Parameters Control Everything}
+
+These six parameters completely determine the correlation structure:
+\begin{enumerate}
+\item \texttt{c.tv, c.pb, c.br}: Within-component temporal stability
+\item \texttt{c.cf1t}: Cross-component synchrony (same time)
+\item \texttt{c.cfct}: Cross-component lag correlation (different times)
+\item \texttt{c.bm}: Biomarker predictive value
+\end{enumerate}
+
+\subsection{Within-Component Autocorrelation is Critical}
+
+\textbf{High autocorrelation (0.6--0.8)} answers:
+\begin{quote}
+``Are people consistently different from each other over time?''
+\end{quote}
+
+\textbf{Answer: YES}
+\begin{itemize}
+\item People have stable ``types''---responders vs non-responders
+\item Essential for N-of-1 trials and precision medicine
+\item Required for biomarker prediction to work
+\end{itemize}
+
+\subsection{Always Maintain the Hierarchy}
+
+The single most important constraint:
+\begin{equation}
+\boxed{c.cfct < c.cf1t < \min(c.tv, c.pb, c.br)}
+\end{equation}
+
+Violating this hierarchy \textbf{guarantees} a non-positive-definite matrix.
+
+\subsection{Hendrickson's Choice is Well-Justified}
+
+For N-of-1 trials focused on detecting biomarker $\times$ treatment interactions:
+\begin{itemize}
+\item \textbf{High autocorrelations (0.8)} are theoretically appropriate
+\item Reflects stable individual characteristics
+\item Enables precision medicine approach
+\item Empirically validated in published simulations
+\end{itemize}
+
+\subsection{Practical Recommendations}
+
+\begin{enumerate}
+\item \textbf{For Hendrickson comparison}: Use exact values (all 0.8, 0.2, 0.1)
+\item \textbf{For general use}: Use intermediate values (0.65, 0.18, 0.09)
+\item \textbf{For sensitivity}: Test conservative to high range
+\item \textbf{Always}: Validate positive definiteness before running simulations
+\end{enumerate}
+
+\section{References}
+
+\begin{enumerate}
+\item Hendrickson, E., Hatfield, L. A., \& Hodges, J. S. (2020). N-of-1 trials with multiple randomization structures: Design, power, and carryover effects.
+
+\item See companion document: \texttt{correlation\_structure\_design.pdf} for theoretical treatment and troubleshooting
+
+\item See companion document: \texttt{correlation\_structure\_discussion.md} for additional context and recommendations
+\end{enumerate}
+
+\end{document}

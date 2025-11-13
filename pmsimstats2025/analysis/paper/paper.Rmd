@@ -1,0 +1,61 @@
+---
+title: "Title Goes Here"
+author:
+  - Your Name:
+      email: your.email@example.com
+      institute: [Your Institution]
+      correspondence: true
+institute:
+  - Your Institution: Your Institution Full Name
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes
+    number_sections: true
+    toc: false
+    keep_tex: true
+bibliography: references.bib
+csl: "../templates/statistics-in-medicine.csl"
+abstract: |
+  Text of abstract
+keywords: |
+  keyword 1; keyword 2; keyword 3
+highlights: |
+  These are the highlights.
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.path = "../figures/",
+  dpi = 300
+)
+library(d08)
+# other packages
+library(rmarkdown)
+library(knitr)
+```
+
+# Introduction
+
+Here is the text of your introduction.
+
+# Materials and methods
+
+Here are the methods.
+
+# Results
+
+Here are the results.
+
+# Discussion
+
+Discussion text goes here.
+
+# Conclusion
+
+Conclusions text goes here.
+
+# References
