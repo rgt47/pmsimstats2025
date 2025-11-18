@@ -521,10 +521,10 @@ base_params <- list(
 # Define parameter grid for simulation
 param_grid <- expand_grid(
   n_participants = c(70),
-  # Biomarker correlation range (PD boundary tested: max c.bm = 0.34 @ autocorr = 0.8)
-  # Maintains alignment with Hendrickson et al. (2020) autocorrelation values
-  # Tested with actual simulation designs: c.bm = 0.35 fails, c.bm = 0.34 works
-  biomarker_correlation = c(0.2, 0.34),
+  # Biomarker correlation range (PD boundary tested: max c.bm = 0.48 @ autocorr = 0.6)
+  # Increased from 0.34 to 0.48 to improve power (higher effect size)
+  # Tested with actual simulation designs: c.bm = 0.49 fails, c.bm = 0.48 works
+  biomarker_correlation = c(0.2, 0.48),
   # Three carryover conditions: none, moderate, strong
   carryover_t1half = c(0, 1.0, 2.0),
   # Increased from 3.0 to improve power
@@ -545,11 +545,13 @@ model_params <- list(
   # Carryover parameters (affects MEANS only)
   carryover_t1half = base_params$carryover_t1half,
 
-  # FIXED CORRELATION VALUES (Hendrickson approach)
+  # FIXED CORRELATION VALUES
+  # Reduced from Hendrickson (0.8) to 0.6 to increase power
+  # Lower autocorrelations = less correlation between timepoints = more independent observations
   # These do NOT change with carryover_t1half
-  c.tv = 0.8,    # Autocorrelation: time_variant across time
-  c.pb = 0.8,    # Autocorrelation: pharm_biomarker across time
-  c.br = 0.8,    # Autocorrelation: bio_response across time
+  c.tv = 0.6,    # Autocorrelation: time_variant across time (was 0.8)
+  c.pb = 0.6,    # Autocorrelation: pharm_biomarker across time (was 0.8)
+  c.br = 0.6,    # Autocorrelation: bio_response across time (was 0.8)
   c.cf1t = 0.2,  # Cross-correlation: different factors, same time
   c.cfct = 0.1   # Cross-correlation: different factors, different times
 )

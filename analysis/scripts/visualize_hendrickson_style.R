@@ -75,13 +75,13 @@ panel_a <- ggplot(
   )
 
 # ============================================================================
-# Panel B: With Carryover, Fixed Biomarker Correlation = 0.34
+# Panel B: With Carryover, Fixed Biomarker Correlation = 0.48
 # ============================================================================
 
 panel_b_data <- simulation_summary %>%
   filter(
     carryover_t1half > 0,
-    biomarker_correlation == 0.34
+    biomarker_correlation == 0.48
   ) %>%
   mutate(
     design_label = str_to_title(design),
@@ -110,7 +110,7 @@ panel_b <- ggplot(
   ) +
   facet_wrap(~ approach_label, ncol = 2) +
   labs(
-    title = "B. With Carryover (Biomarker Correlation = 0.34)",
+    title = "B. With Carryover (Biomarker Correlation = 0.48)",
     subtitle = "Power by Carryover Half-life",
     x = "Carryover Half-life (weeks)",
     y = NULL
@@ -183,7 +183,7 @@ print(panel_a_data %>%
   select(design_label, biomarker_correlation, approach_label, power) %>%
   arrange(approach_label, biomarker_correlation, design_label))
 
-cat("\n\nPanel B (With Carryover, biomarker_correlation = 0.34):\n")
+cat("\n\nPanel B (With Carryover, biomarker_correlation = 0.48):\n")
 cat(strrep("-", 80) %+% "\n")
 print(panel_b_data %>%
   select(design_label, carryover_t1half, approach_label, power) %>%
