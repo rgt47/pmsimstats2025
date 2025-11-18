@@ -87,6 +87,10 @@ run_monte_carlo <- function(design_name, params,
 
   # Use map_dfr for sequential processing
   all_results <- map_dfr(1:n_iter, function(iter) {
+    # Progress indicator
+    if (iter %% 5 == 1 || iter == n_iter) {
+      cat("  Iteration", iter, "of", n_iter, "\n")
+    }
 
     # Generate data for each path separately, then combine
     # This follows Hendrickson's approach of simulating each path
@@ -740,19 +744,38 @@ for (i in 1:nrow(param_grid)) {
     for (model_carryover in c(TRUE, FALSE)) {
       approach_label <- if (model_carryover) "WITH_CARRYOVER_MODEL" else "NO_CARRYOVER_MODEL"
 
-      cat("\nRunning", design_name, "design with", approach_label,
-          "- params:", i, "of", nrow(param_grid), "\n")
+      cat("\n", strrep("=", 70), "\n", sep = "")
+      cat(sprintf("Running: %s design | %s\n",
+                  toupper(design_name), approach_label))
+      cat(sprintf("Parameters [%d/%d]: n=%d, c.bm=%.1f, t1/2=%.1f\n",
+                  i, nrow(param_grid),
+                  current_params$n_participants,
+                  current_params$biomarker_correlation,
+                  current_params$carryover_t1half))
+      cat(strrep("=", 70), "\n", sep = "")
 
       # Run the Monte Carlo simulation with sigma cache
+      start_time <- Sys.time()
       design_results <- run_monte_carlo(
         design_name,
         current_params,
         sigma_cache,
         model_carryover = model_carryover
       )
+      elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
 
       # Add to overall results
       simulation_results <- bind_rows(simulation_results, design_results)
+
+      # Completion message
+      if (nrow(design_results) > 0) {
+        n_sig <- sum(design_results$significant, na.rm = TRUE)
+        power_est <- mean(design_results$significant, na.rm = TRUE)
+        cat(sprintf("✓ Completed in %.1f sec | Power = %.2f (%d/%d significant)\n",
+                    elapsed_time, power_est, n_sig, nrow(design_results)))
+      } else {
+        cat(sprintf("✗ Skipped (non-PD matrix) in %.1f sec\n", elapsed_time))
+      }
     }
   }
 }
@@ -832,6 +855,33 @@ if (nrow(simulation_summary) > 0) {
     simulation_summary = simulation_summary
   )
 }
-# ========================================== 
+
+# ==========================================
+# Save results to file
+# ==========================================
+
+# Create output directory if it doesn't exist
+output_dir <- "../output"
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+  cat("\n✓ Created output directory:", output_dir, "\n")
+}
+
+# Save results
+output_file <- file.path(output_dir, "full_pmsim_analysis_hyb_versus_co.RData")
+save(simulation_results, simulation_summary, param_grid,
+     model_params, resp_param, baseline_param,
+     file = output_file)
+
+cat("\n", strrep("=", 70), "\n", sep = "")
+cat("✓ SIMULATION COMPLETE!\n")
+cat(strrep("=", 70), "\n", sep = "")
+cat(sprintf("Total simulations run: %d\n", nrow(simulation_results)))
+cat(sprintf("Unique conditions: %d\n", nrow(simulation_summary)))
+cat(sprintf("Results saved to: %s\n", output_file))
+cat(sprintf("File size: %.2f MB\n", file.size(output_file) / 1024^2))
+cat(strrep("=", 70), "\n", sep = "")
+
+# ==========================================
 # End of script
 # ==========================================

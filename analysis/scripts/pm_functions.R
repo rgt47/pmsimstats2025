@@ -395,46 +395,11 @@ build_correlation_matrix <- function(
                          timepoint_idx], "br", sep = ".")
 
         if (timepoint_idx > 1) {
-          # Use advanced biomarker correlation logic if data
-          # is provided
-          if (!is.null(bio_response_test) &&
-              !is.null(bio_response_means) &&
-              !is.null(means)) {
-            name0 <- paste(
-              trial_design$timepoint_name[timepoint_idx - 1],
-              "br", sep = "."
-            )
-            mean_value1 <- means[which(name1 == labels)]
-            mean_value0 <- means[which(name0 == labels)]
-
-            # Handle special cases with careful checks
-            # Calculate correlation with mean-value scaling
-            scaled_correlation <- ifelse(
-              bio_response_test[timepoint_idx],
-              ifelse(
-                bio_response_means[timepoint_idx] == 0 ||
-                  abs(mean_value0) < 1e-10,
-                0,
-                (mean_value1 / max(mean_value0, 1e-10)) *
-                  model_param$c.bm
-              ),
-              model_param$c.bm
-            )
-
-            # CRITICAL: Clamp correlation to valid range [-0.99, 0.99]
-            # Prevent correlations from exceeding 1 or going below -1
-            # Leave small margin (0.99) to ensure positive definiteness
-            scaled_correlation <- pmax(-0.99, pmin(0.99, scaled_correlation))
-
-            correlations["biomarker", name1] <-
-              correlations[name1, "biomarker"] <-
-              scaled_correlation
-          } else {
-            # Simple biomarker correlation
-            correlations["biomarker", name1] <-
-              correlations[name1, "biomarker"] <-
-              model_param$c.bm
-          }
+          # Use c.bm directly (Hendrickson approach)
+          # No mean-ratio scaling needed after removing population mean shift
+          correlations["biomarker", name1] <-
+            correlations[name1, "biomarker"] <-
+            model_param$c.bm
         }
       }
     }
