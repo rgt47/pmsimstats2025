@@ -499,7 +499,7 @@ base_params <- list(
   within_subject_sd = 2.8,
 
   # Number of Monte Carlo iterations
-  n_iterations = 300
+  n_iterations = 20
 )
 
 # Define parameter grid for simulation
