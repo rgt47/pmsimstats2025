@@ -1,0 +1,448 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+% R code styling
+\lstdefinestyle{Rstyle}{
+    language=R,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\title{Technical Differences in Implementation:\\
+Biomarker Correlation Scaling and\\
+Positive-Definite Matrix Handling}
+
+\author{N-of-1 Trial Simulation Project}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides detailed technical explanation of two implementation differences between Hendrickson et al. (2020) and our current approach: (1) biomarker correlation scaling with validity clamping, and (2) non-positive definite (non-PD) matrix handling. We explain the mathematical rationale, practical implications, and quality control benefits of these differences.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Biomarker Correlation Scaling and Clamping}
+
+\subsection{The Problem}
+
+\textbf{Hendrickson's approach:}
+\begin{lstlisting}[style=Rstyle]
+# Simply uses c.bm directly in correlation matrix
+R[pb_idx, br_idx] = c.bm  # e.g., 0.4
+\end{lstlisting}
+
+\textbf{Our approach:}
+\begin{lstlisting}[style=Rstyle]
+# Scales by mean ratio
+mean_ratio = mean_br / mean_pb
+scaled_correlation = c.bm * mean_ratio
+# CLAMP to valid range
+scaled_correlation = pmax(-0.99, pmin(0.99, scaled_correlation))
+\end{lstlisting}
+
+\subsection{Mathematical Rationale}
+
+The scaling exists because \textbf{correlation matrices must preserve relationships when means differ}.
+
+\subsubsection{Correlation vs. Covariance}
+
+Correlation is scale-free, but covariance is not:
+\begin{align}
+\text{Correlation:} \quad \rho(X,Y) &= \frac{\text{Cov}(X,Y)}{\sigma_X \cdot \sigma_Y} \\
+\text{Covariance:} \quad \text{Cov}(X,Y) &= \rho(X,Y) \cdot \sigma_X \cdot \sigma_Y
+\end{align}
+
+When $X$ and $Y$ have different means (due to treatment effects and carryover), their covariances need adjustment to maintain the same ``strength of relationship.''
+
+\subsubsection{Concrete Example}
+
+Consider a timepoint where BR mean is inflated by treatment and carryover:
+\begin{align*}
+\mu_{\text{pb}} &= 15.0 \quad \text{(baseline)} \\
+\mu_{\text{br}} &= 15.0 + 5.0 \text{ (treatment)} + 2.5 \text{ (carryover)} = 22.5
+\end{align*}
+
+Mean ratio:
+\[
+r = \frac{\mu_{\text{br}}}{\mu_{\text{pb}}} = \frac{22.5}{15.0} = 1.5
+\]
+
+If $c_{\text{bm}} = 0.4$:
+\begin{align*}
+\rho_{\text{naive}} &= 0.4 \\
+\rho_{\text{scaled}} &= 0.4 \times 1.5 = 0.6
+\end{align*}
+
+The scaling reflects that BR has ``more room to vary'' when its mean is higher, so the correlation strength needs adjustment to maintain consistent relationship across timepoints.
+
+\subsection{The Danger Without Clamping}
+
+\textbf{Before we added clamping:}
+
+With $c_{\text{bm}} = 0.4$ and mean ratio $r = 2.5$ (high treatment + strong carryover):
+\[
+\rho_{\text{scaled}} = 0.4 \times 2.5 = 1.0 \quad \text{\textbf{INVALID!}}
+\]
+
+\textbf{Problem:} Correlations must satisfy $|\rho| < 1$. A correlation of exactly 1.0 indicates perfect linear dependence, which:
+\begin{itemize}
+    \item Produces non-positive definite matrices
+    \item Causes negative eigenvalues
+    \item Creates mathematically invalid covariance structures
+\end{itemize}
+
+\textbf{After adding clamping:}
+
+Same scenario:
+\begin{align*}
+\rho_{\text{raw}} &= 0.4 \times 2.5 = 1.0 \\
+\rho_{\text{clamped}} &= \min(0.99, 1.0) = 0.99 \quad \text{\checkmark~VALID}
+\end{align*}
+
+This preserves matrix positive-definiteness. The value 0.99 represents ``strong but not perfect correlation,'' and the slight margin prevents numerical instability.
+
+\subsection{Why This Matters}
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Validity preservation}: Keeps correlation matrices mathematically valid
+    \item \textbf{Numerical stability}: Prevents eigenvalue computation failures
+    \item \textbf{Conservative approach}: When mean ratios are extreme, caps correlation at maximum valid value
+    \item \textbf{Quality control}: Rather than failing silently, ensures all matrices are usable
+\end{enumerate}
+
+\subsection{Impact After Option 1 Changes}
+
+After removing the population mean shift ($c_{\text{bm}} \times \text{tod} \times 2.0$), mean ratios became smaller:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Component} & \textbf{Before Option 1} & \textbf{After Option 1} \\
+\midrule
+Baseline & 15.0 & 15.0 \\
+Treatment effect & 5.0 & 5.0 \\
+Carryover effect & 2.5 & 2.5 \\
+Biomarker shift & 0.8 & \textbf{0.0} (removed) \\
+\midrule
+Total BR mean & 23.3 & 22.5 \\
+Mean ratio & 1.55 & 1.50 \\
+\bottomrule
+\end{tabular}
+\caption{Mean values before and after Option 1 implementation}
+\end{table}
+
+\textbf{Result:} Smaller ratios $\Rightarrow$ less scaling $\Rightarrow$ clamping is now \textbf{mostly a safety check} rather than frequently invoked.
+
+\section{Non-Positive Definite Matrix Handling}
+
+\subsection{What is Positive-Definiteness?}
+
+A covariance matrix $\boldsymbol{\Sigma}$ is \textbf{positive-definite} (PD) if:
+\[
+\mathbf{v}^T \boldsymbol{\Sigma} \mathbf{v} > 0 \quad \forall \mathbf{v} \neq \mathbf{0}
+\]
+
+\textbf{Equivalently:} All eigenvalues $\lambda_i > 0$.
+
+\subsubsection{Why It Matters}
+
+\begin{itemize}
+    \item Only PD matrices can represent valid covariance structures
+    \item Multivariate normal (MVN) distribution requires PD matrix for valid probability density:
+    \[
+    f(\mathbf{x}) = \frac{1}{(2\pi)^{k/2} |\boldsymbol{\Sigma}|^{1/2}} \exp\left(-\frac{1}{2}(\mathbf{x}-\boldsymbol{\mu})^T \boldsymbol{\Sigma}^{-1} (\mathbf{x}-\boldsymbol{\mu})\right)
+    \]
+    \item Non-PD $\Rightarrow$ some linear combinations of variables have negative variance (impossible!)
+\end{itemize}
+
+\subsection{Hendrickson's Approach: Auto-Fix}
+
+\begin{lstlisting}[style=Rstyle]
+# Check if matrix is PD
+eigenvalues = eigen(Sigma)$values
+is_pd = all(eigenvalues > 0)
+
+if (!is_pd) {
+  # Automatically "fix" by adjusting eigenvalues
+  Sigma = corpcor::make.positive.definite(Sigma, tol = 1e-3)
+  # This finds the "nearest" PD matrix
+}
+
+return(Sigma)  # Always returns something
+\end{lstlisting}
+
+\subsubsection{What \texttt{make.positive.definite()} Does}
+
+\begin{enumerate}
+    \item Compute eigendecomposition: $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^T$
+    \item Find negative eigenvalues: $\lambda_i < 0$
+    \item Replace them: $\lambda_i \rightarrow \max(\lambda_i, \tau)$ where $\tau = 10^{-3}$
+    \item Reconstruct: $\boldsymbol{\Sigma}_{\text{fixed}} = \mathbf{Q} \boldsymbol{\Lambda}_{\text{fixed}} \mathbf{Q}^T$
+\end{enumerate}
+
+\textbf{Effect:} You always get a ``valid'' matrix, but it's \textbf{not the matrix you asked for}---it's been perturbed.
+
+\subsection{Our Approach: Reject Invalid}
+
+\begin{lstlisting}[style=Rstyle]
+# Check if matrix is PD
+eigenvalues = eigen(Sigma)$values
+is_pd = all(eigenvalues > 0)
+
+if (!is_pd) {
+  cat("REJECTED: Non-positive definite matrix detected.\n")
+  cat("Eigenvalue range:", min(eigenvalues), "to",
+      max(eigenvalues), "\n")
+  cat("Parameter combination:", params, "\n")
+  return(NULL)  # Signal: skip this combination
+}
+
+return(Sigma)  # Only return if truly valid
+\end{lstlisting}
+
+\textbf{Effect:} Simulation skips invalid parameter combinations entirely.
+
+\subsection{Why This Difference Matters}
+
+\textbf{Philosophical question:} What should you do when parameters produce invalid matrices?
+
+\subsubsection{Option A: Fix and Continue (Hendrickson)}
+
+\textbf{Pros:}
+\begin{itemize}
+    \item Never lose data, complete parameter grid
+    \item Computational efficiency (no failed runs)
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+    \item Using a \emph{different} matrix than intended
+    \item Masks potential parameter issues
+    \item ``Fixing'' might introduce bias
+\end{itemize}
+
+\subsubsection{Option B: Reject and Skip (Our Approach)}
+
+\textbf{Pros:}
+\begin{itemize}
+    \item Only use mathematically correct matrices
+    \item Reveals problematic parameter combinations
+    \item No silent perturbations
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+    \item Lose some parameter combinations
+    \item Need to ensure grid has valid combinations
+\end{itemize}
+
+\subsection{When Does Non-PD Occur?}
+
+\subsubsection{1. High Correlations}
+
+When multiple correlations near 1.0 create impossible relationships:
+
+\begin{lstlisting}[style=Rstyle]
+# Example: Can't have all three simultaneously
+Cor(X,Y) = 0.95
+Cor(Y,Z) = 0.95
+Cor(X,Z) = 0.10  # Inconsistent!
+# X and Z should be correlated through Y
+\end{lstlisting}
+
+If $X$ and $Y$ are highly correlated, and $Y$ and $Z$ are highly correlated, then $X$ and $Z$ \emph{must} also be correlated. A low correlation between $X$ and $Z$ creates an inconsistent constraint system.
+
+\subsubsection{2. Scaling Issues}
+
+When mean-ratio scaling pushes correlations too high:
+
+\begin{lstlisting}[style=Rstyle]
+# Before clamping fix
+c.bm = 0.4
+mean_ratio = 2.6
+# Result:
+correlation = 0.4 * 2.6 = 1.04  # Invalid!
+# Produces non-PD matrix
+\end{lstlisting}
+
+\subsubsection{3. Autocorrelation + Cross-Correlation Conflicts}
+
+If:
+\begin{itemize}
+    \item Autocorrelations are very high (e.g., $c_{\text{tv}} = c_{\text{pb}} = c_{\text{br}} = 0.8$)
+    \item AND cross-correlations are substantial ($c_{\text{cf1t}} = 0.2$, $c_{\text{cfct}} = 0.1$)
+    \item AND biomarker correlation varies by timepoint (on/off treatment)
+\end{itemize}
+
+This can create impossible constraint systems, leading to non-PD matrices.
+
+\subsection{Practical Impact in Our Simulations}
+
+With fixed Hendrickson correlations + clamping:
+\begin{itemize}
+    \item[\checkmark] All 12 parameter combinations produce valid (PD) matrices
+    \item[\checkmark] No rejections in current parameter grid
+    \item[\checkmark] Eigenvalue ranges all positive
+    \item[\checkmark] Condition numbers acceptable ($< 100$)
+\end{itemize}
+
+So our rejection mechanism is currently a \textbf{quality assurance check} rather than frequently invoked.
+
+\subsection{Quality Control Benefits}
+
+Our approach provides \textbf{diagnostic information}:
+
+\begin{lstlisting}[style=Rstyle]
+# When rejection occurs, we print:
+REJECTED: Non-positive definite matrix detected.
+Eigenvalue range: -0.0234 to 2.156
+Condition number: 847.3 (ill-conditioned!)
+
+Parameter combination:
+  c.bm = 0.8
+  carryover_t1half = 2.0
+  biomarker_correlation = 0.8
+
+# This tells us: "These parameters create
+#   inconsistent correlation structure"
+# Action: Revise parameters or investigate why
+\end{lstlisting}
+
+Hendrickson's auto-fix would silently continue with a perturbed matrix---we'd never know there was a problem.
+
+\section{Comparison Summary}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{2.5cm}p{3.5cm}p{3.5cm}p{3cm}}
+\toprule
+\textbf{Aspect} & \textbf{Hendrickson} & \textbf{Our Approach} & \textbf{Trade-off} \\
+\midrule
+\textbf{Scaling} & No scaling, use $c_{\text{bm}}$ directly & Scale by mean ratio, clamp to $[-0.99, 0.99]$ & Complexity vs. validity \\
+\addlinespace
+\textbf{Philosophy} & Trust parameters & Validate parameters & Permissive vs. strict \\
+\addlinespace
+\textbf{Non-PD handling} & Auto-fix and continue & Reject and skip & Completeness vs. correctness \\
+\addlinespace
+\textbf{Diagnostics} & Silent & Explicit warnings & Convenience vs. transparency \\
+\addlinespace
+\textbf{Result} & Always complete grid & Only valid combinations & Quantity vs. quality \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of approaches}
+\end{table}
+
+\subsection{Which Approach is ``Better''?}
+
+\textbf{It depends on the goal:}
+
+\subsubsection{For Exploratory Simulation (Hendrickson's Goal)}
+\begin{itemize}
+    \item Wide parameter sweep
+    \item Want complete results
+    \item Auto-fix acceptable
+    \item Published methodology
+\end{itemize}
+
+\subsubsection{For Methodological Validation (Our Goal)}
+\begin{itemize}
+    \item Strict adherence to assumptions
+    \item Only mathematically valid matrices
+    \item Diagnostic transparency
+    \item Quality over quantity
+\end{itemize}
+
+Both approaches are defensible. We chose the stricter approach because:
+\begin{enumerate}
+    \item We're extending published methodology (need rigor)
+    \item Current parameter grid produces all valid matrices anyway
+    \item Provides quality assurance for future parameters
+    \item Diagnostic output helps identify issues
+\end{enumerate}
+
+\section{Practical Recommendations}
+
+\subsection{When to Use Scaling/Clamping}
+
+\textbf{Always use it when:}
+\begin{itemize}
+    \item Means vary across timepoints (treatment effects, carryover)
+    \item You want correlation ``strength'' to remain consistent
+    \item You need to prevent invalid correlations
+\end{itemize}
+
+\textbf{Monitor for:}
+\begin{itemize}
+    \item Frequent clamping at 0.99 $\Rightarrow$ parameters may be too extreme
+    \item Mean ratios $> 2.0$ $\Rightarrow$ consider parameter adjustment
+\end{itemize}
+
+\subsection{When to Reject Non-PD Matrices}
+
+\textbf{Reject when:}
+\begin{itemize}
+    \item Methodological rigor required
+    \item Parameter validation needed
+    \item Publishing results (need defensibility)
+\end{itemize}
+
+\textbf{Auto-fix when:}
+\begin{itemize}
+    \item Exploratory analysis
+    \item Computational constraints (can't afford rejections)
+    \item Parameters known to be near boundary
+\end{itemize}
+
+\subsection{Our Current Status}
+
+After Option 1 alignment:
+\begin{itemize}
+    \item[\checkmark] Mean ratios are modest ($< 1.5$ typically)
+    \item[\checkmark] Clamping rarely invoked
+    \item[\checkmark] All matrices PD without rejection
+    \item[\checkmark] Both mechanisms serving as quality checks
+\end{itemize}
+
+\section{Conclusion}
+
+These differences reflect \textbf{stricter quality control} in our implementation, ensuring we only use mathematically valid, correctly specified covariance structures. While Hendrickson's approach prioritizes computational completeness (always obtaining results), our approach prioritizes mathematical correctness (only using valid matrices).
+
+Both philosophies are valid for their respective goals. For our purpose of extending and validating Hendrickson's methodology with novel carryover modeling, the stricter approach provides:
+\begin{enumerate}
+    \item Confidence that all results are mathematically sound
+    \item Transparency about parameter validity
+    \item Early detection of problematic parameter combinations
+    \item Documentation trail for methodological rigor
+\end{enumerate}
+
+The practical impact is minimal in our current simulations (all parameters produce valid matrices), but the infrastructure ensures quality control as we extend to new parameter ranges or designs.
+
+\vspace{1cm}
+
+\noindent\rule{\textwidth}{0.4pt}
+
+\noindent\textit{Documentation created: \today}\\
+\textit{Repository:} \texttt{/Users/zenn/Dropbox/prj/d08/pmsimstats2025}
+
+\end{document}
