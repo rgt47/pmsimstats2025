@@ -90,7 +90,7 @@ combined_heatmaps <- (heatmap1 | heatmap2) / (heatmap3 | heatmap4) +
       unique(simulation_summary$n_participants)[1],
       max(simulation_results$iteration)
     ),
-    caption = "Each heatmap shows power to detect biomarker×treatment interaction\nFixed parameters: autocorr = 0.6 (reduced from Hendrickson 0.8), treatment effect = 5.0",
+    caption = "Each heatmap shows power to detect biomarker×treatment interaction\nBiomarker correlation levels: 0 (no interaction), 0.3 (moderate), 0.48 (strong)\nFixed parameters: autocorr = 0.6 (reduced from Hendrickson 0.8), treatment effect = 5.0",
     theme = theme(
       plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
       plot.subtitle = element_text(size = 12, hjust = 0.5),
