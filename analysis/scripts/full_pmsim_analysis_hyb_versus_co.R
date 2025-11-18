@@ -521,9 +521,10 @@ base_params <- list(
 # Define parameter grid for simulation
 param_grid <- expand_grid(
   n_participants = c(70),
-  # Biomarker correlation range (PD boundary tested: max c.bm = 0.35 @ autocorr = 0.8)
+  # Biomarker correlation range (PD boundary tested: max c.bm = 0.34 @ autocorr = 0.8)
   # Maintains alignment with Hendrickson et al. (2020) autocorrelation values
-  biomarker_correlation = c(0.2, 0.35),
+  # Tested with actual simulation designs: c.bm = 0.35 fails, c.bm = 0.34 works
+  biomarker_correlation = c(0.2, 0.34),
   # Three carryover conditions: none, moderate, strong
   carryover_t1half = c(0, 1.0, 2.0),
   # Increased from 3.0 to improve power

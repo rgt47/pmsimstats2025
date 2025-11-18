@@ -24,7 +24,7 @@ conflict_prefer("lag", "dplyr")
 conflict_prefer("select", "dplyr")
 
 # Load simulation results
-load("analysis/output/full_pmsim_analysis_hyb_versus_co.RData")
+load("../output/full_pmsim_analysis_hyb_versus_co.RData")
 
 # ============================================================================
 # Panel A: No Carryover, Varying Biomarker Correlation
@@ -75,13 +75,13 @@ panel_a <- ggplot(
   )
 
 # ============================================================================
-# Panel B: With Carryover, Fixed Biomarker Correlation = 0.35
+# Panel B: With Carryover, Fixed Biomarker Correlation = 0.34
 # ============================================================================
 
 panel_b_data <- simulation_summary %>%
   filter(
     carryover_t1half > 0,
-    biomarker_correlation == 0.35
+    biomarker_correlation == 0.34
   ) %>%
   mutate(
     design_label = str_to_title(design),
@@ -110,7 +110,7 @@ panel_b <- ggplot(
   ) +
   facet_wrap(~ approach_label, ncol = 2) +
   labs(
-    title = "B. With Carryover (Biomarker Correlation = 0.35)",
+    title = "B. With Carryover (Biomarker Correlation = 0.34)",
     subtitle = "Power by Carryover Half-life",
     x = "Carryover Half-life (weeks)",
     y = NULL
@@ -151,7 +151,7 @@ combined_figure <- panel_a / panel_b +
 # ============================================================================
 
 ggsave(
-  filename = "analysis/output/figure4_equivalent_hendrickson_style.png",
+  filename = "../output/figure4_equivalent_hendrickson_style.png",
   plot = combined_figure,
   width = 14,
   height = 10,
@@ -159,15 +159,15 @@ ggsave(
 )
 
 ggsave(
-  filename = "analysis/output/figure4_equivalent_hendrickson_style.pdf",
+  filename = "../output/figure4_equivalent_hendrickson_style.pdf",
   plot = combined_figure,
   width = 14,
   height = 10
 )
 
 cat("\n✓ Figure 4-equivalent saved to:\n")
-cat("  - analysis/output/figure4_equivalent_hendrickson_style.png\n")
-cat("  - analysis/output/figure4_equivalent_hendrickson_style.pdf\n")
+cat("  - ../output/figure4_equivalent_hendrickson_style.png\n")
+cat("  - ../output/figure4_equivalent_hendrickson_style.pdf\n")
 
 # ============================================================================
 # Print Summary Statistics
@@ -183,7 +183,7 @@ print(panel_a_data %>%
   select(design_label, biomarker_correlation, approach_label, power) %>%
   arrange(approach_label, biomarker_correlation, design_label))
 
-cat("\n\nPanel B (With Carryover, biomarker_correlation = 0.4):\n")
+cat("\n\nPanel B (With Carryover, biomarker_correlation = 0.34):\n")
 cat(strrep("-", 80) %+% "\n")
 print(panel_b_data %>%
   select(design_label, carryover_t1half, approach_label, power) %>%
