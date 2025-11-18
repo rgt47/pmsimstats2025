@@ -109,15 +109,13 @@ calculate_bio_response_with_interaction <- function(
     resp_param$disp[resp_param$cat == "bio_response"],
     resp_param$rate[resp_param$cat == "bio_response"]
   )
-  
-  # Create biomarker×treatment interaction effect
-  interaction_strength <- model_param$c.bm
-  biomarker_interaction_effect <- interaction_strength *
-                                   trial_data$tod * 2.0
 
-  # Combine base response with biomarker interaction
-  bio_response_means <- base_bio_response +
-                        biomarker_interaction_effect
+  # NOTE: Biomarker×treatment interaction emerges from correlation structure
+  # in the MVN draw, following Hendrickson et al. (2020) approach.
+  # No population mean shift needed - interaction is created by differential
+  # correlation between biomarker and bio_response by treatment status.
+  # See: WHY_POST_MVN_ADJUSTMENT_ANALYSIS.md
+  bio_response_means <- base_bio_response
 
   # Check for zero values (for correlation matrix logic)
   bio_response_test <- base_bio_response == 0
@@ -127,7 +125,7 @@ calculate_bio_response_with_interaction <- function(
     bio_response_means, trial_data, component_halflives,
     scale_factor, "br"
   )
-  
+
   return(list(
     bio_response_means = bio_response_means,
     bio_response_test = bio_response_test,
@@ -640,32 +638,14 @@ generate_data <- function(
   participant_data <- as_tibble(participant_data)
   colnames(participant_data) <- labels
 
-  # Apply TRUE biomarker×treatment interaction to bio-response
-  # components. This creates individualized treatment responses
-  # based on each participant's biomarker level
-  interaction_strength <- model_param$c.bm
-
-  # Find bio-response columns
-  br_columns <- grep("\\.br$", names(participant_data), value = TRUE)
-
-  if (length(br_columns) > 0 && interaction_strength > 0) {
-    # Get corresponding treatment status for each timepoint
-    for (br_col in br_columns) {
-      # Extract timepoint name (e.g., "W1" from "W1.br")
-      timepoint_name <- sub("\\.br$", "", br_col)
-      timepoint_idx <- which(trial_design$timepoint_name == timepoint_name)
-
-      if (length(timepoint_idx) > 0) {
-        # Get treatment status for this timepoint
-        treatment_status <- trial_design$tod[timepoint_idx]
-
-        # Apply biomarker×treatment interaction:
-        # Individual biomarker value × treatment status × interaction strength
-        participant_data[[br_col]] <- participant_data[[br_col]] +
-          (participant_data$biomarker * treatment_status * interaction_strength)
-      }
-    }
-  }
+  # NOTE: No post-MVN biomarker adjustment needed.
+  # Biomarker×treatment interaction emerges naturally from differential
+  # correlation structure in the MVN draw (Hendrickson et al. 2020 approach).
+  # The correlation matrix specifies:
+  #   - Cor(biomarker, bio_response) = c.bm when on treatment
+  #   - Cor(biomarker, bio_response) = 0 (or scaled) when off treatment
+  # This differential correlation IS the biomarker×treatment interaction.
+  # See: WHY_POST_MVN_ADJUSTMENT_ANALYSIS.md for detailed explanation.
 
   # Process participant data using helper function
   participant_data <- process_participant_data(

@@ -36,9 +36,14 @@ source("pm_functions.R")
 # parameters with support for multiple randomization paths
 #===========================================================================
 run_monte_carlo <- function(design_name, params,
-                            sigma_cache = NULL) {
+                            sigma_cache = NULL,
+                            model_carryover = TRUE) {
   # FIXED CORRELATIONS: Do NOT adjust based on carryover
   # Correlations remain constant; only MEANS are affected by carryover
+
+  # model_carryover: Should the analysis model include carryover term?
+  #   TRUE = Our enhancement (control for carryover)
+  #   FALSE = Hendrickson approach (carryover is unmodeled confound)
 
   # Update model parameters with current simulation parameters
   current_model_params <- model_params
@@ -195,18 +200,24 @@ run_monte_carlo <- function(design_name, params,
     # Following Hendrickson et al. (2020) approach:
     # - Always include time effect (week) to account for period effects
     # - Biomarker × treatment interaction as primary effect of interest
-    # - Carryover effect when applicable (enhancement over Hendrickson)
+    # - Carryover effect: OPTIONAL (controlled by model_carryover parameter)
+    #   * TRUE = Our enhancement (control for carryover)
+    #   * FALSE = Hendrickson approach (carryover unmodeled)
     # - Random intercept for participant-level variation
     model_result <- tryCatch({
 
-      # Include carryover effect in model if present
-      if (params$carryover_t1half > 0) {
+      # Include carryover effect in model if:
+      # 1. Carryover exists in data (carryover_t1half > 0), AND
+      # 2. We want to model it (model_carryover = TRUE)
+      if (params$carryover_t1half > 0 && model_carryover) {
         model <- lmer(
           response ~ treatment * bm + week + carryover_effect +
             (1 | participant_id),
           data = analysis_data_long
         )
       } else {
+        # No carryover term in model
+        # (either no carryover in data, or deliberately not modeling it)
         model <- lmer(
           response ~ treatment * bm + week + (1 | participant_id),
           data = analysis_data_long
@@ -258,7 +269,8 @@ run_monte_carlo <- function(design_name, params,
         design = design_name,
         n_participants = params$n_participants,
         biomarker_correlation = params$biomarker_correlation,
-        carryover_t1half = params$carryover_t1half
+        carryover_t1half = params$carryover_t1half,
+        model_carryover = model_carryover  # Track analysis approach
       )
   })
 
@@ -720,13 +732,28 @@ for (i in 1:nrow(param_grid)) {
 
   # Run for each design using our Monte Carlo function
   for (design_name in c("hybrid", "crossover")) {
-    # Run the Monte Carlo simulation with sigma cache
-    design_results <- run_monte_carlo(design_name, current_params,
-                                      sigma_cache)
 
-    # Add to overall results
-    simulation_results <- bind_rows(simulation_results,
-                                    design_results)
+    # Run BOTH analysis approaches for comparison:
+    # 1. WITH carryover modeling (our enhancement)
+    # 2. WITHOUT carryover modeling (Hendrickson approach)
+
+    for (model_carryover in c(TRUE, FALSE)) {
+      approach_label <- if (model_carryover) "WITH_CARRYOVER_MODEL" else "NO_CARRYOVER_MODEL"
+
+      cat("\nRunning", design_name, "design with", approach_label,
+          "- params:", i, "of", nrow(param_grid), "\n")
+
+      # Run the Monte Carlo simulation with sigma cache
+      design_results <- run_monte_carlo(
+        design_name,
+        current_params,
+        sigma_cache,
+        model_carryover = model_carryover
+      )
+
+      # Add to overall results
+      simulation_results <- bind_rows(simulation_results, design_results)
+    }
   }
 }
 
@@ -734,7 +761,7 @@ for (i in 1:nrow(param_grid)) {
 if (nrow(simulation_results) > 0) {
   simulation_summary <- simulation_results %>%
     group_by(design, n_participants, biomarker_correlation,
-             carryover_t1half) %>%
+             carryover_t1half, model_carryover) %>%
     summarize(
       power = mean(significant, na.rm = TRUE),
       mean_effect = mean(effect_size, na.rm = TRUE),
