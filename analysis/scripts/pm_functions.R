@@ -395,11 +395,20 @@ build_correlation_matrix <- function(
                          timepoint_idx], "br", sep = ".")
 
         if (timepoint_idx > 1) {
-          # Use c.bm directly (Hendrickson approach)
-          # No mean-ratio scaling needed after removing population mean shift
-          correlations["biomarker", name1] <-
-            correlations[name1, "biomarker"] <-
-            model_param$c.bm
+          # Apply biomarker correlation ONLY when on treatment (Hendrickson approach)
+          # Differential correlation by treatment status creates the interaction
+          if (!is.null(bio_response_test) &&
+              !bio_response_test[timepoint_idx]) {
+            # On treatment: apply c.bm
+            correlations["biomarker", name1] <-
+              correlations[name1, "biomarker"] <-
+              model_param$c.bm
+          } else {
+            # Off treatment: zero correlation
+            correlations["biomarker", name1] <-
+              correlations[name1, "biomarker"] <-
+              0
+          }
         }
       }
     }

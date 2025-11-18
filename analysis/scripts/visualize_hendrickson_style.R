@@ -11,8 +11,17 @@
 #   - Hybrid vs Crossover design comparison
 #   - WITH carryover model vs WITHOUT carryover model
 
-library(tidyverse)
-library(patchwork)
+# Suppress package startup messages
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(patchwork)
+  library(conflicted)
+})
+
+# Resolve conflicts
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+conflict_prefer("select", "dplyr")
 
 # Load simulation results
 load("analysis/output/full_pmsim_analysis_hyb_versus_co.RData")
