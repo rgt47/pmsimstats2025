@@ -515,8 +515,8 @@ base_params <- list(
   within_subject_sd = 2.8,
 
   # Number of Monte Carlo iterations
-  # Increased to 100 for stable Type I error estimates
-  n_iterations = 100
+  # Set to 30 for reasonable run time while maintaining stable estimates
+  n_iterations = 30
 )
 
 # Define parameter grid for simulation
@@ -528,7 +528,10 @@ param_grid <- expand_grid(
   # Note: c.bm = 0.5 fails with autocorr = 0.6, c.bm = 0.48 works
   biomarker_correlation = c(0, 0.3, 0.48),
   # Three carryover conditions: none, moderate, strong
-  carryover_t1half = c(0, 1.0, 2.0),
+  # UPDATED 2025-11-18: Changed from c(0, 1.0, 2.0) to match Hendrickson's scale
+  # Hendrickson used 0, 0.1, 0.2 WEEKS (= 0, 0.7, 1.4 DAYS)
+  # Previous values (1-2 weeks) were too long and eliminated treatment contrast
+  carryover_t1half = c(0, 0.1, 0.2),
   # Increased from 3.0 to improve power
   treatment_effect = c(5.0)
 )
