@@ -515,7 +515,8 @@ base_params <- list(
   within_subject_sd = 2.8,
 
   # Number of Monte Carlo iterations
-  n_iterations = 20
+  # Increased to 100 for stable Type I error estimates
+  n_iterations = 100
 )
 
 # Define parameter grid for simulation
