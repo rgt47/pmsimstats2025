@@ -15,45 +15,51 @@ source("pm_functions.R")
 cat("Testing Positive-Definiteness Boundaries\n")
 cat(strrep("=", 70), "\n\n")
 
-# Response parameters (shared) - must be data frame with cat, max, disp, rate
+# Response parameters (shared) - must be data frame with cat, max, disp, rate, sd
 resp_param <- tibble(
   cat = c("time_variant", "pharm_biomarker", "bio_response"),
   max = c(15.0, 15.0, 15.0),
   disp = c(1.0, 1.0, 1.0),
-  rate = c(0.1, 0.1, 0.1)
+  rate = c(0.1, 0.1, 0.1),
+  sd = c(1.5, 1.5, 1.5)  # Standard deviations
 )
 
-# Baseline parameters (shared)
-baseline_param <- list(
-  variance.ue = 0.8,
-  variance.ce = 0.0,
-  t1half = 1.0,
-  scale_factor = 1.0,
-  n_weeks_on = 4,
-  n_weeks_off = 4
+# Baseline parameters (shared) - must be data frame with cat, sd, and m (mean)
+baseline_param <- tibble(
+  cat = c("biomarker", "baseline"),
+  sd = c(1.0, 1.0),
+  m = c(0.0, 0.0)  # Means (set to 0 for baseline)
 )
 
-# Create HYBRID trial design (8 timepoints, 4 periods)
+# Create HYBRID trial design (8 timepoints, 4 periods) - SINGLE PARTICIPANT
 hybrid_design <- tibble(
-  participant_id = rep(1:10, each = 8),
-  period = rep(rep(1:4, each = 2), 10),
-  week = rep(1:8, 10),
-  timepoint_name = paste0("W", rep(1:8, 10)),
-  treatment = rep(c("A", "B", "A", "B", "A", "B", "A", "B"), 10),
-  tod = rep(c(1, 0, 1, 0, 1, 0, 1, 0), 10),
-  path = rep(1:4, length.out = 80)
-)
+  participant_id = 1,
+  period = rep(1:4, each = 2),
+  week = 1:8,
+  timepoint_name = paste0("W", 1:8),
+  treatment = c("A", "B", "A", "B", "A", "B", "A", "B"),
+  tod = c(1, 0, 1, 0, 1, 0, 1, 0),
+  path = 1,
+  e = 1.0,  # Expectancy factor (typically 1.0)
+  t_wk = 1,  # Time per week
+  tsd = 0    # Time since discontinuation (simplified)
+) %>%
+  mutate(tpb = cumsum(e))  # Cumulative sum of expectancy
 
-# Create CROSSOVER trial design (4 timepoints, 2 periods)
+# Create CROSSOVER trial design (4 timepoints, 2 periods) - SINGLE PARTICIPANT
 crossover_design <- tibble(
-  participant_id = rep(1:10, each = 4),
-  period = rep(rep(1:2, each = 2), 10),
-  week = rep(1:4, 10),
-  timepoint_name = paste0("W", rep(1:4, 10)),
-  treatment = rep(c("A", "B", "A", "B"), 10),
-  tod = rep(c(1, 0, 1, 0), 10),
-  path = rep(1:2, length.out = 40)
-)
+  participant_id = 1,
+  period = rep(1:2, each = 2),
+  week = 1:4,
+  timepoint_name = paste0("W", 1:4),
+  treatment = c("A", "B", "A", "B"),
+  tod = c(1, 0, 1, 0),
+  path = 1,
+  e = 1.0,  # Expectancy factor (typically 1.0)
+  t_wk = 1,  # Time per week
+  tsd = 0    # Time since discontinuation (simplified)
+) %>%
+  mutate(tpb = cumsum(e))  # Cumulative sum of expectancy
 
 # Test grid
 test_grid <- expand_grid(

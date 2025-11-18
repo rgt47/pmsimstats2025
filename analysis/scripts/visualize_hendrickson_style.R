@@ -5,7 +5,7 @@
 # BOTH analysis scenarios (WITH vs WITHOUT carryover modeling)
 #
 # Panel A: No carryover (t1/2 = 0), varying biomarker_correlation
-# Panel B: With carryover (varying t1/2), fixed biomarker_correlation = 0.4
+# Panel B: With carryover (varying t1/2), fixed biomarker_correlation = 0.35
 #
 # Each panel shows:
 #   - Hybrid vs Crossover design comparison
@@ -75,13 +75,13 @@ panel_a <- ggplot(
   )
 
 # ============================================================================
-# Panel B: With Carryover, Fixed Biomarker Correlation = 0.4
+# Panel B: With Carryover, Fixed Biomarker Correlation = 0.35
 # ============================================================================
 
 panel_b_data <- simulation_summary %>%
   filter(
     carryover_t1half > 0,
-    biomarker_correlation == 0.4
+    biomarker_correlation == 0.35
   ) %>%
   mutate(
     design_label = str_to_title(design),
@@ -110,7 +110,7 @@ panel_b <- ggplot(
   ) +
   facet_wrap(~ approach_label, ncol = 2) +
   labs(
-    title = "B. With Carryover (Biomarker Correlation = 0.4)",
+    title = "B. With Carryover (Biomarker Correlation = 0.35)",
     subtitle = "Power by Carryover Half-life",
     x = "Carryover Half-life (weeks)",
     y = NULL
