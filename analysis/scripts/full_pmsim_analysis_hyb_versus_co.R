@@ -778,8 +778,8 @@ for (i in 1:nrow(param_grid)) {
   current_params$n_iterations <- simulation_params$n_iterations
   current_params$carryover_scale <- simulation_params$carryover_scale
 
-  # Run for each design using our Monte Carlo function
-  for (design_name in c("hybrid", "crossover")) {
+  # SIMPLIFIED: Run for hybrid design only
+  for (design_name in c("hybrid")) {
 
     # Run BOTH analysis approaches for comparison:
     # 1. WITH carryover modeling (our enhancement)
