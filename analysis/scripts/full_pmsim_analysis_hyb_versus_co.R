@@ -543,10 +543,10 @@ param_grid <- expand_grid(
   # Note: c.bm = 0.5 fails with autocorr = 0.6, c.bm = 0.48 works
   biomarker_correlation = c(0, 0.3, 0.48),
   # Three carryover conditions: none, moderate, strong
-  # UPDATED 2025-11-18: Changed from c(0, 1.0, 2.0) to match Hendrickson's scale
-  # Hendrickson used 0, 0.1, 0.2 WEEKS (= 0, 0.7, 1.4 DAYS)
-  # Previous values (1-2 weeks) were too long and eliminated treatment contrast
-  carryover_t1half = c(0, 0.1, 0.2),
+  # UPDATED 2025-11-18: Changed to 0, 0.5, 1.0 weeks
+  # These intermediate values should create detectable carryover effects
+  # in the 8-timepoint design with 1-week gaps in BD phase
+  carryover_t1half = c(0, 0.5, 1.0),
   # Increased from 3.0 to improve power
   treatment_effect = c(5.0)
 )
