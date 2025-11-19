@@ -539,12 +539,10 @@ param_grid <- expand_grid(
   # Three levels: 0 (no interaction), 0.3 (moderate), 0.48 (strong)
   # PD boundary tested: max c.bm = 0.48 @ autocorr = 0.6
   # Note: c.bm = 0.5 fails with autocorr = 0.6, c.bm = 0.48 works
-  biomarker_correlation = c(0, 0.3, 0.48),
-  # Three carryover conditions: none, moderate, strong
-  # UPDATED 2025-11-18: Changed to 0, 0.5, 1.0 weeks
-  # These intermediate values should create detectable carryover effects
-  # in the 8-timepoint design with 1-week gaps in BD phase
-  carryover_t1half = c(0, 0.5, 1.0),
+  # SIMPLIFIED: Just moderate correlation for learning
+  biomarker_correlation = c(0.3),
+  # SIMPLIFIED: No carryover to start (simplest case)
+  carryover_t1half = c(0),
   # Increased from 3.0 to improve power
   treatment_effect = c(5.0)
 )
@@ -663,7 +661,7 @@ designs <- list(
 
 # Simulation parameters
 simulation_params <- list(
-  n_iterations = 20,
+  n_iterations = 5,  # SIMPLIFIED: Reduced from 20 for faster learning runs
   carryover_scale = base_params$carryover_scale,
   between_subject_sd = base_params$between_subject_sd,
   within_subject_sd = base_params$within_subject_sd
@@ -694,10 +692,10 @@ for (i in 1:nrow(param_grid)) {
   # (already set in model_params: c.tv=0.8, c.pb=0.8, c.br=0.8,
   # c.cf1t=0.2, c.cfct=0.1)
 
-  # Test both designs
+  # SIMPLIFIED: Test hybrid design only (crossover removed for learning)
   # For sigma matrix, use first path template (all paths have same
   # timepoints)
-  for (design_name in c("hybrid", "crossover")) {
+  for (design_name in c("hybrid")) {
     # Select first path design template for sigma building
     design_template <- designs[[design_name]]$design_paths[[1]]
 
