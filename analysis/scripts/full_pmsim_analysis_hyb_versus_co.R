@@ -17,6 +17,7 @@ suppressPackageStartupMessages({
   library(MASS)           # For mvrnorm
   library(corpcor)        # For is.positive.definite and make.positive.definite
   library(conflicted)
+  library(progress)       # For professional progress bars
 })
 
 # Suppress conflict messages
@@ -87,10 +88,7 @@ run_monte_carlo <- function(design_name, params,
 
   # Use map_dfr for sequential processing
   all_results <- map_dfr(1:n_iter, function(iter) {
-    # Progress indicator
-    if (iter %% 5 == 1 || iter == n_iter) {
-      cat("  Iteration", iter, "of", n_iter, "\n")
-    }
+    # No per-iteration progress messages - using main progress bar instead
 
     # Generate data for each path separately, then combine
     # This follows Hendrickson's approach of simulating each path
@@ -754,16 +752,26 @@ simulation_results <- tibble()
 # Calculate total number of simulation runs
 # param_grid rows × 2 designs × 2 model types
 total_combinations <- nrow(param_grid) * 2 * 2
-combination_counter <- 0
 
 cat("\n", strrep("=", 70), "\n", sep = "")
-cat(sprintf("TOTAL SIMULATION COMBINATIONS: %d\n", total_combinations))
-cat(sprintf("  Parameter grid: %d\n", nrow(param_grid)))
+cat(sprintf("SIMULATION OVERVIEW\n"))
+cat(strrep("=", 70), "\n", sep = "")
+cat(sprintf("  Parameter combinations: %d\n", nrow(param_grid)))
 cat(sprintf("  Designs: 2 (hybrid, crossover)\n"))
-cat(sprintf("  Models: 2 (WITH carryover, WITHOUT carryover)\n"))
+cat(sprintf("  Model specifications: 2 (WITH/WITHOUT carryover)\n"))
+cat(sprintf("  Total combinations: %d\n", total_combinations))
 cat(sprintf("  Iterations per combination: %d\n", simulation_params$n_iterations))
 cat(sprintf("  Total model fits: %d\n", total_combinations * simulation_params$n_iterations))
-cat(strrep("=", 70), "\n", sep = "")
+cat(strrep("=", 70), "\n\n", sep = "")
+
+# Create progress bar using the progress package
+pb <- progress_bar$new(
+  format = "[:bar] :current/:total (:percent) | :design | :model | ETA: :eta | Elapsed: :elapsed",
+  total = total_combinations,
+  clear = FALSE,
+  width = 80,
+  show_after = 0
+)
 
 # For each parameter combination
 for (i in 1:nrow(param_grid)) {
@@ -780,41 +788,24 @@ for (i in 1:nrow(param_grid)) {
     # 2. WITHOUT carryover modeling (Hendrickson approach)
 
     for (model_carryover in c(TRUE, FALSE)) {
-      combination_counter <- combination_counter + 1
-      approach_label <- if (model_carryover) "WITH_CARRYOVER_MODEL" else "NO_CARRYOVER_MODEL"
+      approach_label <- if (model_carryover) "WITH" else "W/O "
 
-      cat("\n", strrep("=", 70), "\n", sep = "")
-      cat(sprintf("COMBINATION [%d/%d]: %s design | %s\n",
-                  combination_counter, total_combinations,
-                  toupper(design_name), approach_label))
-      cat(sprintf("Parameters: n=%d, c.bm=%.2f, t1/2=%.1f weeks\n",
-                  current_params$n_participants,
-                  current_params$biomarker_correlation,
-                  current_params$carryover_t1half))
-      cat(strrep("=", 70), "\n", sep = "")
+      # Update progress bar with current status
+      pb$tick(tokens = list(
+        design = sprintf("%-9s", design_name),
+        model = sprintf("%s carryover", approach_label)
+      ))
 
       # Run the Monte Carlo simulation with sigma cache
-      start_time <- Sys.time()
       design_results <- run_monte_carlo(
         design_name,
         current_params,
         sigma_cache,
         model_carryover = model_carryover
       )
-      elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
 
       # Add to overall results
       simulation_results <- bind_rows(simulation_results, design_results)
-
-      # Completion message
-      if (nrow(design_results) > 0) {
-        n_sig <- sum(design_results$significant, na.rm = TRUE)
-        power_est <- mean(design_results$significant, na.rm = TRUE)
-        cat(sprintf("✓ Completed in %.1f sec | Power = %.2f (%d/%d significant)\n",
-                    elapsed_time, power_est, n_sig, nrow(design_results)))
-      } else {
-        cat(sprintf("✗ Skipped (non-PD matrix) in %.1f sec\n", elapsed_time))
-      }
     }
   }
 }
