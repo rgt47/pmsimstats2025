@@ -471,3 +471,174 @@ gitk --all
 
 *Created: 2025-11-19*
 *For project: pmsimstats2025*
+
+---
+---
+
+# PART 2: Step-by-Step Walkthrough with Narrative and Intuition
+
+---
+
+## Step 1: Understanding Why We Use Branches for Learning
+
+### The Narrative
+
+Imagine you have a beautifully engineered Swiss watch (your complex codebase). It works perfectly, but you can't understand how all the gears interact. You want to learn, but you're afraid to take it apart because:
+
+1. You might not be able to put it back together
+2. You might lose pieces
+3. You need it to keep working while you learn
+
+**Git branches are like having a perfect photograph of the watch that you can restore anytime.**
+
+### The Mental Model
+
+Think of your repository as a tree:
+
+```
+main branch (complex, working code)
+     |
+     |---- simplified-learning branch (your learning playground)
+```
+
+- **Main branch**: The "production" version. Complex, complete, proven to work.
+- **Simplified-learning branch**: Your personal laboratory. You can break things, simplify drastically, add tons of explanatory comments, and experiment freely.
+
+### The Key Insight
+
+**The magic**: At any moment, you can:
+- Look back at the original (switch to `main`)
+- Compare your changes side-by-side (`git diff`)
+- Copy specific improvements back to the original (cherry-pick)
+- Throw away your experiments and start over (reset)
+
+**The safety**: Your complex working code on `main` never changes unless you explicitly choose to update it.
+
+### Why This Beats Copying to a New Repo
+
+Copying creates two completely separate universes with no easy way to:
+- Compare what you changed
+- Move improvements between versions
+- See the history of what you learned
+- Switch back and forth instantly
+
+Branches keep them connected but separate - like parallel dimensions you can hop between.
+
+---
+
+## Step 2: Creating Your Learning Branch
+
+### The Narrative
+
+You're about to create a "parallel universe" of your code. Think of this moment as Neo in The Matrix being offered the red pill - you're about to see how your code really works, but you can always come back.
+
+### The Command Breakdown
+
+```bash
+cd ~/prj/d08/pmsimstats2025
+git checkout -b simplified-learning
+```
+
+Let's decode what's actually happening:
+
+#### `git checkout -b simplified-learning`
+
+This is actually TWO commands combined:
+
+```bash
+# What it really does:
+git branch simplified-learning    # Creates new branch
+git checkout simplified-learning  # Switches to it
+```
+
+**The `-b` flag** means "create **b**efore checking out"
+
+### The Intuition: What Just Happened?
+
+#### Before the command:
+```
+main branch (you are here)
+  ├─ file1.R
+  ├─ file2.R
+  └─ file3.R
+```
+
+#### After the command:
+```
+main branch
+  ├─ file1.R (original)
+  ├─ file2.R (original)
+  └─ file3.R (original)
+
+simplified-learning branch (you are here now)
+  ├─ file1.R (identical copy for now)
+  ├─ file2.R (identical copy for now)
+  └─ file3.R (identical copy for now)
+```
+
+**Key insight**: Right now, both branches are IDENTICAL. They're pointing to the exact same commit in history. They only diverge when you make changes.
+
+### The Mental Model: Branches Are Pointers
+
+Think of branches as **bookmarks** pointing to specific moments in your code's history:
+
+```
+History Timeline:
+[commit1] → [commit2] → [commit3] ← main branch (bookmark)
+                                  ← simplified-learning (bookmark)
+```
+
+Both bookmarks point to the same place right now. When you make a change on `simplified-learning`, it moves forward while `main` stays put:
+
+```
+After you make changes:
+[commit1] → [commit2] → [commit3] ← main (unchanged)
+                            ↓
+                        [commit4] ← simplified-learning (moved forward)
+```
+
+### Verifying You're on the New Branch
+
+```bash
+git branch
+```
+
+You should see:
+```
+  main
+* simplified-learning
+```
+
+**The asterisk (`*`)** is like a "You Are Here" marker on a map. It shows which branch you're currently on.
+
+### What You Can Do Now
+
+At this moment:
+- ✅ All your files look identical to `main`
+- ✅ You can start editing freely
+- ✅ Your changes won't affect `main`
+- ✅ You can switch back to `main` anytime with `git checkout main`
+
+### The Safety Net
+
+**Important realization**: Nothing you do on this branch can hurt `main` unless you explicitly merge or cherry-pick changes. You could:
+- Delete entire files
+- Completely rewrite functions
+- Break everything
+- Experiment wildly
+
+...and `main` remains untouched, like it's in a time capsule.
+
+### Try This Right Now
+
+Let's prove the branches are independent:
+
+```bash
+# See that files are currently identical
+ls -la
+
+# This is your playground now. You're standing on simplified-learning.
+# main is still there, frozen in time, waiting for you.
+```
+
+---
