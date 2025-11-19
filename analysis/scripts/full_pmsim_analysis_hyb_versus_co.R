@@ -334,74 +334,88 @@ create_designs <- function(n_participants) {
   #   Factor 1: Blinded discontinuation (stay on vs discontinue)
   #   Factor 2: Crossover sequence (AB vs BA)
   #
+  # UPDATED 2025-11-18: Changed to 8-timepoint design matching Hendrickson
+  # Timepoints: weeks 4, 8, 9, 10, 11, 12, 16, 20 (not every week 1-20)
+  #
   # Phase structure (20 weeks total):
-  #   Weeks 1-8:   Open-label (all on treatment)
-  #   Weeks 9-12:  Blinded discontinuation (randomized)
-  #   Weeks 13-16: Crossover period 1 (randomized sequence)
-  #   Weeks 17-20: Crossover period 2 (opposite of period 1)
+  #   Weeks 4, 8:      Open-label (all on treatment) - OL1, OL2
+  #   Weeks 9-12:      Blinded discontinuation (randomized) - BD1-BD4
+  #   Weeks 16, 20:    Crossover (randomized sequence) - COd, COp
+  #
+  # Path definitions (matching Hendrickson's tdNof11):
+  # pathA: BD stay on, CO drug first   → treatment: 1,1,1,1,1,1,1,0
+  # pathB: BD stay on, CO placebo first → treatment: 1,1,1,1,1,1,0,1
+  # pathC: BD discontinue, CO drug first → treatment: 1,1,1,0,0,0,1,0
+  # pathD: BD discontinue, CO placebo first → treatment: 1,1,1,0,0,0,0,1
 
   # Randomly assign participants to one of 4 paths
   # Ensure roughly equal distribution across paths
   path_assignment <- rep(1:4, length.out = n_participants)
   path_assignment <- sample(path_assignment)  # Randomize
 
-  # Path definitions (matching Hendrickson's tdNof11):
-  # pathA: BD stay on (1,1), CO drug first (1,0)
-  # pathB: BD stay on (1,1), CO placebo first (0,1)
-  # pathC: BD discontinue (0,0), CO drug first (1,0)
-  # pathD: BD discontinue (0,0), CO placebo first (0,1)
+  # Define the 8 measurement timepoints (matching Hendrickson's tdNof11)
+  measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
 
   hybrid_design <- expand_grid(
     participant_id = 1:n_participants,
-    week = 1:20
+    week = measurement_weeks  # Only 8 measurements, not all 20 weeks
   ) %>%
   mutate(
     path = path_assignment[participant_id],
-    # Define treatment schedule based on path
+    # Define treatment schedule based on path (matching Hendrickson exactly)
     treatment = case_when(
-      # Weeks 1-8: Open-label phase (all paths on treatment)
-      week <= 8 ~ 1,
+      # Week 4, 8: Open-label phase (OL1, OL2) - all paths on treatment
+      week %in% c(4, 8) ~ 1,
 
-      # Weeks 9-12: Blinded discontinuation phase
-      # Paths A & B: stay on drug
-      # Paths C & D: discontinue (off drug)
-      week >= 9 & week <= 12 & path %in% c(1, 2) ~ 1,
-      week >= 9 & week <= 12 & path %in% c(3, 4) ~ 0,
+      # Weeks 9-12: Blinded discontinuation phase (BD1-BD4)
+      # Paths A & B: stay on drug (1,1,1,1)
+      # Paths C & D: discontinue at week 9 (1,0,0,0)
+      week == 9 & path %in% c(1, 2) ~ 1,
+      week == 9 & path %in% c(3, 4) ~ 1,  # Still ON at week 9 measurement
+      week %in% c(10, 11, 12) & path %in% c(1, 2) ~ 1,
+      week %in% c(10, 11, 12) & path %in% c(3, 4) ~ 0,
 
-      # Weeks 13-16: Crossover period 1
-      # Paths A & C: on drug (drug-first sequence)
-      # Paths B & D: off drug (placebo-first sequence)
-      week >= 13 & week <= 16 & path %in% c(1, 3) ~ 1,
-      week >= 13 & week <= 16 & path %in% c(2, 4) ~ 0,
+      # Week 16: Crossover period 1 (COd)
+      # Paths A & C: on drug
+      # Paths B & D: off drug
+      week == 16 & path %in% c(1, 3) ~ 1,
+      week == 16 & path %in% c(2, 4) ~ 0,
 
-      # Weeks 17-20: Crossover period 2 (switch)
+      # Week 20: Crossover period 2 (COp) - switch
       # Paths A & C: off drug
       # Paths B & D: on drug
-      week >= 17 & week <= 20 & path %in% c(1, 3) ~ 0,
-      week >= 17 & week <= 20 & path %in% c(2, 4) ~ 1,
+      week == 20 & path %in% c(1, 3) ~ 0,
+      week == 20 & path %in% c(2, 4) ~ 1,
 
       TRUE ~ NA_real_
     ),
     # Define expectancy (blinding)
     expectancy = case_when(
-      week <= 8 ~ 1,        # Open-label: know on drug
-      week >= 9 & week <= 20 ~ 0.5,  # Blinded phases
+      week %in% c(4, 8) ~ 1,        # Open-label: know on drug
+      week %in% c(9, 10, 11, 12, 16, 20) ~ 0.5,  # Blinded phases
       TRUE ~ NA_real_
     ),
     # Define periods for analysis
     period = case_when(
-      week <= 8 ~ 1,        # Open-label
-      week >= 9 & week <= 12 ~ 2,   # Blinded discontinuation
-      week >= 13 & week <= 20 ~ 3,  # Crossover
+      week %in% c(4, 8) ~ 1,        # Open-label
+      week %in% c(9, 10, 11, 12) ~ 2,   # Blinded discontinuation
+      week %in% c(16, 20) ~ 3,  # Crossover
       TRUE ~ NA_real_
     )
   )
 
   # TRADITIONAL CROSSOVER DESIGN (Design 3)
-  # Simple AB vs BA randomization (no change from original)
+  # UPDATED 2025-11-18: Changed to 8-timepoint design matching Hendrickson
+  # Timepoints: weeks 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20
+  # Structure: 4 measurements per period (A and B)
+  # pathA (AB): Drug for first 4 timepoints, placebo for last 4
+  # pathB (BA): Placebo for first 4 timepoints, drug for last 4
+
+  crossover_weeks <- c(2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20)
+
   crossover_design <- expand_grid(
     participant_id = 1:n_participants,
-    week = 1:20
+    week = crossover_weeks  # Only 8 measurements
   ) %>%
   mutate(
     # Randomly assign to AB or BA sequence
@@ -409,11 +423,12 @@ create_designs <- function(n_participants) {
     # Set path based on sequence (path 1 = AB, path 2 = BA)
     path = if_else(participant_id %% 2 == 0, 1, 2),
     # Set treatment based on sequence
+    # Matching Hendrickson's tdCO: pathA=c(1,1,1,1,0,0,0,0), pathB=c(0,0,0,0,1,1,1,1)
     treatment = case_when(
-      sequence == "AB" & week <= 10 ~ 1,
-      sequence == "AB" & week > 10 ~ 0,
-      sequence == "BA" & week <= 10 ~ 0,
-      sequence == "BA" & week > 10 ~ 1,
+      sequence == "AB" & week <= 10 ~ 1,   # First 4 timepoints (weeks 2.5, 5, 7.5, 10)
+      sequence == "AB" & week > 10 ~ 0,    # Last 4 timepoints (weeks 12.5, 15, 17.5, 20)
+      sequence == "BA" & week <= 10 ~ 0,   # First 4 timepoints
+      sequence == "BA" & week > 10 ~ 1,    # Last 4 timepoints
       TRUE ~ NA_real_
     ),
     expectancy = 0.5,  # Blinded throughout
