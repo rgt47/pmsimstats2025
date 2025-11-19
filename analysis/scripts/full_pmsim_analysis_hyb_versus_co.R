@@ -751,6 +751,20 @@ print(valid_combinations)
 # Initialize results storage
 simulation_results <- tibble()
 
+# Calculate total number of simulation runs
+# param_grid rows × 2 designs × 2 model types
+total_combinations <- nrow(param_grid) * 2 * 2
+combination_counter <- 0
+
+cat("\n", strrep("=", 70), "\n", sep = "")
+cat(sprintf("TOTAL SIMULATION COMBINATIONS: %d\n", total_combinations))
+cat(sprintf("  Parameter grid: %d\n", nrow(param_grid)))
+cat(sprintf("  Designs: 2 (hybrid, crossover)\n"))
+cat(sprintf("  Models: 2 (WITH carryover, WITHOUT carryover)\n"))
+cat(sprintf("  Iterations per combination: %d\n", simulation_params$n_iterations))
+cat(sprintf("  Total model fits: %d\n", total_combinations * simulation_params$n_iterations))
+cat(strrep("=", 70), "\n", sep = "")
+
 # For each parameter combination
 for (i in 1:nrow(param_grid)) {
   # Extract current parameters
@@ -766,13 +780,14 @@ for (i in 1:nrow(param_grid)) {
     # 2. WITHOUT carryover modeling (Hendrickson approach)
 
     for (model_carryover in c(TRUE, FALSE)) {
+      combination_counter <- combination_counter + 1
       approach_label <- if (model_carryover) "WITH_CARRYOVER_MODEL" else "NO_CARRYOVER_MODEL"
 
       cat("\n", strrep("=", 70), "\n", sep = "")
-      cat(sprintf("Running: %s design | %s\n",
+      cat(sprintf("COMBINATION [%d/%d]: %s design | %s\n",
+                  combination_counter, total_combinations,
                   toupper(design_name), approach_label))
-      cat(sprintf("Parameters [%d/%d]: n=%d, c.bm=%.1f, t1/2=%.1f\n",
-                  i, nrow(param_grid),
+      cat(sprintf("Parameters: n=%d, c.bm=%.2f, t1/2=%.1f weeks\n",
                   current_params$n_participants,
                   current_params$biomarker_correlation,
                   current_params$carryover_t1half))

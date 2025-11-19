@@ -54,16 +54,14 @@ for (design_type in c("Hybrid (4-path)", "Crossover (2-seq)")) {
     panel_data <- plot_data %>%
       filter(design_label == design_type, model_label == model_type)
     
-    # Create heatmap
-    p <- ggplot(panel_data, aes(x = effect_size_label, y = carryover_label, fill = power)) +
+    # Create heatmap with REVERSED axes and RED-to-GREEN color gradient
+    p <- ggplot(panel_data, aes(x = carryover_label, y = effect_size_label, fill = power)) +
       geom_tile(color = "white", size = 0.5) +
-      geom_text(aes(label = sprintf("%.0f%%", power * 100)), 
-                color = "white", size = 4, fontface = "bold") +
-      scale_fill_gradient2(
-        low = "#2166ac", 
-        mid = "#f7f7f7", 
-        high = "#b2182b",
-        midpoint = 0.5,
+      geom_text(aes(label = sprintf("%.0f%%", power * 100)),
+                color = "black", size = 4, fontface = "bold") +
+      scale_fill_gradient(
+        low = "#d73027",    # Red for low power
+        high = "#1a9850",   # Green for high power
         limits = c(0, 1),
         breaks = seq(0, 1, 0.2),
         labels = scales::percent_format(accuracy = 1),
@@ -71,8 +69,8 @@ for (design_type in c("Hybrid (4-path)", "Crossover (2-seq)")) {
       ) +
       labs(
         title = paste(design_type, "|", model_type),
-        x = "Effect Size (biomarker correlation)",
-        y = "Carryover Half-Life"
+        x = "Carryover Half-Life",
+        y = "Effect Size (biomarker correlation)"
       ) +
       theme_minimal(base_size = 11) +
       theme(
