@@ -642,3 +642,66 @@ ls -la
 ```
 
 ---
+
+## Step 5: Comparing Branches with git diff
+
+### The Narrative
+
+Imagine you're a detective with two photographs of the same room taken at different times. Your job is to spot every difference - what was moved, what was added, what was removed.
+
+`git diff` is your magnifying glass. It shows you **exactly** what changed between any two versions of your code.
+
+### The Mental Model: Two Snapshots Side by Side
+
+```
+main branch                    simplified-learning branch
+┌─────────────────┐            ┌─────────────────┐
+│ c(0, 0.3, 0.48) │  ───────►  │ c(0.3)          │
+│ c(0, 0.5, 1.0)  │  changed   │ c(0)            │
+│ n_iterations=20 │  ───────►  │ n_iterations=5  │
+│ hybrid+crossover│            │ hybrid only     │
+└─────────────────┘            └─────────────────┘
+```
+
+### Essential Diff Commands
+
+#### See summary of all differences:
+```bash
+git diff main simplified-learning --stat
+```
+
+#### See actual code changes:
+```bash
+git diff main simplified-learning -- path/to/file.R
+```
+
+#### See just file names that changed:
+```bash
+git diff --name-only main simplified-learning
+```
+
+### Reading Diff Output
+
+| Symbol | Meaning |
+|--------|---------|
+| `-` (red) | Line **removed** from main |
+| `+` (green) | Line **added** in simplified-learning |
+| `@@` | Location marker (line numbers) |
+
+### Example Output Explained
+
+```diff
+-  biomarker_correlation = c(0, 0.3, 0.48),    ← REMOVED (3 values)
++  biomarker_correlation = c(0.3),              ← ADDED (1 value)
+```
+
+This shows you replaced 3 parameter values with 1 - exactly what you intended for simplification.
+
+### The Key Insight
+
+**You can always see exactly what you changed.** This means:
+- No fear of breaking things (you can see what to undo)
+- Clear documentation of your learning journey
+- Easy to explain changes to others
+
+---

@@ -541,8 +541,8 @@ param_grid <- expand_grid(
   # Note: c.bm = 0.5 fails with autocorr = 0.6, c.bm = 0.48 works
   # SIMPLIFIED: Just moderate correlation for learning
   biomarker_correlation = c(0.3),
-  # SIMPLIFIED: No carryover to start (simplest case)
-  carryover_t1half = c(0),
+  # Two carryover conditions: none and moderate
+  carryover_t1half = c(0, 0.5),
   # Increased from 3.0 to improve power
   treatment_effect = c(5.0)
 )
