@@ -40,7 +40,7 @@ autocorr_decay <- 0.9          # How fast autocorrelation decays with lag
 # Parameter grid - what we're testing
 param_grid <- expand_grid(
   biomarker_correlation = c(0.3),
-  carryover_t1half = c(0, 0.5)
+  carryover_decay_rate = c(0, 0.25)    # Linear decay: points lost per week off drug
 )
 
 # =============================================================================
@@ -121,8 +121,8 @@ results <- tibble()
 
 for (i in 1:nrow(param_grid)) {
   params <- as.list(param_grid[i, ])
-  cat(sprintf("Condition %d: biomarker=%.1f, carryover=%.1f\n",
-              i, params$biomarker_correlation, params$carryover_t1half))
+  cat(sprintf("Condition %d: biomarker=%.2f, carryover_decay=%.2f\n",
+              i, params$biomarker_correlation, params$carryover_decay_rate))
 
   # Run iterations
   for (iter in 1:n_iterations) {
@@ -205,16 +205,19 @@ for (i in 1:nrow(param_grid)) {
 
         # 1. BR (Biological Response) - accumulates while on drug
         #    - Rate: BR_rate points per week on drug
-        #    - When off: decays from accumulated level
-        BR = if (params$carryover_t1half > 0) {
+        #    - When off: partial carryover at first off-drug timepoint only, then 0
+        BR = {
+          # BR at last on-drug timepoint
+          br_accumulated <- lag(weeks_on_drug, default = 0) * BR_rate
+
+          # First off-drug timepoint indicator
+          first_off <- treatment == 0 & lag(treatment, default = 1) == 1
+
           ifelse(treatment == 1,
-                 weeks_on_drug * BR_rate,                    # Accumulating while on
-                 lag(weeks_on_drug, default = 0) * BR_rate * # Decay from last level
-                   (0.5)^(time_off / params$carryover_t1half))
-        } else {
-          ifelse(treatment == 1,
-                 weeks_on_drug * BR_rate,                    # Accumulating while on
-                 0)                                          # Instant drop when off
+                 weeks_on_drug * BR_rate,                              # Accumulating while on
+                 ifelse(first_off,
+                        br_accumulated * params$carryover_decay_rate,  # Partial at first off
+                        0))                                            # Zero thereafter
         },
 
         # 2. ER (Expectancy Response) - accumulates based on expectancy
@@ -279,7 +282,7 @@ for (i in 1:nrow(param_grid)) {
       tibble(
         iteration = iter,
         biomarker_correlation = params$biomarker_correlation,
-        carryover_t1half = params$carryover_t1half,
+        carryover_decay_rate = params$carryover_decay_rate,
         effect_size = coefs[idx, "Estimate"],
         se = coefs[idx, "Std. Error"],
         t_value = t_val,
@@ -289,7 +292,7 @@ for (i in 1:nrow(param_grid)) {
     }, error = function(e) {
       cat("  Error in iteration", iter, ":", conditionMessage(e), "\n")
       tibble(iteration = iter, biomarker_correlation = params$biomarker_correlation,
-             carryover_t1half = params$carryover_t1half, effect_size = NA,
+             carryover_decay_rate = params$carryover_decay_rate, effect_size = NA,
              se = NA, t_value = NA, p_value = NA, significant = NA)
     })
 
@@ -306,7 +309,7 @@ cat("RESULTS\n")
 cat(strrep("=", 50), "\n\n")
 
 summary_results <- results %>%
-  group_by(biomarker_correlation, carryover_t1half) %>%
+  group_by(biomarker_correlation, carryover_decay_rate) %>%
   summarize(
     power = mean(significant, na.rm = TRUE),
     mean_effect = mean(effect_size, na.rm = TRUE),
@@ -325,30 +328,30 @@ library(viridis)
 
 # Adaptive visualization based on data structure
 plot_power_results <- function(data) {
-  has_carryover <- n_distinct(data$carryover_t1half) > 1
+  has_carryover <- n_distinct(data$carryover_decay_rate) > 1
   has_biomarker <- n_distinct(data$biomarker_correlation) > 1
 
   # Convert to factors
   data <- data %>%
     mutate(
-      carryover_t1half = factor(carryover_t1half),
+      carryover_decay_rate = factor(carryover_decay_rate),
       biomarker_correlation = factor(biomarker_correlation)
     )
 
   if (has_carryover && has_biomarker) {
     # 2D heatmap
-    p <- ggplot(data, aes(x = carryover_t1half, y = biomarker_correlation, fill = power)) +
+    p <- ggplot(data, aes(x = carryover_decay_rate, y = biomarker_correlation, fill = power)) +
       geom_tile(color = "white", linewidth = 0.5) +
       geom_text(aes(label = sprintf("%.0f%%", power * 100)), color = "black", size = 5) +
-      labs(x = "Carryover Half-life (weeks)", y = "Biomarker Correlation")
+      labs(x = "Carryover Decay Rate (points/week)", y = "Biomarker Correlation")
 
   } else if (has_carryover) {
     # Bar chart by carryover
-    p <- ggplot(data, aes(x = carryover_t1half, y = power, fill = power)) +
+    p <- ggplot(data, aes(x = carryover_decay_rate, y = power, fill = power)) +
       geom_col(width = 0.6) +
       geom_text(aes(label = sprintf("%.0f%%", power * 100)), vjust = -0.5, size = 5) +
       scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
-      labs(x = "Carryover Half-life (weeks)", y = "Power")
+      labs(x = "Carryover Decay Rate (points/week)", y = "Power")
 
   } else if (has_biomarker) {
     # Bar chart by biomarker
