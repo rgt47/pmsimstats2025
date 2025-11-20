@@ -21,7 +21,12 @@ conflicts_prefer(lmerTest::lmer)
 
 n_participants <- 70
 n_iterations <- 5
-treatment_effect <- 5.0        # Constant effect when on treatment
+
+# Three-factor response model - RATE-BASED (points per week)
+BR_rate <- 0.5                 # Biological Response: drug improvement rate
+ER_rate <- 0.2                 # Expectancy Response: placebo improvement rate
+TR_rate <- 0.1                 # Time-variant Response: natural improvement rate
+
 baseline_mean <- 10.0          # Mean baseline response
 between_subject_sd <- 3.0      # SD of participant random effects
 within_subject_sd <- 2.8       # SD of measurement noise
@@ -77,22 +82,29 @@ create_hybrid_design <- function(n_participants, measurement_weeks) {
   ) %>%
     mutate(
       path = path_assignment[participant_id],
+
       # Treatment assignment based on path and week
-      # Path 1: On -> On -> Off
-      # Path 2: On -> Off -> On
-      # Path 3: Off -> On -> Off
-      # Path 4: Off -> Off -> On
+      # Weeks 4, 8: Open-label, all on active
+      # Week 9: Blinded, all on active
+      # Week 10: Blinded, randomized (paths 1,2 = active; paths 3,4 = placebo)
+      # Weeks 11, 12: Blinded, all on placebo
+      # Week 16: Blinded crossover
+      # Week 20: Blinded crossover
       treatment = case_when(
-        week %in% c(4, 8) ~ 1,              # Open-label weeks: all on treatment
-        week == 9 ~ 1,                       # Transition week
-        week %in% c(10, 11, 12) & path %in% c(1, 2) ~ 1,  # First crossover period
-        week %in% c(10, 11, 12) & path %in% c(3, 4) ~ 0,
-        week == 16 & path %in% c(1, 3) ~ 1,  # Second crossover period
+        week %in% c(4, 8) ~ 1,                              # Open-label: all active
+        week == 9 ~ 1,                                      # Blinded: all active
+        week == 10 & path %in% c(1, 2) ~ 1,                 # Randomized: paths 1,2 active
+        week == 10 & path %in% c(3, 4) ~ 0,                 # Randomized: paths 3,4 placebo
+        week %in% c(11, 12) ~ 0,                            # All on placebo
+        week == 16 & path %in% c(1, 3) ~ 1,                 # Crossover period
         week == 16 & path %in% c(2, 4) ~ 0,
-        week == 20 & path %in% c(1, 3) ~ 0,  # Third crossover period
+        week == 20 & path %in% c(1, 3) ~ 0,                 # Crossover period
         week == 20 & path %in% c(2, 4) ~ 1,
         TRUE ~ NA_real_
-      )
+      ),
+
+      # Expectancy: 1.0 = open-label (know they're on drug), 0.5 = blinded
+      expectancy = if_else(week %in% c(4, 8), 1.0, 0.5)
     )
 }
 
@@ -167,36 +179,70 @@ for (i in 1:nrow(param_grid)) {
       group_by(participant_id) %>%
       arrange(week) %>%
       mutate(
-        # Calculate time since drug stopped (for carryover)
-        drug_stopped = treatment == 0 & lag(treatment, default = 1) == 1,
-        time_off = cumsum(drug_stopped),
+        # ===========================================
+        # CUMULATIVE TIME TRACKING
+        # ===========================================
 
-        # Carryover effect: exponential decay when off treatment
-        carryover_effect = if (params$carryover_t1half > 0) {
-          ifelse(treatment == 0 & time_off > 0,
-                 (0.5)^(time_off / params$carryover_t1half),
-                 0)
+        # Cumulative weeks on drug
+        weeks_on_drug = cumsum(treatment),
+
+        # Cumulative weeks with expectancy (weighted by expectancy level)
+        weeks_with_expectancy = cumsum(expectancy),
+
+        # Cumulative weeks in trial (for time trend)
+        weeks_in_trial = week - min(week),
+
+        # Track when drug stops for carryover calculation
+        drug_stopped = treatment == 0 & lag(treatment, default = 1) == 1,
+        time_off = cumsum(treatment == 0),
+
+        # BR level at last on-drug timepoint (for carryover decay)
+        br_at_stop = weeks_on_drug * BR_rate,
+
+        # ===========================================
+        # THREE-FACTOR RESPONSE MODEL (RATE-BASED)
+        # ===========================================
+
+        # 1. BR (Biological Response) - accumulates while on drug
+        #    - Rate: BR_rate points per week on drug
+        #    - When off: decays from accumulated level
+        BR = if (params$carryover_t1half > 0) {
+          ifelse(treatment == 1,
+                 weeks_on_drug * BR_rate,                    # Accumulating while on
+                 lag(weeks_on_drug, default = 0) * BR_rate * # Decay from last level
+                   (0.5)^(time_off / params$carryover_t1half))
         } else {
-          0
+          ifelse(treatment == 1,
+                 weeks_on_drug * BR_rate,                    # Accumulating while on
+                 0)                                          # Instant drop when off
         },
 
-        # Treatment effect (constant when on drug)
-        # - Full effect when treatment = 1
-        # - Partial effect via carryover when treatment = 0
-        drug_effect = treatment * treatment_effect +
-                      (1 - treatment) * carryover_effect * treatment_effect,
+        # 2. ER (Expectancy Response) - accumulates based on expectancy
+        #    - Rate: ER_rate points per week × expectancy level
+        #    - Open-label: full rate (1.0 × ER_rate)
+        #    - Blinded: half rate (0.5 × ER_rate)
+        ER = weeks_with_expectancy * ER_rate,
 
-        # Biomarker moderation of treatment effect
-        # Higher biomarker = stronger response to treatment
+        # 3. TR (Time-variant Response) - linear time trend
+        #    - Rate: TR_rate points per week
+        #    - Accumulates regardless of treatment
+        TR = weeks_in_trial * TR_rate,
+
+        # Biomarker moderation: biomarker amplifies BR (not ER or TR)
+        # Higher biomarker = stronger biological response to treatment
         biomarker_moderation = (biomarker - biomarker_mean) / biomarker_sd *
-                               params$biomarker_correlation * drug_effect,
+                               params$biomarker_correlation * BR,
 
-        # Generate response
-        # Response = baseline + random effect + drug effect + biomarker moderation + correlated residual
+        # ===========================================
+        # TOTAL RESPONSE
+        # ===========================================
+        # Response = baseline + random effect + BR + ER + TR + biomarker moderation + noise
         response = baseline_mean +
                    random_intercept +
-                   drug_effect +
-                   biomarker_moderation +
+                   BR +                      # Biological (drug) effect
+                   ER +                      # Expectancy (placebo) effect
+                   TR +                      # Time-variant effect
+                   biomarker_moderation +    # Biomarker amplifies BR
                    residual
       ) %>%
       ungroup()
