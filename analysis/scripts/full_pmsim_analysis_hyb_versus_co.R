@@ -28,6 +28,10 @@ within_subject_sd <- 2.8       # SD of measurement noise
 biomarker_mean <- 5.0          # Mean biomarker value
 biomarker_sd <- 2.0            # SD of biomarker
 
+# Correlation parameters (from Hendrickson)
+autocorr <- 0.8                # Autocorrelation between adjacent timepoints
+autocorr_decay <- 0.9          # How fast autocorrelation decays with lag
+
 # Parameter grid - what we're testing
 param_grid <- expand_grid(
   biomarker_correlation = c(0.3),
@@ -35,35 +39,62 @@ param_grid <- expand_grid(
 )
 
 # =============================================================================
-# CREATE HYBRID DESIGN
+# BUILD CORRELATION MATRIX
+# =============================================================================
+
+# Function to build AR(1)-like correlation matrix for timepoints
+build_corr_matrix <- function(n_timepoints, rho, decay = 0.9) {
+  # Create correlation matrix where corr decreases with lag
+  # corr(t1, t2) = rho * decay^|t1 - t2|
+  mat <- matrix(1, n_timepoints, n_timepoints)
+  for (i in 1:n_timepoints) {
+    for (j in 1:n_timepoints) {
+      if (i != j) {
+        lag <- abs(i - j)
+        mat[i, j] <- rho * (decay ^ (lag - 1))
+      }
+    }
+  }
+  return(mat)
+}
+
+# =============================================================================
+# HYBRID DESIGN STRUCTURE
 # =============================================================================
 
 # Measurement schedule
 measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
 
-# Assign participants to 4 paths (balanced)
-path_assignment <- sample(rep(1:4, length.out = n_participants))
+# Function to create design with randomized path assignment
+create_hybrid_design <- function(n_participants, measurement_weeks) {
+  # Randomize participants to 4 paths (balanced)
+  path_assignment <- sample(rep(1:4, length.out = n_participants))
 
-# Create design matrix
-hybrid_design <- expand_grid(
-  participant_id = 1:n_participants,
-  week = measurement_weeks
-) %>%
-  mutate(
-    path = path_assignment[participant_id],
-    # Treatment assignment based on path and week
-    treatment = case_when(
-      week %in% c(4, 8) ~ 1,              # Open-label weeks: all on treatment
-      week == 9 ~ 1,                       # Transition week
-      week %in% c(10, 11, 12) & path %in% c(1, 2) ~ 1,  # First crossover period
-      week %in% c(10, 11, 12) & path %in% c(3, 4) ~ 0,
-      week == 16 & path %in% c(1, 3) ~ 1,  # Second crossover period
-      week == 16 & path %in% c(2, 4) ~ 0,
-      week == 20 & path %in% c(1, 3) ~ 0,  # Third crossover period
-      week == 20 & path %in% c(2, 4) ~ 1,
-      TRUE ~ NA_real_
+  # Create design matrix
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      path = path_assignment[participant_id],
+      # Treatment assignment based on path and week
+      # Path 1: On -> On -> Off
+      # Path 2: On -> Off -> On
+      # Path 3: Off -> On -> Off
+      # Path 4: Off -> Off -> On
+      treatment = case_when(
+        week %in% c(4, 8) ~ 1,              # Open-label weeks: all on treatment
+        week == 9 ~ 1,                       # Transition week
+        week %in% c(10, 11, 12) & path %in% c(1, 2) ~ 1,  # First crossover period
+        week %in% c(10, 11, 12) & path %in% c(3, 4) ~ 0,
+        week == 16 & path %in% c(1, 3) ~ 1,  # Second crossover period
+        week == 16 & path %in% c(2, 4) ~ 0,
+        week == 20 & path %in% c(1, 3) ~ 0,  # Third crossover period
+        week == 20 & path %in% c(2, 4) ~ 1,
+        TRUE ~ NA_real_
+      )
     )
-  )
+}
 
 # =============================================================================
 # RUN SIMULATION
@@ -85,18 +116,54 @@ for (i in 1:nrow(param_grid)) {
   for (iter in 1:n_iterations) {
     set.seed(iter * 1000 + i)
 
-    # Generate participant-level random effects
-    participant_data <- tibble(
-      participant_id = 1:n_participants,
-      # Biomarker value for each participant
-      biomarker = rnorm(n_participants, biomarker_mean, biomarker_sd),
+    # Create design with fresh path randomization for this iteration
+    hybrid_design <- create_hybrid_design(n_participants, measurement_weeks)
+
+    n_timepoints <- length(measurement_weeks)
+
+    # Build correlation matrix for residuals
+    R <- build_corr_matrix(n_timepoints, autocorr, autocorr_decay)
+
+    # Convert to covariance matrix
+    Sigma <- R * within_subject_sd^2
+
+    # Generate correlated data for each participant
+    all_participant_data <- list()
+
+    for (pid in 1:n_participants) {
+      # Generate biomarker (correlated with response via shared factor)
+      biomarker <- rnorm(1, biomarker_mean, biomarker_sd)
+
       # Random intercept (between-subject variability)
-      random_intercept = rnorm(n_participants, 0, between_subject_sd)
-    )
+      random_intercept <- rnorm(1, 0, between_subject_sd)
+
+      # Generate correlated residuals across timepoints
+      correlated_residuals <- mvrnorm(1, mu = rep(0, n_timepoints), Sigma = Sigma)
+
+      # Biomarker-correlated component of residuals
+      # Higher biomarker -> residuals shifted by biomarker_correlation
+      bm_effect_on_residuals <- (biomarker - biomarker_mean) / biomarker_sd *
+                                 params$biomarker_correlation * within_subject_sd
+
+      all_participant_data[[pid]] <- tibble(
+        participant_id = pid,
+        biomarker = biomarker,
+        random_intercept = random_intercept,
+        residual = correlated_residuals + bm_effect_on_residuals
+      )
+    }
+
+    participant_data <- bind_rows(all_participant_data) %>%
+      group_by(participant_id) %>%
+      mutate(timepoint_idx = row_number()) %>%
+      ungroup()
 
     # Generate trial data
     trial_data <- hybrid_design %>%
-      left_join(participant_data, by = "participant_id") %>%
+      group_by(participant_id) %>%
+      mutate(timepoint_idx = row_number()) %>%
+      ungroup() %>%
+      left_join(participant_data, by = c("participant_id", "timepoint_idx")) %>%
       group_by(participant_id) %>%
       arrange(week) %>%
       mutate(
@@ -119,18 +186,18 @@ for (i in 1:nrow(param_grid)) {
         drug_effect = treatment * treatment_effect +
                       (1 - treatment) * carryover_effect * treatment_effect,
 
-        # Biomarker moderation: biomarker amplifies treatment effect
+        # Biomarker moderation of treatment effect
         # Higher biomarker = stronger response to treatment
         biomarker_moderation = (biomarker - biomarker_mean) / biomarker_sd *
                                params$biomarker_correlation * drug_effect,
 
         # Generate response
-        # Response = baseline + random effect + drug effect + biomarker moderation + noise
+        # Response = baseline + random effect + drug effect + biomarker moderation + correlated residual
         response = baseline_mean +
                    random_intercept +
                    drug_effect +
                    biomarker_moderation +
-                   rnorm(n(), 0, within_subject_sd)
+                   residual
       ) %>%
       ungroup()
 
