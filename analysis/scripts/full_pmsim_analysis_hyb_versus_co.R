@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # =============================================================================
 
 n_participants <- 70
-n_iterations <- 100
+n_iterations <- 20
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5                 # Biological Response: drug improvement rate
@@ -58,6 +58,7 @@ allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 
 # Parameter grid - what we're testing
 param_grid <- expand_grid(
+  design = c("hybrid", "parallel"),
   biomarker_correlation = c(0.3),
   carryover_decay_rate = c(0, 0.25, 0.5, 0.75)    # Linear decay: points lost per week off drug
 )
@@ -324,13 +325,15 @@ verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
 }
 
 # =============================================================================
-# HYBRID DESIGN STRUCTURE
+# DESIGN STRUCTURES
 # =============================================================================
 
-# Measurement schedule
+# Measurement schedule (same for all designs)
 measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
 
-# Function to create design with randomized path assignment
+# -----------------------------------------------------------------------------
+# HYBRID DESIGN: Open-label run-in + blinded crossover
+# -----------------------------------------------------------------------------
 create_hybrid_design <- function(n_participants, measurement_weeks) {
   # Randomize participants to 4 paths (balanced)
   path_assignment <- sample(rep(1:4, length.out = n_participants))
@@ -368,6 +371,29 @@ create_hybrid_design <- function(n_participants, measurement_weeks) {
     )
 }
 
+# -----------------------------------------------------------------------------
+# PARALLEL DESIGN: Randomized to treatment or placebo for entire study
+# -----------------------------------------------------------------------------
+create_parallel_design <- function(n_participants, measurement_weeks) {
+  # Randomize participants to treatment (1) or placebo (0) - balanced
+  treatment_assignment <- sample(rep(0:1, length.out = n_participants))
+
+  # Create design matrix
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      path = treatment_assignment[participant_id] + 1,  # Path 1 = placebo, Path 2 = treatment
+
+      # Treatment: same throughout study based on randomization
+      treatment = treatment_assignment[participant_id],
+
+      # Expectancy: 0.5 throughout (all blinded)
+      expectancy = 0.5
+    )
+}
+
 # =============================================================================
 # RUN SIMULATION
 # =============================================================================
@@ -381,15 +407,19 @@ results <- tibble()
 
 for (i in 1:nrow(param_grid)) {
   params <- as.list(param_grid[i, ])
-  cat(sprintf("Condition %d: biomarker=%.2f, carryover_decay=%.2f\n",
-              i, params$biomarker_correlation, params$carryover_decay_rate))
+  cat(sprintf("Condition %d: design=%s, biomarker=%.2f, carryover_decay=%.2f\n",
+              i, params$design, params$biomarker_correlation, params$carryover_decay_rate))
 
   # Run iterations
   for (iter in 1:n_iterations) {
     set.seed(iter * 1000 + i)
 
     # Create design with fresh path randomization for this iteration
-    hybrid_design <- create_hybrid_design(n_participants, measurement_weeks)
+    if (params$design == "hybrid") {
+      trial_design <- create_hybrid_design(n_participants, measurement_weeks)
+    } else if (params$design == "parallel") {
+      trial_design <- create_parallel_design(n_participants, measurement_weeks)
+    }
 
     n_timepoints <- length(measurement_weeks)
 
@@ -421,7 +451,7 @@ for (i in 1:nrow(param_grid)) {
       ungroup()
 
     # Generate trial data
-    trial_data <- hybrid_design %>%
+    trial_data <- trial_design %>%
       group_by(participant_id) %>%
       mutate(timepoint_idx = row_number()) %>%
       ungroup() %>%
@@ -530,6 +560,7 @@ for (i in 1:nrow(param_grid)) {
 
       tibble(
         iteration = iter,
+        design = params$design,
         biomarker_correlation = effective_bm_corr,  # Use effective (grid) value
         carryover_decay_rate = params$carryover_decay_rate,
         effect_size = coefs[idx, "Estimate"],
@@ -540,7 +571,8 @@ for (i in 1:nrow(param_grid)) {
       )
     }, error = function(e) {
       cat("  Error in iteration", iter, ":", conditionMessage(e), "\n")
-      tibble(iteration = iter, biomarker_correlation = effective_bm_corr,
+      tibble(iteration = iter, design = params$design,
+             biomarker_correlation = effective_bm_corr,
              carryover_decay_rate = params$carryover_decay_rate, effect_size = NA,
              se = NA, t_value = NA, p_value = NA, significant = NA)
     })
@@ -558,7 +590,7 @@ cat("RESULTS\n")
 cat(strrep("=", 50), "\n\n")
 
 summary_results <- results %>%
-  group_by(biomarker_correlation, carryover_decay_rate) %>%
+  group_by(design, biomarker_correlation, carryover_decay_rate) %>%
   summarize(
     power = mean(significant, na.rm = TRUE),
     mean_effect = mean(effect_size, na.rm = TRUE),
@@ -579,50 +611,46 @@ library(viridis)
 plot_power_results <- function(data) {
   has_carryover <- n_distinct(data$carryover_decay_rate) > 1
   has_biomarker <- n_distinct(data$biomarker_correlation) > 1
+  has_design <- n_distinct(data$design) > 1
 
   # Convert to factors
   data <- data %>%
     mutate(
       carryover_decay_rate = factor(carryover_decay_rate),
-      biomarker_correlation = factor(biomarker_correlation)
+      biomarker_correlation = factor(biomarker_correlation),
+      design = factor(design)
     )
 
-  if (has_carryover && has_biomarker) {
-    # 2D heatmap
-    p <- ggplot(data, aes(x = carryover_decay_rate, y = biomarker_correlation, fill = power)) +
-      geom_tile(color = "white", linewidth = 0.5) +
-      geom_text(aes(label = sprintf("%.0f%%", power * 100)), color = "black", size = 5) +
-      labs(x = "Carryover Decay Rate (points/week)", y = "Biomarker Correlation")
-
-  } else if (has_carryover) {
-    # Bar chart by carryover
-    p <- ggplot(data, aes(x = carryover_decay_rate, y = power, fill = power)) +
-      geom_col(width = 0.6) +
-      geom_text(aes(label = sprintf("%.0f%%", power * 100)), vjust = -0.5, size = 5) +
+  if (has_carryover) {
+    # Bar chart by carryover, faceted by design if multiple
+    p <- ggplot(data, aes(x = carryover_decay_rate, y = power, fill = design)) +
+      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
+                position = position_dodge(width = 0.8), vjust = -0.5, size = 3) +
       scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
       labs(x = "Carryover Decay Rate (points/week)", y = "Power")
 
   } else if (has_biomarker) {
     # Bar chart by biomarker
-    p <- ggplot(data, aes(x = biomarker_correlation, y = power, fill = power)) +
-      geom_col(width = 0.6) +
-      geom_text(aes(label = sprintf("%.0f%%", power * 100)), vjust = -0.5, size = 5) +
+    p <- ggplot(data, aes(x = biomarker_correlation, y = power, fill = design)) +
+      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
+                position = position_dodge(width = 0.8), vjust = -0.5, size = 3) +
       scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
       labs(x = "Biomarker Correlation", y = "Power")
 
   } else {
-    # Single bar
-    p <- ggplot(data, aes(x = 1, y = power, fill = power)) +
-      geom_col(width = 0.4) +
-      geom_text(aes(label = sprintf("%.0f%%", power * 100)), vjust = -0.5, size = 6) +
+    # Single bar per design
+    p <- ggplot(data, aes(x = design, y = power, fill = design)) +
+      geom_col(width = 0.6) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100)), vjust = -0.5, size = 5) +
       scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
-      labs(x = "", y = "Power") +
-      theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+      labs(x = "Design", y = "Power")
   }
 
   # Common styling
   p <- p +
-    scale_fill_viridis_c(name = "Power", labels = scales::percent, limits = c(0, 1)) +
+    scale_fill_viridis_d(name = "Design") +
     labs(title = "Statistical Power: Constant Effect Model",
          subtitle = sprintf("N=%d, treatment effect=%.1f, %d iterations",
                            n_participants, treatment_effect, n_iterations)) +
