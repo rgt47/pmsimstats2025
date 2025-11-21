@@ -73,7 +73,7 @@ Crossover designs traditionally assume minimal heterogeneity (Senn, 2002). Aggre
 
 Carryover—the persistence of treatment effects into subsequent periods—is handled fundamentally differently across designs:
 
-- **Classic crossover**: Carryover is typically tested and assumed negligible. If present, it confounds period and treatment effects, potentially invalidating the design. Washout periods are employed to eliminate carryover, and statistical tests for carryover are often underpowered (Jones & Kenward, 2014; Senn, 2002).
+- **Classic crossover**: Carryover is typically tested and assumed negligible. If present, it confounds period and treatment effects, potentially invalidating the design. Washout periods are employed to eliminate carryover, and statistical tests for carryover are often underpowered (Dwan et al., 2019; Senn, 2002).
 
 - **Aggregated N-of-1**: Multiple treatment cycles enable explicit modeling of carryover as a parameter. Carryover can be incorporated as a fixed effect based on prior-period treatment, with magnitude determined by pharmacokinetic half-life. This transforms carryover from a nuisance to an estimable quantity.
 
@@ -166,7 +166,7 @@ To illustrate the design differences, consider a hypothetical new fast-acting ph
 
 - Only one treatment contrast per person
 - Cannot estimate individual treatment effects
-- Less suitable if heterogeneity is clinically important (Jones & Kenward, 2014)
+- Less suitable if heterogeneity is clinically important (Dwan et al., 2019)
 
 **Mixed Model:**
 
@@ -232,7 +232,7 @@ The N-of-1 design achieves adequate power with fewer participants because:
 
 ## Choosing Between the Designs for a PTSD Trial
 
-- If the goal is regulatory approval or demonstration of a population-average effect → Crossover (Jones & Kenward, 2014).
+- If the goal is regulatory approval or demonstration of a population-average effect → Crossover (Dwan et al., 2019).
 - If the goal is to understand who responds, optimize personalized treatment, or examine heterogeneity → Aggregated N-of-1 (Lillie et al., 2011; Punja et al., 2016).
 - If measurement is frequent and the drug acts quickly → N-of-1 is advantageous.
 - If measurement is sporadic or drug has slow dynamics → Crossover preferred.
@@ -259,6 +259,7 @@ When the goal is regulatory approval of a population-average effect, crossover d
 - Araujo, A., & Julious, S. A. (2014). Understanding the assumptions of crossover trials. *Pharmaceutical Statistics*, 13(6), 341–350.
 - Brown, H. (1980). The analysis of variance and covariance in crossover trials. *Biometrics*, 36(1), 69–79.
 - Deaton, A., & Cartwright, N. (2018). Understanding and misunderstanding randomized controlled trials. *Social Science & Medicine*, 210, 2–21.
+- Dwan, K., Li, T., Altman, D. G., & Elbourne, D. (2019). CONSORT 2010 statement: extension to randomised crossover trials. *BMJ*, 366, l4378.
 - Guyatt, G. H., et al. (2000). The N-of-1 randomized controlled trial: Clinical usefulness. *Annals of Internal Medicine*, 112(4), 293–299.
 - Mills, E. J., Chan, A. W., Wu, P., Vail, A., Guyatt, G. H., & Altman, D. G. (2009). Design, analysis, and presentation of crossover trials. *Trials*, 10, 27.
 - Lillie, E. O., et al. (2011). The n-of-1 clinical trial: The ultimate strategy for individualizing medicine? *Personalized Medicine*, 8(2), 161–173.
@@ -555,7 +556,7 @@ nof1 %>%
 
 - For real CAPS outcomes measured daily, expand the simulation to include within-period autocorrelation (e.g., AR(1)), measurement error, and missingness. Use `nlme::lme` or specify correlation structures for autocorrelation.
 
-- If carryover is suspected, consider adding period-by-treatment interaction terms or explicitly modeling carryover terms; tests for carryover should be planned but interpreted cautiously (Jones & Kenward, 2014).
+- If carryover is suspected, consider adding period-by-treatment interaction terms or explicitly modeling carryover terms; tests for carryover should be planned but interpreted cautiously (Dwan et al., 2019).
 
 - In the aggregated N-of-1 context, Bayesian hierarchical models (e.g., `brms`) allow flexible priors and full posterior inference for individual effects (Zucker et al., 2010).
 
