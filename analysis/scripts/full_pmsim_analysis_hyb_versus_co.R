@@ -34,8 +34,18 @@ biomarker_mean <- 5.0          # Mean biomarker value
 biomarker_sd <- 2.0            # SD of biomarker
 
 # Correlation parameters (from Hendrickson)
-autocorr <- 0.8                # Autocorrelation between adjacent timepoints
-autocorr_decay <- 0.9          # How fast autocorrelation decays with lag
+# Autocorrelations within each response type
+c.br <- 0.8                    # BR autocorrelation across timepoints
+c.er <- 0.8                    # ER autocorrelation across timepoints
+c.tr <- 0.8                    # TR autocorrelation across timepoints
+
+# Cross-correlations between response types
+c.cf1t <- 0.2                  # Same-time cross-correlation (BR-ER, BR-TR, ER-TR)
+c.cfct <- 0.1                  # Different-time cross-correlation
+
+# Biomarker and baseline correlations
+c.bm_baseline <- 0.3           # Biomarker-baseline correlation
+c.baseline_resp <- 0.4         # Baseline-response correlation
 
 # Parameter grid - what we're testing
 param_grid <- expand_grid(
@@ -44,23 +54,105 @@ param_grid <- expand_grid(
 )
 
 # =============================================================================
-# BUILD CORRELATION MATRIX
+# BUILD 26x26 HENDRICKSON SIGMA MATRIX
 # =============================================================================
 
-# Function to build AR(1)-like correlation matrix for timepoints
-build_corr_matrix <- function(n_timepoints, rho, decay = 0.9) {
-  # Create correlation matrix where corr decreases with lag
-  # corr(t1, t2) = rho * decay^|t1 - t2|
-  mat <- matrix(1, n_timepoints, n_timepoints)
-  for (i in 1:n_timepoints) {
-    for (j in 1:n_timepoints) {
-      if (i != j) {
-        lag <- abs(i - j)
-        mat[i, j] <- rho * (decay ^ (lag - 1))
+# Structure: [BR(8) | ER(8) | TR(8) | Biomarker(1) | Baseline(1)]
+build_hendrickson_sigma <- function(n_timepoints, c.bm, params) {
+  n <- 3 * n_timepoints + 2  # 26 for 8 timepoints
+  R <- matrix(0, n, n)
+
+  # Index ranges
+  br_idx <- 1:n_timepoints
+  er_idx <- (n_timepoints + 1):(2 * n_timepoints)
+  tr_idx <- (2 * n_timepoints + 1):(3 * n_timepoints)
+  bm_idx <- 3 * n_timepoints + 1
+  bl_idx <- 3 * n_timepoints + 2
+
+  # Helper: fill autocorrelation block
+  fill_auto <- function(idx, rho) {
+    for (i in seq_along(idx)) {
+      for (j in seq_along(idx)) {
+        if (i == j) {
+          R[idx[i], idx[j]] <<- 1
+        } else {
+          R[idx[i], idx[j]] <<- rho
+        }
       }
     }
   }
-  return(mat)
+
+  # Helper: fill cross-correlation block
+  fill_cross <- function(idx1, idx2, rho_same, rho_diff) {
+    for (i in seq_along(idx1)) {
+      for (j in seq_along(idx2)) {
+        if (i == j) {
+          R[idx1[i], idx2[j]] <<- rho_same
+          R[idx2[j], idx1[i]] <<- rho_same
+        } else {
+          R[idx1[i], idx2[j]] <<- rho_diff
+          R[idx2[j], idx1[i]] <<- rho_diff
+        }
+      }
+    }
+  }
+
+  # 1. Autocorrelations within each response type
+  fill_auto(br_idx, c.br)
+  fill_auto(er_idx, c.er)
+  fill_auto(tr_idx, c.tr)
+
+  # 2. Cross-correlations between response types
+  fill_cross(br_idx, er_idx, c.cf1t, c.cfct)
+  fill_cross(br_idx, tr_idx, c.cf1t, c.cfct)
+  fill_cross(er_idx, tr_idx, c.cf1t, c.cfct)
+
+  # 3. Biomarker correlations
+  R[bm_idx, bm_idx] <- 1
+  # Biomarker-BR correlation (the key parameter we're testing)
+  for (i in br_idx) {
+    R[bm_idx, i] <- c.bm
+    R[i, bm_idx] <- c.bm
+  }
+  # Biomarker-ER and Biomarker-TR (weaker)
+  for (i in c(er_idx, tr_idx)) {
+    R[bm_idx, i] <- c.bm * 0.5
+    R[i, bm_idx] <- c.bm * 0.5
+  }
+
+  # 4. Baseline correlations
+  R[bl_idx, bl_idx] <- 1
+  R[bm_idx, bl_idx] <- c.bm_baseline
+  R[bl_idx, bm_idx] <- c.bm_baseline
+  # Baseline-response correlations
+  for (i in c(br_idx, er_idx, tr_idx)) {
+    R[bl_idx, i] <- c.baseline_resp
+    R[i, bl_idx] <- c.baseline_resp
+  }
+
+  # 5. Convert correlation to covariance matrix
+  # SD vector: within_subject_sd for responses, biomarker_sd, between_subject_sd for baseline
+  sd_vec <- c(
+    rep(within_subject_sd, 3 * n_timepoints),  # BR, ER, TR
+    biomarker_sd,                               # Biomarker
+    between_subject_sd                          # Baseline
+  )
+
+  # Sigma = diag(SD) %*% R %*% diag(SD)
+  Sigma <- diag(sd_vec) %*% R %*% diag(sd_vec)
+
+  # Check positive definiteness
+  eigenvalues <- eigen(Sigma, only.values = TRUE)$values
+  if (any(eigenvalues <= 0)) {
+    warning("Sigma matrix is not positive definite!")
+    return(NULL)
+  }
+
+  return(list(
+    Sigma = Sigma,
+    R = R,
+    indices = list(br = br_idx, er = er_idx, tr = tr_idx, bm = bm_idx, bl = bl_idx)
+  ))
 }
 
 # =============================================================================
@@ -133,35 +225,39 @@ for (i in 1:nrow(param_grid)) {
 
     n_timepoints <- length(measurement_weeks)
 
-    # Build correlation matrix for residuals
-    R <- build_corr_matrix(n_timepoints, autocorr, autocorr_decay)
+    # Build 26x26 Hendrickson sigma matrix
+    sigma_result <- build_hendrickson_sigma(n_timepoints, params$biomarker_correlation, params)
+    if (is.null(sigma_result)) {
+      cat("  Skipping iteration", iter, "- non-positive definite sigma\n")
+      next
+    }
+    Sigma <- sigma_result$Sigma
+    idx <- sigma_result$indices
 
-    # Convert to covariance matrix
-    Sigma <- R * within_subject_sd^2
+    # Mean vector (all zeros - we add means separately)
+    mu <- rep(0, nrow(Sigma))
 
-    # Generate correlated data for each participant
+    # Generate correlated data for each participant from 26-dim MVN
     all_participant_data <- list()
 
     for (pid in 1:n_participants) {
-      # Generate biomarker (correlated with response via shared factor)
-      biomarker <- rnorm(1, biomarker_mean, biomarker_sd)
+      # Generate from multivariate normal
+      mvn_draw <- mvrnorm(1, mu = mu, Sigma = Sigma)
 
-      # Random intercept (between-subject variability)
-      random_intercept <- rnorm(1, 0, between_subject_sd)
-
-      # Generate correlated residuals across timepoints
-      correlated_residuals <- mvrnorm(1, mu = rep(0, n_timepoints), Sigma = Sigma)
-
-      # Biomarker-correlated component of residuals
-      # Higher biomarker -> residuals shifted by biomarker_correlation
-      bm_effect_on_residuals <- (biomarker - biomarker_mean) / biomarker_sd *
-                                 params$biomarker_correlation * within_subject_sd
+      # Extract components
+      br_values <- mvn_draw[idx$br]         # BR residuals at each timepoint
+      er_values <- mvn_draw[idx$er]         # ER residuals at each timepoint
+      tr_values <- mvn_draw[idx$tr]         # TR residuals at each timepoint
+      biomarker <- mvn_draw[idx$bm] + biomarker_mean   # Biomarker (add mean)
+      baseline <- mvn_draw[idx$bl] + baseline_mean     # Baseline (add mean)
 
       all_participant_data[[pid]] <- tibble(
         participant_id = pid,
         biomarker = biomarker,
-        random_intercept = random_intercept,
-        residual = correlated_residuals + bm_effect_on_residuals
+        baseline = baseline,
+        br_resid = br_values,
+        er_resid = er_values,
+        tr_resid = tr_values
       )
     }
 
@@ -193,60 +289,47 @@ for (i in 1:nrow(param_grid)) {
         weeks_in_trial = week - min(week),
 
         # Track when drug stops for carryover calculation
-        drug_stopped = treatment == 0 & lag(treatment, default = 1) == 1,
         time_off = cumsum(treatment == 0),
 
-        # BR level at last on-drug timepoint (for carryover decay)
-        br_at_stop = weeks_on_drug * BR_rate,
-
         # ===========================================
-        # THREE-FACTOR RESPONSE MODEL (RATE-BASED)
+        # THREE-FACTOR RESPONSE MODEL (RATE-BASED + CORRELATED RESIDUALS)
         # ===========================================
 
-        # 1. BR (Biological Response) - accumulates while on drug
-        #    - Rate: BR_rate points per week on drug
-        #    - When off: partial carryover at first off-drug timepoint only, then 0
-        BR = {
-          # BR at last on-drug timepoint
+        # 1. BR (Biological Response) - accumulates while on drug + correlated noise
+        #    - Mean: BR_rate points per week on drug
+        #    - Carryover: partial at first off-drug timepoint, then 0
+        #    - Residual: from 26x26 sigma matrix (correlated across time)
+        BR_mean = {
           br_accumulated <- lag(weeks_on_drug, default = 0) * BR_rate
-
-          # First off-drug timepoint indicator
           first_off <- treatment == 0 & lag(treatment, default = 1) == 1
 
           ifelse(treatment == 1,
-                 weeks_on_drug * BR_rate,                              # Accumulating while on
+                 weeks_on_drug * BR_rate,
                  ifelse(first_off,
-                        br_accumulated * params$carryover_decay_rate,  # Partial at first off
-                        0))                                            # Zero thereafter
+                        br_accumulated * params$carryover_decay_rate,
+                        0))
         },
+        BR = BR_mean + br_resid,
 
-        # 2. ER (Expectancy Response) - accumulates based on expectancy
-        #    - Rate: ER_rate points per week × expectancy level
-        #    - Open-label: full rate (1.0 × ER_rate)
-        #    - Blinded: half rate (0.5 × ER_rate)
-        ER = weeks_with_expectancy * ER_rate,
+        # 2. ER (Expectancy Response) - accumulates based on expectancy + correlated noise
+        #    - Mean: ER_rate points per week × expectancy level
+        #    - Residual: from 26x26 sigma matrix
+        ER_mean = weeks_with_expectancy * ER_rate,
+        ER = ER_mean + er_resid,
 
-        # 3. TR (Time-variant Response) - linear time trend
-        #    - Rate: TR_rate points per week
-        #    - Accumulates regardless of treatment
-        TR = weeks_in_trial * TR_rate,
-
-        # Biomarker moderation: biomarker amplifies BR (not ER or TR)
-        # Higher biomarker = stronger biological response to treatment
-        biomarker_moderation = (biomarker - biomarker_mean) / biomarker_sd *
-                               params$biomarker_correlation * BR,
+        # 3. TR (Time-variant Response) - linear time trend + correlated noise
+        #    - Mean: TR_rate points per week
+        #    - Residual: from 26x26 sigma matrix
+        TR_mean = weeks_in_trial * TR_rate,
+        TR = TR_mean + tr_resid,
 
         # ===========================================
         # TOTAL RESPONSE
         # ===========================================
-        # Response = baseline + random effect + BR + ER + TR + biomarker moderation + noise
-        response = baseline_mean +
-                   random_intercept +
-                   BR +                      # Biological (drug) effect
-                   ER +                      # Expectancy (placebo) effect
-                   TR +                      # Time-variant effect
-                   biomarker_moderation +    # Biomarker amplifies BR
-                   residual
+        # Response = baseline + BR + ER + TR
+        # Note: baseline already includes between-subject variability from sigma
+        # Note: biomarker moderation is captured in sigma correlations
+        response = baseline + BR + ER + TR
       ) %>%
       ungroup()
 
