@@ -255,9 +255,9 @@ for (i in 1:nrow(param_grid)) {
         participant_id = pid,
         biomarker = biomarker,
         baseline = baseline,
-        br_resid = br_values,
-        er_resid = er_values,
-        tr_resid = tr_values
+        br_random = br_values,
+        er_random = er_values,
+        tr_random = tr_values
       )
     }
 
@@ -292,13 +292,13 @@ for (i in 1:nrow(param_grid)) {
         time_off = cumsum(treatment == 0),
 
         # ===========================================
-        # THREE-FACTOR RESPONSE MODEL (RATE-BASED + CORRELATED RESIDUALS)
+        # THREE-FACTOR RESPONSE MODEL (RATE-BASED + RANDOM VARIATION)
         # ===========================================
 
-        # 1. BR (Biological Response) - accumulates while on drug + correlated noise
+        # 1. BR (Biological Response) - accumulates while on drug + random variation
         #    - Mean: BR_rate points per week on drug
         #    - Carryover: partial at first off-drug timepoint, then 0
-        #    - Residual: from 26x26 sigma matrix (correlated across time)
+        #    - Random: from 26x26 sigma matrix (correlated across time)
         BR_mean = {
           br_accumulated <- lag(weeks_on_drug, default = 0) * BR_rate
           first_off <- treatment == 0 & lag(treatment, default = 1) == 1
@@ -309,19 +309,19 @@ for (i in 1:nrow(param_grid)) {
                         br_accumulated * params$carryover_decay_rate,
                         0))
         },
-        BR = BR_mean + br_resid,
+        BR = BR_mean + br_random,
 
-        # 2. ER (Expectancy Response) - accumulates based on expectancy + correlated noise
+        # 2. ER (Expectancy Response) - accumulates based on expectancy + random variation
         #    - Mean: ER_rate points per week × expectancy level
-        #    - Residual: from 26x26 sigma matrix
+        #    - Random: from 26x26 sigma matrix
         ER_mean = weeks_with_expectancy * ER_rate,
-        ER = ER_mean + er_resid,
+        ER = ER_mean + er_random,
 
-        # 3. TR (Time-variant Response) - linear time trend + correlated noise
+        # 3. TR (Time-variant Response) - linear time trend + random variation
         #    - Mean: TR_rate points per week
-        #    - Residual: from 26x26 sigma matrix
+        #    - Random: from 26x26 sigma matrix
         TR_mean = weeks_in_trial * TR_rate,
-        TR = TR_mean + tr_resid,
+        TR = TR_mean + tr_random,
 
         # ===========================================
         # TOTAL RESPONSE
