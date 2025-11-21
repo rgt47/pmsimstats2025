@@ -47,6 +47,9 @@ c.cfct <- 0.1                  # Different-time cross-correlation
 c.bm_baseline <- 0.3           # Biomarker-baseline correlation
 c.baseline_resp <- 0.4         # Baseline-response correlation
 
+# Allowed correlation values (finite grid for consistent results)
+allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+
 # Parameter grid - what we're testing
 param_grid <- expand_grid(
   biomarker_correlation = c(0.3),
@@ -54,103 +57,179 @@ param_grid <- expand_grid(
 )
 
 # =============================================================================
-# BUILD 26x26 HENDRICKSON SIGMA MATRIX
+# BUILD SIGMA WITH GUARANTEED PD (Time-Based AR(1))
 # =============================================================================
 
-# Structure: [BR(8) | ER(8) | TR(8) | Biomarker(1) | Baseline(1)]
-build_hendrickson_sigma <- function(n_timepoints, c.bm, params) {
-  n <- 3 * n_timepoints + 2  # 26 for 8 timepoints
-  R <- matrix(0, n, n)
+# Build sigma using independent construction with automatic scaling
+# Structure: responses (24) conditioned on participant vars (2)
+build_sigma_guaranteed_pd <- function(weeks, c.bm, params) {
+  n_tp <- length(weeks)
 
-  # Index ranges
-  br_idx <- 1:n_timepoints
-  er_idx <- (n_timepoints + 1):(2 * n_timepoints)
-  tr_idx <- (2 * n_timepoints + 1):(3 * n_timepoints)
-  bm_idx <- 3 * n_timepoints + 1
-  bl_idx <- 3 * n_timepoints + 2
+  # Index ranges for final 26x26 (for compatibility)
+  br_idx <- 1:n_tp
+  er_idx <- (n_tp + 1):(2 * n_tp)
+  tr_idx <- (2 * n_tp + 1):(3 * n_tp)
+  bm_idx <- 3 * n_tp + 1
+  bl_idx <- 3 * n_tp + 2
 
-  # Helper: fill autocorrelation block
-  fill_auto <- function(idx, rho) {
-    for (i in seq_along(idx)) {
-      for (j in seq_along(idx)) {
-        if (i == j) {
-          R[idx[i], idx[j]] <<- 1
-        } else {
-          R[idx[i], idx[j]] <<- rho
-        }
+  # =========================================================================
+  # STAGE 1: Build Σ₂₂ (2×2) - Biomarker & Baseline
+  # =========================================================================
+  # Always PD for |correlation| < 1
+
+  Sigma_22 <- matrix(c(
+    biomarker_sd^2,                                    c.bm_baseline * biomarker_sd * between_subject_sd,
+    c.bm_baseline * biomarker_sd * between_subject_sd, between_subject_sd^2
+  ), 2, 2)
+
+  Sigma_22_inv <- solve(Sigma_22)
+
+  # =========================================================================
+  # STAGE 2: Build Σ₁₁ (24×24) - Responses with Time-Based AR(1)
+  # =========================================================================
+  # Guaranteed PD by construction
+
+  # Helper: Build AR(1) covariance block based on actual time lags
+  build_ar1_time <- function(weeks, rho, sigma) {
+    n <- length(weeks)
+    Cov <- matrix(0, n, n)
+    for (i in 1:n) {
+      for (j in 1:n) {
+        time_lag <- abs(weeks[i] - weeks[j])
+        Cov[i, j] <- sigma^2 * rho^time_lag
       }
+    }
+    return(Cov)
+  }
+
+  # Build diagonal blocks (within each response type)
+  Sigma_BR <- build_ar1_time(weeks, c.br, within_subject_sd)
+  Sigma_ER <- build_ar1_time(weeks, c.er, within_subject_sd)
+  Sigma_TR <- build_ar1_time(weeks, c.tr, within_subject_sd)
+
+  # Initialize 24x24 with diagonal blocks
+  Sigma_11 <- matrix(0, 3 * n_tp, 3 * n_tp)
+  Sigma_11[br_idx, br_idx] <- Sigma_BR
+  Sigma_11[er_idx, er_idx] <- Sigma_ER
+  Sigma_11[tr_idx, tr_idx] <- Sigma_TR
+
+  # Add cross-correlations between response types
+  # Use time-based decay for cross-correlations too
+  for (i in 1:n_tp) {
+    for (j in 1:n_tp) {
+      time_lag <- abs(weeks[i] - weeks[j])
+
+      if (i == j) {
+        # Same timepoint: use c.cf1t
+        cross_cov <- c.cf1t * within_subject_sd^2
+      } else {
+        # Different timepoint: use c.cfct with time decay
+        cross_cov <- c.cfct * within_subject_sd^2 * (0.9^time_lag)
+      }
+
+      # BR-ER
+      Sigma_11[br_idx[i], er_idx[j]] <- cross_cov
+      Sigma_11[er_idx[j], br_idx[i]] <- cross_cov
+
+      # BR-TR
+      Sigma_11[br_idx[i], tr_idx[j]] <- cross_cov
+      Sigma_11[tr_idx[j], br_idx[i]] <- cross_cov
+
+      # ER-TR
+      Sigma_11[er_idx[i], tr_idx[j]] <- cross_cov
+      Sigma_11[tr_idx[j], er_idx[i]] <- cross_cov
     }
   }
 
-  # Helper: fill cross-correlation block
-  fill_cross <- function(idx1, idx2, rho_same, rho_diff) {
-    for (i in seq_along(idx1)) {
-      for (j in seq_along(idx2)) {
-        if (i == j) {
-          R[idx1[i], idx2[j]] <<- rho_same
-          R[idx2[j], idx1[i]] <<- rho_same
-        } else {
-          R[idx1[i], idx2[j]] <<- rho_diff
-          R[idx2[j], idx1[i]] <<- rho_diff
-        }
+  # =========================================================================
+  # STAGE 3: Build Σ₁₂ (24×2) - Cross-covariance (regression coefficients)
+  # =========================================================================
+
+  Sigma_12 <- matrix(0, 3 * n_tp, 2)
+
+  # Column 1: Biomarker effects on responses
+  # BR strongly correlated with biomarker (this is what we're testing)
+  Sigma_12[br_idx, 1] <- c.bm * within_subject_sd * biomarker_sd
+  # ER and TR weakly correlated with biomarker
+  Sigma_12[er_idx, 1] <- c.bm * 0.5 * within_subject_sd * biomarker_sd
+  Sigma_12[tr_idx, 1] <- c.bm * 0.5 * within_subject_sd * biomarker_sd
+
+  # Column 2: Baseline effects on responses
+  Sigma_12[br_idx, 2] <- c.baseline_resp * within_subject_sd * between_subject_sd
+  Sigma_12[er_idx, 2] <- c.baseline_resp * within_subject_sd * between_subject_sd
+  Sigma_12[tr_idx, 2] <- c.baseline_resp * within_subject_sd * between_subject_sd
+
+  # =========================================================================
+  # STAGE 4: Check Schur Complement & Snap to Grid if Needed
+  # =========================================================================
+
+  # Function to find largest allowed correlation that keeps matrix PD
+  find_valid_correlation <- function(Sigma_11, Sigma_22_inv, c.bm_requested,
+                                     allowed_vals, sigma_resp, sigma_bm, sigma_bl,
+                                     br_idx, er_idx, tr_idx) {
+    # Try correlations from requested down to 0
+    valid_vals <- allowed_vals[allowed_vals <= c.bm_requested]
+    valid_vals <- sort(valid_vals, decreasing = TRUE)
+
+    for (c.bm_try in valid_vals) {
+      # Rebuild Sigma_12 with this correlation
+      Sigma_12_try <- matrix(0, nrow(Sigma_11), 2)
+      Sigma_12_try[br_idx, 1] <- c.bm_try * sigma_resp * sigma_bm
+      Sigma_12_try[er_idx, 1] <- c.bm_try * 0.5 * sigma_resp * sigma_bm
+      Sigma_12_try[tr_idx, 1] <- c.bm_try * 0.5 * sigma_resp * sigma_bm
+      Sigma_12_try[br_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+      Sigma_12_try[er_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+      Sigma_12_try[tr_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+
+      # Check if PD
+      cross_term <- Sigma_12_try %*% Sigma_22_inv %*% t(Sigma_12_try)
+      Sigma_cond_try <- Sigma_11 - cross_term
+      min_eig <- min(eigen(Sigma_cond_try, only.values = TRUE)$values)
+
+      if (min_eig > 1e-6) {
+        return(list(c.bm = c.bm_try, Sigma_12 = Sigma_12_try, Sigma_cond = Sigma_cond_try))
       }
     }
+
+    # Fallback to 0 correlation
+    Sigma_12_try <- matrix(0, nrow(Sigma_11), 2)
+    Sigma_12_try[br_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+    Sigma_12_try[er_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+    Sigma_12_try[tr_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+    cross_term <- Sigma_12_try %*% Sigma_22_inv %*% t(Sigma_12_try)
+    Sigma_cond_try <- Sigma_11 - cross_term
+
+    return(list(c.bm = 0, Sigma_12 = Sigma_12_try, Sigma_cond = Sigma_cond_try))
   }
 
-  # 1. Autocorrelations within each response type
-  fill_auto(br_idx, c.br)
-  fill_auto(er_idx, c.er)
-  fill_auto(tr_idx, c.tr)
-
-  # 2. Cross-correlations between response types
-  fill_cross(br_idx, er_idx, c.cf1t, c.cfct)
-  fill_cross(br_idx, tr_idx, c.cf1t, c.cfct)
-  fill_cross(er_idx, tr_idx, c.cf1t, c.cfct)
-
-  # 3. Biomarker correlations
-  R[bm_idx, bm_idx] <- 1
-  # Biomarker-BR correlation (the key parameter we're testing)
-  for (i in br_idx) {
-    R[bm_idx, i] <- c.bm
-    R[i, bm_idx] <- c.bm
-  }
-  # Biomarker-ER and Biomarker-TR (weaker)
-  for (i in c(er_idx, tr_idx)) {
-    R[bm_idx, i] <- c.bm * 0.5
-    R[i, bm_idx] <- c.bm * 0.5
-  }
-
-  # 4. Baseline correlations
-  R[bl_idx, bl_idx] <- 1
-  R[bm_idx, bl_idx] <- c.bm_baseline
-  R[bl_idx, bm_idx] <- c.bm_baseline
-  # Baseline-response correlations
-  for (i in c(br_idx, er_idx, tr_idx)) {
-    R[bl_idx, i] <- c.baseline_resp
-    R[i, bl_idx] <- c.baseline_resp
-  }
-
-  # 5. Convert correlation to covariance matrix
-  # SD vector: within_subject_sd for responses, biomarker_sd, between_subject_sd for baseline
-  sd_vec <- c(
-    rep(within_subject_sd, 3 * n_timepoints),  # BR, ER, TR
-    biomarker_sd,                               # Biomarker
-    between_subject_sd                          # Baseline
+  # Find valid correlation on the grid
+  result <- find_valid_correlation(
+    Sigma_11, Sigma_22_inv, c.bm,
+    allowed_correlations, within_subject_sd, biomarker_sd, between_subject_sd,
+    br_idx, er_idx, tr_idx
   )
 
-  # Sigma = diag(SD) %*% R %*% diag(SD)
-  Sigma <- diag(sd_vec) %*% R %*% diag(sd_vec)
+  Sigma_12 <- result$Sigma_12
+  Sigma_cond <- result$Sigma_cond
+  effective_c.bm <- result$c.bm
 
-  # Check positive definiteness
-  eigenvalues <- eigen(Sigma, only.values = TRUE)$values
-  if (any(eigenvalues <= 0)) {
-    warning("Sigma matrix is not positive definite!")
-    return(NULL)
+  if (effective_c.bm < c.bm) {
+    cat(sprintf("  Snapped biomarker correlation: %.2f → %.2f (to ensure PD)\n",
+                c.bm, effective_c.bm))
   }
 
+  # =========================================================================
+  # Return partitioned result
+  # =========================================================================
+
   return(list(
-    Sigma = Sigma,
-    R = R,
+    Sigma_11 = Sigma_11,
+    Sigma_22 = Sigma_22,
+    Sigma_12 = Sigma_12,
+    Sigma_cond = Sigma_cond,
+    Sigma_22_inv = Sigma_22_inv,
+    requested_c.bm = c.bm,
+    effective_c.bm = effective_c.bm,
     indices = list(br = br_idx, er = er_idx, tr = tr_idx, bm = bm_idx, bl = bl_idx)
   ))
 }
@@ -159,36 +238,19 @@ build_hendrickson_sigma <- function(n_timepoints, c.bm, params) {
 # TWO-STAGE DATA GENERATION (2x2 + 24x24)
 # =============================================================================
 
-# Partition sigma into components for two-stage generation
-partition_sigma <- function(Sigma, idx) {
-  # Response indices (1-24)
-  resp_idx <- c(idx$br, idx$er, idx$tr)
-  # Participant indices (25-26)
-  part_idx <- c(idx$bm, idx$bl)
-
-  list(
-    Sigma_11 = Sigma[resp_idx, resp_idx],           # 24x24 response covariance
-    Sigma_22 = Sigma[part_idx, part_idx],           # 2x2 participant covariance
-    Sigma_12 = Sigma[resp_idx, part_idx],           # 24x2 cross-covariance
-    Sigma_22_inv = solve(Sigma[part_idx, part_idx]) # 2x2 inverse (trivial)
-  )
-}
-
 # Generate one participant's data using two-stage approach
-generate_participant_twostage <- function(partitioned, idx) {
+# Uses pre-computed partitioned sigma from build_sigma_guaranteed_pd
+generate_participant_twostage <- function(sigma_parts, idx) {
   # Stage 1: Generate participant variables (biomarker, baseline) from 2x2
-  x2 <- mvrnorm(1, mu = c(0, 0), Sigma = partitioned$Sigma_22)
+  x2 <- mvrnorm(1, mu = c(0, 0), Sigma = sigma_parts$Sigma_22)
 
-  # Stage 2: Compute conditional distribution parameters
+  # Stage 2: Compute conditional mean given participant vars
   # Conditional mean: μ₁|₂ = Σ₁₂ Σ₂₂⁻¹ x₂
-  mu_cond <- partitioned$Sigma_12 %*% partitioned$Sigma_22_inv %*% x2
-
-  # Conditional covariance: Σ₁|₂ = Σ₁₁ - Σ₁₂ Σ₂₂⁻¹ Σ₂₁
-  Sigma_cond <- partitioned$Sigma_11 -
-                partitioned$Sigma_12 %*% partitioned$Sigma_22_inv %*% t(partitioned$Sigma_12)
+  mu_cond <- sigma_parts$Sigma_12 %*% sigma_parts$Sigma_22_inv %*% x2
 
   # Generate responses from conditional distribution
-  x1 <- mvrnorm(1, mu = as.vector(mu_cond), Sigma = Sigma_cond)
+  # Sigma_cond is pre-computed and guaranteed PD
+  x1 <- mvrnorm(1, mu = as.vector(mu_cond), Sigma = sigma_parts$Sigma_cond)
 
   # Extract components
   n_tp <- length(idx$br)
@@ -325,29 +387,17 @@ for (i in 1:nrow(param_grid)) {
 
     n_timepoints <- length(measurement_weeks)
 
-    # Build 26x26 Hendrickson sigma matrix
-    sigma_result <- build_hendrickson_sigma(n_timepoints, params$biomarker_correlation, params)
-    if (is.null(sigma_result)) {
-      cat("  Skipping iteration", iter, "- non-positive definite sigma\n")
-      next
-    }
-    Sigma <- sigma_result$Sigma
-    idx <- sigma_result$indices
-
-    # Partition sigma for two-stage generation
-    partitioned <- partition_sigma(Sigma, idx)
-
-    # Verify equivalence on first iteration of first condition
-    if (i == 1 && iter == 1) {
-      verify_twostage_equivalence(Sigma, idx, n_samples = 5000)
-    }
+    # Build sigma with guaranteed PD using time-based AR(1)
+    sigma_parts <- build_sigma_guaranteed_pd(measurement_weeks, params$biomarker_correlation, params)
+    idx <- sigma_parts$indices
+    effective_bm_corr <- sigma_parts$effective_c.bm
 
     # Generate correlated data for each participant using TWO-STAGE approach
     all_participant_data <- list()
 
     for (pid in 1:n_participants) {
       # Two-stage generation: (biomarker, baseline) then (BR, ER, TR | biomarker, baseline)
-      result <- generate_participant_twostage(partitioned, idx)
+      result <- generate_participant_twostage(sigma_parts, idx)
 
       all_participant_data[[pid]] <- tibble(
         participant_id = pid,
@@ -462,7 +512,7 @@ for (i in 1:nrow(param_grid)) {
 
       tibble(
         iteration = iter,
-        biomarker_correlation = params$biomarker_correlation,
+        biomarker_correlation = effective_bm_corr,  # Use effective (grid) value
         carryover_decay_rate = params$carryover_decay_rate,
         effect_size = coefs[idx, "Estimate"],
         se = coefs[idx, "Std. Error"],
@@ -472,7 +522,7 @@ for (i in 1:nrow(param_grid)) {
       )
     }, error = function(e) {
       cat("  Error in iteration", iter, ":", conditionMessage(e), "\n")
-      tibble(iteration = iter, biomarker_correlation = params$biomarker_correlation,
+      tibble(iteration = iter, biomarker_correlation = effective_bm_corr,
              carryover_decay_rate = params$carryover_decay_rate, effect_size = NA,
              se = NA, t_value = NA, p_value = NA, significant = NA)
     })

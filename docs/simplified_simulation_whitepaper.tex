@@ -1,0 +1,978 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Simplified N-of-1 Trial Simulation: Mathematical Foundations and Design Rationale},
+  pdfauthor={pmsimstats2025 Project},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Simplified N-of-1 Trial Simulation: Mathematical Foundations and
+Design Rationale}
+\author{pmsimstats2025 Project}
+\date{2025-11-21}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\section{Executive Summary}\label{executive-summary}
+
+This white paper documents the systematic simplification of an N-of-1
+clinical trial simulation based on Hendrickson et al.~(2020). The
+original implementation used complex Gompertz response curves and a
+monolithic 26×26 covariance matrix. We present a series of
+mathematically equivalent but conceptually clearer simplifications:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Rate-based response model} replacing Gompertz curves
+\item
+  \textbf{Time-based AR(1) correlation} replacing compound symmetry
+\item
+  \textbf{Two-stage data generation} separating participant and response
+  variables
+\item
+  \textbf{Guaranteed positive-definiteness} via grid-snapping
+\end{enumerate}
+
+Each simplification is justified mathematically and evaluated for
+conceptual clarity, computational efficiency, and biological
+plausibility.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Introduction}\label{introduction}
+
+\subsection{Background}\label{background}
+
+N-of-1 trials are randomized crossover designs where a single
+participant serves as their own control. The hybrid design combines an
+open-label run-in with blinded crossover periods to estimate individual
+treatment effects while accounting for placebo (expectancy) effects.
+
+\subsection{Original Complexity}\label{original-complexity}
+
+The original Hendrickson-based simulation involved:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Three response factors}: Biological Response (BR), Expectancy
+  Response (ER), Time-variant Response (TR)
+\item
+  \textbf{Gompertz trajectories}: Sigmoidal curves with 3 parameters
+  each (max, displacement, rate)
+\item
+  \textbf{26×26 covariance matrix}: 3 factors × 8 timepoints + biomarker
+  + baseline
+\item
+  \textbf{Non-transparent construction}: Correlations filled
+  element-by-element without PD guarantees
+\end{itemize}
+
+\subsection{Goals of Simplification}\label{goals-of-simplification}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Conceptual clarity}: Each component should be independently
+  understandable
+\item
+  \textbf{Mathematical transparency}: All assumptions explicit and
+  justified
+\item
+  \textbf{Robustness}: Guaranteed valid (positive definite) covariance
+  matrices
+\item
+  \textbf{Flexibility}: Easy to modify individual components
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Simplification 1: Rate-Based Response
+Model}\label{simplification-1-rate-based-response-model}
+
+\subsection{Original: Gompertz Curves}\label{original-gompertz-curves}
+
+The original model used Gompertz functions for each response factor:
+
+\[
+f(t) = \text{max} \cdot \exp\left(-\text{disp} \cdot \exp(-\text{rate} \cdot t)\right)
+\]
+
+This S-shaped curve has three parameters:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{max}: Asymptotic maximum effect
+\item
+  \textbf{disp}: Displacement (horizontal shift)
+\item
+  \textbf{rate}: Growth rate
+\end{itemize}
+
+\subsubsection{Problems with Gompertz}\label{problems-with-gompertz}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Over-parameterized}: 3 parameters per factor × 3 factors = 9
+  response parameters
+\item
+  \textbf{Non-intuitive}: Displacement and rate interact in complex ways
+\item
+  \textbf{Asymptotic behavior}: Effect plateaus, but clinical effects
+  often accumulate linearly
+\end{enumerate}
+
+\subsection{Simplified: Linear Rate
+Model}\label{simplified-linear-rate-model}
+
+We replace Gompertz with simple linear accumulation:
+
+\[
+\text{Effect}(t) = \text{rate} \times \text{time}
+\]
+
+\subsubsection{Three-Factor Rate Model}\label{three-factor-rate-model}
+
+For each factor, we define a single rate parameter (points per week):
+
+\begin{align}
+\text{BR}_{\text{rate}} &= 0.5 \text{ points/week on drug} \\
+\text{ER}_{\text{rate}} &= 0.2 \text{ points/week} \times \text{expectancy} \\
+\text{TR}_{\text{rate}} &= 0.1 \text{ points/week}
+\end{align}
+
+The response at time \(t\) is:
+
+\begin{align}
+\text{BR}(t) &= \text{BR}_{\text{rate}} \times (\text{cumulative weeks on drug}) \\
+\text{ER}(t) &= \text{ER}_{\text{rate}} \times \sum_{s \leq t} \text{expectancy}(s) \\
+\text{TR}(t) &= \text{TR}_{\text{rate}} \times (\text{weeks in trial})
+\end{align}
+
+\subsubsection{Carryover Model}\label{carryover-model}
+
+When drug is discontinued, BR doesn't immediately drop to zero. We model
+carryover as a partial effect at the first off-drug timepoint:
+
+\[
+\text{BR}(t) = \begin{cases}
+\text{BR}_{\text{rate}} \times \text{weeks\_on\_drug} & \text{if on drug} \\
+\text{BR}_{\text{accumulated}} \times \text{carryover\_decay\_rate} & \text{if first week off} \\
+0 & \text{if subsequent weeks off}
+\end{cases}
+\]
+
+For example, with \(\text{carryover\_decay\_rate} = 0.5\):
+
+\begin{itemize}
+\tightlist
+\item
+  Week 10 (on drug, 4 weeks): BR = \(0.5 \times 4 = 2.0\)
+\item
+  Week 11 (first week off): BR = \(2.0 \times 0.5 = 1.0\)
+\item
+  Week 12 (second week off): BR = \(0\)
+\end{itemize}
+
+\subsubsection{Why This Is Better}\label{why-this-is-better}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Aspect & Gompertz & Linear Rate \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Parameters & 9 (3 per factor) & 3 (1 per factor) \\
+Interpretation & Complex & Direct (points/week) \\
+Flexibility & Fixed asymptote & Unbounded accumulation \\
+Clinical face validity & Moderate & High \\
+\end{longtable}
+
+\textbf{Intuition}: Clinicians think in terms of ``improvement per
+week,'' not asymptotic limits and displacement parameters.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Simplification 2: Time-Based AR(1)
+Correlation}\label{simplification-2-time-based-ar1-correlation}
+
+\subsection{Original: Compound
+Symmetry}\label{original-compound-symmetry}
+
+The original model used compound symmetry within each response type:
+
+\[
+\text{Corr}(Y_i, Y_j) = \rho \quad \text{for all } i \neq j
+\]
+
+This means measurements at week 4 and week 8 (4 weeks apart) have the
+same correlation as measurements at week 8 and week 9 (1 week apart).
+
+\subsubsection{Problems with Compound
+Symmetry}\label{problems-with-compound-symmetry}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Biologically implausible}: Nearby measurements should be more
+  correlated
+\item
+  \textbf{Wastes correlation budget}: High correlation everywhere leaves
+  less room for cross-correlations
+\item
+  \textbf{More prone to PD failures}: Concentrates eigenvalues
+\end{enumerate}
+
+\subsection{Simplified: Time-Based
+AR(1)}\label{simplified-time-based-ar1}
+
+We use an autoregressive structure based on actual time lags:
+
+\[
+\text{Corr}(Y_{t_i}, Y_{t_j}) = \rho^{|t_i - t_j|}
+\]
+
+where \(t_i\) and \(t_j\) are the actual week numbers.
+
+\subsubsection{Example Correlation
+Matrix}\label{example-correlation-matrix}
+
+For measurement weeks \(\{4, 8, 9, 10, 11, 12, 16, 20\}\) with
+\(\rho = 0.8\):
+
+\begin{longtable}[]{@{}lrrrrrrrr@{}}
+\caption{Time-based AR(1) correlation matrix}\tabularnewline
+\toprule\noalign{}
+& W4 & W8 & W9 & W10 & W11 & W12 & W16 & W20 \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& W4 & W8 & W9 & W10 & W11 & W12 & W16 & W20 \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+W4 & 1.00 & 0.41 & 0.33 & 0.26 & 0.21 & 0.17 & 0.07 & 0.03 \\
+W8 & 0.41 & 1.00 & 0.80 & 0.64 & 0.51 & 0.41 & 0.17 & 0.07 \\
+W9 & 0.33 & 0.80 & 1.00 & 0.80 & 0.64 & 0.51 & 0.21 & 0.09 \\
+W10 & 0.26 & 0.64 & 0.80 & 1.00 & 0.80 & 0.64 & 0.26 & 0.11 \\
+W11 & 0.21 & 0.51 & 0.64 & 0.80 & 1.00 & 0.80 & 0.33 & 0.13 \\
+W12 & 0.17 & 0.41 & 0.51 & 0.64 & 0.80 & 1.00 & 0.41 & 0.17 \\
+W16 & 0.07 & 0.17 & 0.21 & 0.26 & 0.33 & 0.41 & 1.00 & 0.41 \\
+W20 & 0.03 & 0.07 & 0.09 & 0.11 & 0.13 & 0.17 & 0.41 & 1.00 \\
+\end{longtable}
+
+\subsubsection{Key Comparisons}\label{key-comparisons}
+
+\begin{longtable}[]{@{}llll@{}}
+\toprule\noalign{}
+Week Pair & Time Lag & Compound Symmetry & Time-Based AR(1) \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+W4 - W8 & 4 weeks & 0.80 & \(0.8^4 = 0.41\) \\
+W8 - W9 & 1 week & 0.80 & \(0.8^1 = 0.80\) \\
+W12 - W16 & 4 weeks & 0.80 & \(0.8^4 = 0.41\) \\
+W4 - W20 & 16 weeks & 0.80 & \(0.8^{16} = 0.03\) \\
+\end{longtable}
+
+\subsubsection{Guaranteed Positive
+Definiteness}\label{guaranteed-positive-definiteness}
+
+The AR(1) correlation function \(K(t_1, t_2) = \rho^{|t_1 - t_2|}\) is a
+valid positive definite kernel for \(\rho \in (0, 1)\). This is the
+exponential covariance function, widely used in spatial statistics and
+time series.
+
+\textbf{Proof sketch}: The AR(1) process
+\(Y_t = \rho Y_{t-1} + \epsilon_t\) has this covariance structure, and
+valid stochastic processes always have PD covariance matrices.
+
+\subsubsection{Why This Is Better}\label{why-this-is-better-1}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1778}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4222}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Aspect
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Compound Symmetry
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Time-Based AR(1)
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Biological realism & Low & High \\
+Eigenvalue spread & Concentrated & Distributed \\
+PD robustness & Lower & Higher \\
+Interpretability & ``Same correlation everywhere'' & ``Correlation
+decays with time'' \\
+\end{longtable}
+
+\textbf{Intuition}: Your blood pressure yesterday is more predictive of
+today's than last month's. Correlation should decay with time.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Simplification 3: Two-Stage Data
+Generation}\label{simplification-3-two-stage-data-generation}
+
+\subsection{Original: Monolithic 26×26
+Matrix}\label{original-monolithic-2626-matrix}
+
+The original approach built a single 26×26 covariance matrix:
+
+\[
+\Sigma_{26 \times 26} = \begin{pmatrix}
+\Sigma_{\text{BR}} & \Sigma_{\text{BR,ER}} & \Sigma_{\text{BR,TR}} & \Sigma_{\text{BR,BM}} & \Sigma_{\text{BR,BL}} \\
+\Sigma_{\text{ER,BR}} & \Sigma_{\text{ER}} & \Sigma_{\text{ER,TR}} & \Sigma_{\text{ER,BM}} & \Sigma_{\text{ER,BL}} \\
+\vdots & & \ddots & & \vdots \\
+\Sigma_{\text{BL,BR}} & \cdots & & & \Sigma_{\text{BL}}
+\end{pmatrix}
+\]
+
+Then generated all 26 variables jointly:
+
+\[
+\mathbf{X} \sim \mathcal{N}(\mathbf{0}, \Sigma_{26 \times 26})
+\]
+
+\subsubsection{Problems with Monolithic
+Approach}\label{problems-with-monolithic-approach}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Opaque structure}: Hard to see how biomarker affects responses
+\item
+  \textbf{All-or-nothing PD}: If not PD, entire matrix rejected
+\item
+  \textbf{No clear causal interpretation}: Everything generated
+  simultaneously
+\end{enumerate}
+
+\subsection{Simplified: Two-Stage Conditional
+Generation}\label{simplified-two-stage-conditional-generation}
+
+We partition variables into:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\mathbf{X}_2\): Participant variables (biomarker, baseline) - 2
+  dimensions
+\item
+  \(\mathbf{X}_1\): Response variables (BR, ER, TR at 8 timepoints) - 24
+  dimensions
+\end{itemize}
+
+\subsubsection{Partitioned Covariance}\label{partitioned-covariance}
+
+\[
+\Sigma = \begin{pmatrix}
+\Sigma_{11} & \Sigma_{12} \\
+\Sigma_{21} & \Sigma_{22}
+\end{pmatrix}
+\]
+
+where:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\Sigma_{22}\): 2×2 covariance of (biomarker, baseline)
+\item
+  \(\Sigma_{11}\): 24×24 covariance of responses
+\item
+  \(\Sigma_{12}\): 24×2 cross-covariance (how biomarker/baseline relate
+  to responses)
+\end{itemize}
+
+\subsubsection{Conditional Distribution
+Theorem}\label{conditional-distribution-theorem}
+
+For jointly normal variables:
+
+\[
+\mathbf{X}_1 | \mathbf{X}_2 \sim \mathcal{N}(\boldsymbol{\mu}_{1|2}, \Sigma_{1|2})
+\]
+
+where:
+
+\begin{align}
+\boldsymbol{\mu}_{1|2} &= \Sigma_{12} \Sigma_{22}^{-1} (\mathbf{X}_2 - \boldsymbol{\mu}_2) \\
+\Sigma_{1|2} &= \Sigma_{11} - \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21}
+\end{align}
+
+\subsubsection{Two-Stage Algorithm}\label{two-stage-algorithm}
+
+\textbf{Stage 1}: Generate participant characteristics
+
+\[
+\begin{pmatrix} \text{biomarker} \\ \text{baseline} \end{pmatrix} \sim \mathcal{N}\left( \begin{pmatrix} \mu_{\text{BM}} \\ \mu_{\text{BL}} \end{pmatrix}, \Sigma_{22} \right)
+\]
+
+\textbf{Stage 2}: Generate responses conditional on participant
+characteristics
+
+\[
+\begin{pmatrix} \text{BR}_1 \\ \vdots \\ \text{TR}_8 \end{pmatrix} \sim \mathcal{N}\left( \Sigma_{12} \Sigma_{22}^{-1} \begin{pmatrix} \text{biomarker} - \mu_{\text{BM}} \\ \text{baseline} - \mu_{\text{BL}} \end{pmatrix}, \Sigma_{1|2} \right)
+\]
+
+\subsubsection{Mathematical Equivalence}\label{mathematical-equivalence}
+
+This two-stage procedure is \textbf{exactly equivalent} to generating
+from the joint 26×26 distribution. The conditional distribution formula
+preserves all correlations.
+
+\textbf{Proof}: By construction, the joint density factors as
+\(p(\mathbf{X}_1, \mathbf{X}_2) = p(\mathbf{X}_2) \cdot p(\mathbf{X}_1 | \mathbf{X}_2)\).
+
+\subsubsection{Why This Is Better}\label{why-this-is-better-2}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Aspect & Monolithic & Two-Stage \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Causal interpretation & Unclear & Clear (BM → responses) \\
+Matrix inversion & None & 2×2 only (trivial) \\
+Debugging & Hard & Test each stage \\
+Conceptual model & Simultaneous & Sequential \\
+\end{longtable}
+
+\textbf{Intuition}: A participant's biomarker level is determined before
+the trial starts. Then their responses depend on this biomarker. The
+two-stage approach matches this causal structure.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Simplification 4: Guaranteed Positive
+Definiteness}\label{simplification-4-guaranteed-positive-definiteness}
+
+\subsection{The Problem}\label{the-problem}
+
+For a covariance matrix to be valid, it must be positive definite (PD):
+all eigenvalues must be positive. When constructing correlation matrices
+element-by-element, PD is not guaranteed.
+
+\subsubsection{Common Failure Mode}\label{common-failure-mode}
+
+High correlations ``use up'' the positive definiteness budget:
+
+\[
+\lambda_{\min}(\Sigma) = \sigma^2 (1 - \rho_{\max})
+\]
+
+When cross-correlations are added, \(\lambda_{\min}\) can become
+negative.
+
+\subsection{Solution: Independent Construction with Schur
+Complement}\label{solution-independent-construction-with-schur-complement}
+
+\subsubsection{The Schur Complement
+Condition}\label{the-schur-complement-condition}
+
+For the partitioned matrix to be PD:
+
+\[
+\Sigma_{1|2} = \Sigma_{11} - \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21} > 0
+\]
+
+This is the \textbf{Schur complement} condition.
+
+\subsubsection{Construction Strategy}\label{construction-strategy}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Build \(\Sigma_{22}\) (2×2)}: Always PD for \(|\rho| < 1\)
+\item
+  \textbf{Build \(\Sigma_{11}\) (24×24)}: Use time-based AR(1),
+  guaranteed PD
+\item
+  \textbf{Build \(\Sigma_{12}\) (24×2)}: Regression coefficients
+\item
+  \textbf{Check Schur complement}: If not PD, scale down \(\Sigma_{12}\)
+\end{enumerate}
+
+\subsubsection{Grid-Snapping Algorithm}\label{grid-snapping-algorithm}
+
+Rather than continuous scaling, we snap to a predefined grid of
+correlation values:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{allowed\_correlations }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FloatTok{0.1}\NormalTok{, }\FloatTok{0.2}\NormalTok{, }\FloatTok{0.3}\NormalTok{, }\FloatTok{0.4}\NormalTok{, }\FloatTok{0.5}\NormalTok{, }\FloatTok{0.6}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Algorithm}:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  User requests biomarker correlation \(\rho_{\text{requested}}\)
+\item
+  Try
+  \(\rho \in \{\rho_{\text{requested}}, \rho_{\text{requested}} - 0.1, \ldots, 0\}\)
+\item
+  For each \(\rho\), check if \(\Sigma_{1|2}\) is PD
+\item
+  Use largest valid \(\rho\) from grid
+\end{enumerate}
+
+\subsubsection{Example}\label{example}
+
+\begin{itemize}
+\tightlist
+\item
+  Requested: \(\rho = 0.5\)
+\item
+  System checks: 0.5 (not PD), 0.4 (PD!)
+\item
+  Uses: \(\rho_{\text{effective}} = 0.4\)
+\item
+  Reports: ``Snapped biomarker correlation: 0.50 → 0.40''
+\end{itemize}
+
+\subsubsection{Why Grid-Snapping Is Better Than Continuous
+Scaling}\label{why-grid-snapping-is-better-than-continuous-scaling}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Aspect & Continuous & Grid-Snapping \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Result values & Arbitrary (0.423\ldots) & Clean (0.4) \\
+Visualization & Hard to bin & Natural grid \\
+Reproducibility & Exact but odd values & Clean categories \\
+Interpretation & ``Scaled by 0.847'' & ``Using 0.4'' \\
+\end{longtable}
+
+\textbf{Intuition}: For reporting and visualization, we want results on
+a regular grid. Grid-snapping ensures this automatically.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Complete Response Model}\label{complete-response-model}
+
+\subsection{Total Response Formula}\label{total-response-formula}
+
+Combining all simplifications, the response at timepoint \(t\) for
+participant \(i\) is:
+
+\begin{align}
+Y_{it} = & \underbrace{\text{baseline}_i}_{\text{from } \Sigma_{22}} \\
+& + \underbrace{\text{BR}_{\text{rate}} \times \text{weeks\_on\_drug}_{it} + \text{br\_random}_{it}}_{\text{Biological Response}} \\
+& + \underbrace{\text{ER}_{\text{rate}} \times \sum_{s \leq t} \text{expectancy}_{is} + \text{er\_random}_{it}}_{\text{Expectancy Response}} \\
+& + \underbrace{\text{TR}_{\text{rate}} \times (t - t_0) + \text{tr\_random}_{it}}_{\text{Time-variant Response}}
+\end{align}
+
+where:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\text{baseline}_i\): Participant's baseline (from \(\Sigma_{22}\),
+  correlated with biomarker)
+\item
+  \(\text{br\_random}_{it}\), \(\text{er\_random}_{it}\),
+  \(\text{tr\_random}_{it}\): Correlated random effects (from
+  \(\Sigma_{1|2}\))
+\item
+  Carryover modifies BR when off drug
+\end{itemize}
+
+\subsection{Correlation Structure}\label{correlation-structure}
+
+The random components
+\((\text{br\_random}, \text{er\_random}, \text{tr\_random})\) are
+correlated:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Within factor, across time}: AR(1) with time-based decay
+\item
+  \textbf{Across factors, same time}: Cross-correlation
+  \(c_{\text{cf1t}} = 0.2\)
+\item
+  \textbf{Across factors, different time}: Cross-correlation
+  \(c_{\text{cfct}} = 0.1\) with decay
+\item
+  \textbf{With biomarker}: BR correlated at \(c_{\text{bm}}\), ER/TR at
+  \(0.5 \times c_{\text{bm}}\)
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Hybrid Trial Design}\label{hybrid-trial-design}
+
+\subsection{Design Structure}\label{design-structure}
+
+\begin{longtable}[]{@{}lllll@{}}
+\toprule\noalign{}
+Week & Phase & Treatment & Expectancy & Description \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+4, 8 & Open-label & All active & 1.0 & Run-in period \\
+9 & Blinded & All active & 0.5 & Transition \\
+10 & Blinded & Randomized & 0.5 & Paths 1,2 active; 3,4 placebo \\
+11, 12 & Blinded & All placebo & 0.5 & Washout \\
+16 & Blinded & Crossover & 0.5 & Paths 1,3 active; 2,4 placebo \\
+20 & Blinded & Crossover & 0.5 & Paths 1,3 placebo; 2,4 active \\
+\end{longtable}
+
+\subsection{Four-Path Randomization}\label{four-path-randomization}
+
+Participants are randomized to one of four paths, ensuring balanced
+treatment sequences:
+
+\begin{longtable}[]{@{}lllll@{}}
+\toprule\noalign{}
+Path & W10 & W11-12 & W16 & W20 \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & Active & Placebo & Active & Placebo \\
+2 & Active & Placebo & Placebo & Active \\
+3 & Placebo & Placebo & Active & Placebo \\
+4 & Placebo & Placebo & Placebo & Active \\
+\end{longtable}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Statistical Analysis}\label{statistical-analysis}
+
+\subsection{Mixed Effects Model}\label{mixed-effects-model}
+
+The analysis model is:
+
+\[
+Y_{it} = \beta_0 + \beta_1 \text{treatment}_{it} + \beta_2 \text{biomarker}_i + \beta_3 (\text{treatment} \times \text{biomarker})_{it} + \beta_4 \text{week}_t + \gamma_i + \epsilon_{it}
+\]
+
+where:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\beta_3\): Treatment × biomarker interaction (primary outcome)
+\item
+  \(\gamma_i \sim \mathcal{N}(0, \sigma^2_{\text{between}})\): Random
+  intercept
+\item
+  \(\epsilon_{it} \sim \mathcal{N}(0, \sigma^2_{\text{within}})\):
+  Residual
+\end{itemize}
+
+\subsection{Power Calculation}\label{power-calculation}
+
+Statistical power is the probability of detecting a significant
+treatment × biomarker interaction:
+
+\[
+\text{Power} = P(p < 0.05 | H_1 \text{ true})
+\]
+
+Estimated via Monte Carlo simulation over multiple iterations.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Computational
+Considerations}\label{computational-considerations}
+
+\subsection{Efficiency Comparison}\label{efficiency-comparison}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Operation & Old Method & New Method \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Build covariance & 26×26 at once & 2×2 + 24×24 \\
+PD check & Full eigendecomposition & Schur complement \\
+Failure mode & Reject & Snap to grid \\
+Cholesky & 26×26 & 2×2 + 24×24 \\
+Matrix inverse & None & 2×2 (trivial) \\
+\end{longtable}
+
+\subsection{Cholesky Decomposition
+Cost}\label{cholesky-decomposition-cost}
+
+\[
+\text{Cost} \propto n^3
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Old: \(26^3 = 17,576\)
+\item
+  New: \(2^3 + 24^3 = 8 + 13,824 = 13,832\)
+\end{itemize}
+
+Approximately 20\% reduction, plus avoided failures.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Conclusions}\label{conclusions}
+
+\subsection{Summary of
+Simplifications}\label{summary-of-simplifications}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Rate-based response}: 3 parameters vs 9, clinically
+  interpretable
+\item
+  \textbf{Time-based AR(1)}: Biologically plausible decay, more robust
+\item
+  \textbf{Two-stage generation}: Clear causal structure, easier
+  debugging
+\item
+  \textbf{Grid-snapping}: Guaranteed PD, clean visualization
+\end{enumerate}
+
+\subsection{Trade-offs}\label{trade-offs}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Simplification & Gained & Lost \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Rate model & Interpretability & Asymptotic saturation \\
+AR(1) & Realism, robustness & Compound symmetry option \\
+Two-stage & Clarity & Nothing (mathematically equivalent) \\
+Grid-snapping & Guaranteed PD & Exact requested correlation \\
+\end{longtable}
+
+\subsection{Recommendations}\label{recommendations}
+
+These simplifications are recommended for:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Teaching}: Much easier to understand
+\item
+  \textbf{Development}: Easier to debug and modify
+\item
+  \textbf{Production}: More robust, fewer failures
+\end{itemize}
+
+The original Gompertz/monolithic approach may still be preferred for:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Publication}: Exact replication of Hendrickson
+\item
+  \textbf{Asymptotic effects}: When saturation is clinically meaningful
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{References}\label{references}
+
+Hendrickson, E., et al.~(2020). N-of-1 trials with multiple
+randomization structures for individualized treatment. \emph{Statistics
+in Medicine}.
+
+Raskind, M., et al.~(2013). Pilot RCT data used for biomarker and
+baseline estimates. {[}Source for parameter values{]}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Appendix: R Implementation}\label{appendix-r-implementation}
+
+\subsection{Key Functions}\label{key-functions}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Build guaranteed{-}PD sigma with time{-}based AR(1)}
+\NormalTok{build\_sigma\_guaranteed\_pd }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(weeks, c.bm, params) \{}
+  \CommentTok{\# Stage 1: Sigma\_22 (2×2)}
+  \CommentTok{\# Stage 2: Sigma\_11 (24×24) with AR(1)}
+  \CommentTok{\# Stage 3: Sigma\_12 (24×2)}
+  \CommentTok{\# Stage 4: Grid{-}snap to ensure PD}
+\NormalTok{\}}
+
+\CommentTok{\# Two{-}stage data generation}
+\NormalTok{generate\_participant\_twostage }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(sigma\_parts, idx) \{}
+  \CommentTok{\# Stage 1: Generate (biomarker, baseline)}
+\NormalTok{  x2 }\OtherTok{\textless{}{-}} \FunctionTok{mvrnorm}\NormalTok{(}\DecValTok{1}\NormalTok{, }\AttributeTok{mu =} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{), }\AttributeTok{Sigma =}\NormalTok{ sigma\_parts}\SpecialCharTok{$}\NormalTok{Sigma\_22)}
+
+  \CommentTok{\# Stage 2: Generate responses | participant vars}
+\NormalTok{  mu\_cond }\OtherTok{\textless{}{-}}\NormalTok{ Sigma\_12 }\SpecialCharTok{\%*\%}\NormalTok{ Sigma\_22\_inv }\SpecialCharTok{\%*\%}\NormalTok{ x2}
+\NormalTok{  x1 }\OtherTok{\textless{}{-}} \FunctionTok{mvrnorm}\NormalTok{(}\DecValTok{1}\NormalTok{, }\AttributeTok{mu =}\NormalTok{ mu\_cond, }\AttributeTok{Sigma =}\NormalTok{ sigma\_parts}\SpecialCharTok{$}\NormalTok{Sigma\_cond)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Grid-Snapping Algorithm}\label{grid-snapping-algorithm-1}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{allowed\_correlations }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FloatTok{0.1}\NormalTok{, }\FloatTok{0.2}\NormalTok{, }\FloatTok{0.3}\NormalTok{, }\FloatTok{0.4}\NormalTok{, }\FloatTok{0.5}\NormalTok{, }\FloatTok{0.6}\NormalTok{)}
+
+\NormalTok{find\_valid\_correlation }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(Sigma\_11, Sigma\_22\_inv, c.bm\_requested, ...) \{}
+  \ControlFlowTok{for}\NormalTok{ (c.bm\_try }\ControlFlowTok{in} \FunctionTok{sort}\NormalTok{(allowed[allowed }\SpecialCharTok{\textless{}=}\NormalTok{ c.bm\_requested], }\AttributeTok{decreasing =} \ConstantTok{TRUE}\NormalTok{)) \{}
+    \CommentTok{\# Build Sigma\_12 with c.bm\_try}
+    \CommentTok{\# Check if Schur complement is PD}
+    \ControlFlowTok{if}\NormalTok{ (min\_eigenvalue }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) }\FunctionTok{return}\NormalTok{(c.bm\_try)}
+\NormalTok{  \}}
+  \FunctionTok{return}\NormalTok{(}\DecValTok{0}\NormalTok{)  }\CommentTok{\# Fallback}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+
+\end{document}
