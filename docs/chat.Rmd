@@ -364,14 +364,14 @@ library(emmeans)
 # library(brms)  # Uncomment if using Bayesian models
 ```
 
-## Simulate a Classic 2-Period Crossover Dataset with Biomarker
+## Simulate a Classic 3-Period Crossover Dataset with Biomarker
 
 ```{r simulate-crossover}
 set.seed(2025)
 
 # Parameters
-n_subj <- 80
-periods <- 2
+n_subj <- 40
+periods <- 3
 
 # True effects
 mu <- 20                    # baseline mean CAPS score
@@ -389,9 +389,9 @@ subj_df <- tibble(
   bm = rnorm(n_subj, 0, 1)
 )
 
-# Assign half to sequence AB and half to BA
+# Assign half to sequence ABA and half to BAB
 subj_df <- subj_df %>%
-  mutate(sequence = rep(c("AB", "BA"), length.out = n_subj))
+  mutate(sequence = rep(c("ABA", "BAB"), length.out = n_subj))
 
 # Expand to periods
 crossover <- subj_df %>%
@@ -399,10 +399,12 @@ crossover <- subj_df %>%
   reframe(period = 1:periods, u = u, bm = bm, sequence = sequence) %>%
   mutate(
     treatment = case_when(
-      sequence == "AB" & period == 1 ~ "A",
-      sequence == "AB" & period == 2 ~ "B",
-      sequence == "BA" & period == 1 ~ "B",
-      sequence == "BA" & period == 2 ~ "A"
+      sequence == "ABA" & period == 1 ~ "A",
+      sequence == "ABA" & period == 2 ~ "B",
+      sequence == "ABA" & period == 3 ~ "A",
+      sequence == "BAB" & period == 1 ~ "B",
+      sequence == "BAB" & period == 2 ~ "A",
+      sequence == "BAB" & period == 3 ~ "B"
     ),
     trt_indicator = if_else(treatment == "B", 1, 0)
   )
