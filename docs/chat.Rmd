@@ -452,7 +452,7 @@ emmeans(m_crossover, ~ trt_indicator | bm, at = list(bm = c(-1, 0, 1)))
 set.seed(2025)
 
 n_subj <- 25
-cycles <- 3
+n_periods <- 6  # 3 cycles of AB = 6 periods (3 on-treatment, 3 off-treatment)
 obs_per_period <- 7
 
 # True effects
@@ -477,8 +477,9 @@ subj <- tibble(
 )
 
 # Build periods alternating A/B starting at random
+# 6 periods = ABABAB or BABABA (3 times on each treatment)
 nof1 <- subj %>%
-  crossing(period = 1:cycles) %>%
+  crossing(period = 1:n_periods) %>%
   group_by(subject) %>%
   mutate(order_start = first(sample(c(0, 1), 1))) %>%
   ungroup() %>%

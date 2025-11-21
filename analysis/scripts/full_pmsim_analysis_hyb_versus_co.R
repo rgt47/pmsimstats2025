@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # =============================================================================
 
 n_participants <- 70
-n_iterations <- 20
+n_iterations <- 100
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5                 # Biological Response: drug improvement rate
@@ -31,11 +31,11 @@ treatment_effect <- BR_rate    # Alias for display purposes
 # Biomarker moderation of treatment effect
 # Higher biomarker → stronger treatment response
 # This creates the treatment × biomarker interaction
-biomarker_moderation <- 0.15   # Per SD of biomarker, treatment effect changes by 15%
+biomarker_moderation <- 0.25   # Per SD of biomarker, treatment effect changes by 25%
 
 baseline_mean <- 10.0          # Mean baseline response
-between_subject_sd <- 3.0      # SD of participant random effects
-within_subject_sd <- 2.8       # SD of measurement noise
+between_subject_sd <- 2.0      # SD of participant random effects
+within_subject_sd <- 1.8       # SD of measurement noise
 biomarker_mean <- 5.0          # Mean biomarker value
 biomarker_sd <- 2.0            # SD of biomarker
 
@@ -59,7 +59,7 @@ allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 # Parameter grid - what we're testing
 param_grid <- expand_grid(
   biomarker_correlation = c(0.3),
-  carryover_decay_rate = c(0, 0.25)    # Linear decay: points lost per week off drug
+  carryover_decay_rate = c(0, 0.25, 0.5, 0.75)    # Linear decay: points lost per week off drug
 )
 
 # =============================================================================

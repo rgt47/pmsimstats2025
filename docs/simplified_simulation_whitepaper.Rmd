@@ -413,16 +413,109 @@ $$
 
 ### Why Explicit Moderation vs. Correlation-Based
 
-The original Hendrickson approach creates the interaction through differential correlations:
+The original Hendrickson approach and our simplified approach both create valid treatment × biomarker interactions, but through fundamentally different mechanisms.
+
+#### The Hendrickson Correlation-Based Approach
+
+Hendrickson creates the interaction through **treatment-conditional correlations** in the covariance matrix:
 
 - On treatment: $\text{Cor}(\text{biomarker}, \text{BR}) = c_{\text{bm}}$
 - Off treatment: $\text{Cor}(\text{biomarker}, \text{BR}) = 0$
 
-This elegant approach embeds the interaction in the covariance structure. However, for the simplified model, explicit moderation is:
+**How this creates an interaction**: When we draw from the multivariate normal, participants with high biomarkers will tend to have high BR values *only during on-treatment periods*. During off-treatment periods, BR is uncorrelated with biomarker.
+
+Mathematically, let $Z_{\text{BM}}$ be the standardized biomarker and $Z_{\text{BR}}$ be the standardized BR random effect. Under Hendrickson:
+
+$$
+E[Z_{\text{BR}} | Z_{\text{BM}}, \text{treatment}=1] = c_{\text{bm}} \cdot Z_{\text{BM}}
+$$
+
+$$
+E[Z_{\text{BR}} | Z_{\text{BM}}, \text{treatment}=0] = 0
+$$
+
+The difference in conditional expectations *is* the interaction:
+
+$$
+\Delta E[Z_{\text{BR}}] = c_{\text{bm}} \cdot Z_{\text{BM}}
+$$
+
+This is elegant because the interaction emerges naturally from the joint distribution without explicit computation.
+
+#### The Explicit Moderation Approach
+
+Our simplified approach directly scales the treatment effect by biomarker:
+
+$$
+\text{BR}_{\text{effective}} = \text{BR}_{\text{rate}} \times (1 + \beta_{\text{mod}} \cdot Z_{\text{BM}})
+$$
+
+**How this creates an interaction**: The treatment effect magnitude varies directly with biomarker level. A participant with $Z_{\text{BM}} = 1$ gets a $(1 + \beta_{\text{mod}})$ times stronger effect than a participant with $Z_{\text{BM}} = 0$.
+
+The interaction effect per week on drug is:
+
+$$
+\frac{\partial^2 \text{BR}}{\partial \text{treatment} \cdot \partial Z_{\text{BM}}} = \text{BR}_{\text{rate}} \times \beta_{\text{mod}}
+$$
+
+#### Mathematical Equivalence
+
+Both approaches generate data where the treatment × biomarker coefficient in the analysis model will be non-zero. To see why, consider the regression model:
+
+$$
+Y = \beta_0 + \beta_1 \text{treatment} + \beta_2 \text{biomarker} + \beta_3 (\text{treatment} \times \text{biomarker}) + \epsilon
+$$
+
+**Under Hendrickson**: $\beta_3 \neq 0$ because $\text{Cov}(Y, \text{treatment} \times \text{biomarker})$ differs from what's explained by main effects alone. The differential correlation structure creates residual covariance that the interaction term captures.
+
+**Under explicit moderation**: $\beta_3 \neq 0$ because we directly constructed $\text{BR} \propto \text{treatment} \times \text{biomarker}$.
+
+Both produce valid power estimates for detecting the interaction, though the effect sizes may differ in scale.
+
+#### Key Differences
+
+| Aspect | Hendrickson (Correlation) | Simplified (Explicit) |
+|--------|---------------------------|----------------------|
+| Mechanism | Differential $\Sigma$ by treatment | Direct effect scaling |
+| Effect location | In random component | In mean component |
+| Tuning | Via $c_{\text{bm}}$ correlation | Via $\beta_{\text{mod}}$ coefficient |
+| Sigma matrix | Treatment-conditional (complex) | Single matrix (simple) |
+| Interpretability | Requires MVN theory | Direct formula |
+| Causal model | Latent variable | Explicit moderation |
+
+#### When to Use Each
+
+**Use Hendrickson (correlation-based) when**:
+
+- You want the interaction embedded in the latent structure
+- You're modeling scenarios where the biomarker-response relationship is fundamentally correlational
+- You need exact alignment with Hendrickson et al. (2020) for replication
+
+**Use explicit moderation when**:
+
+- You want transparent, easily auditable code
+- You need to precisely control the interaction effect size
+- You're teaching or learning the simulation mechanics
+- Computational simplicity is important (single sigma matrix)
+
+#### Why Both Are Valid
+
+The critical insight is that **statistical power to detect an interaction depends on whether the interaction exists in the data, not on how it was generated**.
+
+Both methods ensure that:
+
+1. $E[\hat{\beta}_3] \neq 0$ (the interaction estimate is non-zero in expectation)
+2. $\text{Var}(\hat{\beta}_3)$ is determined by sample size and noise (comparable between methods)
+3. Power = $P(|\hat{\beta}_3 / \text{SE}| > t_{\alpha})$ depends on signal-to-noise ratio
+
+The Hendrickson approach is more "natural" in the sense that it models the interaction as arising from correlated latent factors. The explicit approach is more "mechanical" but equally valid for power analysis purposes.
+
+For the simplified learning version, explicit moderation is preferred because:
 
 1. **More transparent**: The interaction mechanism is visible in one formula
 2. **Easier to tune**: $\beta_{\text{mod}}$ directly controls interaction strength
 3. **Computationally simpler**: No need for treatment-conditional sigma matrices
+4. **Pedagogically clearer**: Students can trace exactly how biomarker affects outcome
 
 ## Total Response Formula
 
