@@ -2,34 +2,51 @@
 \contentsline {section}{\numberline {2}Introduction}{2}{section.2}%
 \contentsline {section}{\numberline {3}Background}{2}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Classic Crossover Trials}{2}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}N-of-1 Trials}{2}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Aggregated N-of-1 Trials}{2}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}Hybrid Designs}{2}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.2}N-of-1 Trials}{3}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Aggregated N-of-1 Trials}{3}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Hybrid Designs}{3}{subsection.3.4}%
 \contentsline {section}{\numberline {4}Core Differences Between Designs}{3}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Purpose and Estimands}{3}{subsection.4.1}%
 \contentsline {subsection}{\numberline {4.2}Replication Structure}{3}{subsection.4.2}%
 \contentsline {subsection}{\numberline {4.3}Homogeneity vs Heterogeneity}{3}{subsection.4.3}%
 \contentsline {subsection}{\numberline {4.4}Carryover Effects}{3}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}Biomarker-Treatment Interactions}{3}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.5}Biomarker-Treatment Interactions}{4}{subsection.4.5}%
 \contentsline {section}{\numberline {5}Mixed-Model Specification}{4}{section.5}%
 \contentsline {subsection}{\numberline {5.1}Classic Crossover Mixed Model}{4}{subsection.5.1}%
 \contentsline {subsection}{\numberline {5.2}Aggregated N-of-1 Hierarchical Mixed Model}{4}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}Hybrid Design Mixed Model}{4}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}Why the Models Cannot Be the Same}{4}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.3}Hybrid Design Mixed Model}{5}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Why the Models Cannot Be the Same}{5}{subsection.5.4}%
 \contentsline {section}{\numberline {6}Example: A PTSD (CAPS) Trial Designed as Either Crossover or Aggregated N-of-1}{5}{section.6}%
 \contentsline {subsection}{\numberline {6.1}Clinical Assumptions}{5}{subsection.6.1}%
 \contentsline {subsection}{\numberline {6.2}Option 1: Classic 2-Period Crossover Design}{5}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Option 2: Aggregated N-of-1 Trial}{5}{subsection.6.3}%
-\contentsline {subsubsection}{\numberline {6.3.1}Why Fewer Participants Suffice}{5}{subsubsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3}Option 2: Aggregated N-of-1 Trial}{6}{subsection.6.3}%
+\contentsline {subsubsection}{\numberline {6.3.1}Why Fewer Participants Suffice}{6}{subsubsection.6.3.1}%
 \contentsline {subsection}{\numberline {6.4}Interpretation Differences}{6}{subsection.6.4}%
 \contentsline {subsection}{\numberline {6.5}Choosing Between the Designs for a PTSD Trial}{7}{subsection.6.5}%
-\contentsline {section}{\numberline {7}Conclusion}{7}{section.7}%
-\contentsline {section}{\numberline {8}References}{7}{section.8}%
-\contentsline {section}{\numberline {9}Appendix: R Code for Simulation and Analysis}{9}{section.9}%
-\contentsline {subsection}{\numberline {9.1}Simulate a Classic 2-Period Crossover Dataset with Biomarker}{9}{subsection.9.1}%
-\contentsline {subsection}{\numberline {9.2}Fit the Classic Crossover Mixed Model with Biomarker Interaction}{10}{subsection.9.2}%
-\contentsline {subsection}{\numberline {9.3}Simulate an Aggregated N-of-1 Dataset with Biomarker and Carryover}{11}{subsection.9.3}%
-\contentsline {subsection}{\numberline {9.4}Fit Aggregated N-of-1 Hierarchical Mixed Model with Biomarker Interaction}{13}{subsection.9.4}%
-\contentsline {subsubsection}{\numberline {9.4.1}Advanced Model with Random Biomarker Interaction}{14}{subsubsection.9.4.1}%
-\contentsline {subsection}{\numberline {9.5}Diagnostics and Visualization}{14}{subsection.9.5}%
-\contentsline {subsection}{\numberline {9.6}Notes on Extensions and Real-Data Considerations}{17}{subsection.9.6}%
+\contentsline {section}{\numberline {7}Alternative Analyses for Testing Biomarker × Treatment Interactions}{7}{section.7}%
+\contentsline {subsection}{\numberline {7.1}The Core Insight: Interaction as Correlation}{7}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Signal-to-Noise Framework for Power}{8}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Implications for Study Design}{8}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Power Rules of Thumb}{8}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Pattern Recognition in Data}{8}{subsection.7.5}%
+\contentsline {subsection}{\numberline {7.6}Comparison with Mixed-Effects Models}{9}{subsection.7.6}%
+\contentsline {section}{\numberline {8}Conclusion}{9}{section.8}%
+\contentsline {section}{\numberline {9}References}{9}{section.9}%
+\contentsline {section}{\numberline {10}Appendix: R Code for Simulation and Analysis}{11}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Simulate a Classic 2-Period Crossover Dataset with Biomarker}{11}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Fit the Classic Crossover Mixed Model with Biomarker Interaction}{12}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Simulate an Aggregated N-of-1 Dataset with Biomarker and Carryover}{13}{subsection.10.3}%
+\contentsline {subsection}{\numberline {10.4}Fit Aggregated N-of-1 Hierarchical Mixed Model with Biomarker Interaction}{15}{subsection.10.4}%
+\contentsline {subsubsection}{\numberline {10.4.1}Advanced Model with Random Biomarker Interaction}{16}{subsubsection.10.4.1}%
+\contentsline {subsection}{\numberline {10.5}Diagnostics and Visualization}{17}{subsection.10.5}%
+\contentsline {subsection}{\numberline {10.6}Notes on Extensions and Real-Data Considerations}{20}{subsection.10.6}%
+\contentsline {subsection}{\numberline {10.7}Alternative Analyses: Summary Statistic Approaches}{21}{subsection.10.7}%
+\contentsline {subsubsection}{\numberline {10.7.1}Strategy 1: Summary Statistic Regression}{21}{subsubsection.10.7.1}%
+\contentsline {subsubsection}{\numberline {10.7.2}Strategy 2: Correlation Test}{22}{subsubsection.10.7.2}%
+\contentsline {subsubsection}{\numberline {10.7.3}Strategy 3: ANOVA with Biomarker Tertiles}{22}{subsubsection.10.7.3}%
+\contentsline {subsubsection}{\numberline {10.7.4}Comparing Methods}{23}{subsubsection.10.7.4}%
+\contentsline {subsubsection}{\numberline {10.7.5}Visualizing Interaction Patterns}{23}{subsubsection.10.7.5}%
+\contentsline {subsection}{\numberline {10.8}Analytic Power Calculations}{24}{subsection.10.8}%
+\contentsline {subsubsection}{\numberline {10.8.1}Power Function for Correlation}{26}{subsubsection.10.8.1}%
+\contentsline {subsubsection}{\numberline {10.8.2}Computing Expected Effect Size from Parameters}{26}{subsubsection.10.8.2}%
+\contentsline {subsubsection}{\numberline {10.8.3}Power Grid Across Parameters}{28}{subsubsection.10.8.3}%

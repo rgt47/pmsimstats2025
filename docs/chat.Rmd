@@ -355,6 +355,7 @@ Below are example R code chunks to simulate datasets for a classic crossover and
 ```{r load-packages}
 library(tidyverse)
 library(lme4)
+library(lmerTest)  # Provides p-values for lmer models
 library(nlme)
 library(emmeans)
 # library(brms)  # Uncomment if using Bayesian models
@@ -714,6 +715,10 @@ subj_summary %>%
 ### Comparing Methods
 
 ```{r compare-methods}
+# Extract p-value from lmer model (requires lmerTest)
+lmer_coefs <- coef(summary(m_nof1))
+lmer_pval <- lmer_coefs["trt_indicator:bm", "Pr(>|t|)"]
+
 # Compile results
 comparison <- tibble(
   Method = c("Mixed Model", "Summary Regression", "Correlation", "ANOVA"),
@@ -724,7 +729,7 @@ comparison <- tibble(
     eta_sq
   ),
   P_value = c(
-    summary(m_nof1)$coefficients["trt_indicator:bm", "Pr(>|t|)"],
+    lmer_pval,
     summary(reg_summary)$coefficients["bm_baseline", "Pr(>|t|)"],
     cor_result$p.value,
     anova_result["bm_tertile", "Pr(>F)"]
