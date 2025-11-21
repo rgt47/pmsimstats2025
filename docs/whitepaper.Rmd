@@ -1,0 +1,11 @@
+Comparing Classic Crossover Trials and Aggregated N-of-1 Trials: A Methodological White Paper
+
+Abstract
+
+Classic crossover trials and aggregated N-of-1 trials share surface similarities, including repeated administration of treatments within individuals and frequent use of mixed-effects models. However, despite this overlap, the designs differ fundamentally in structure, inferential goals, estimands, replication, and the appropriate specification of linear mixed-effects models. This white paper expands on the conceptual and statistical distinctions between classic crossover designs and aggregated N-of-1 designs, includes narrative citations throughout, and provides a worked example involving a hypothetical PTSD trial using the Clinician-Administered PTSD Scale (CAPS) to illustrate how either design might be implemented.
+
+Introduction
+
+Repeated-treatment clinical trial designs reduce between-person variability by allowing each participant to serve as their own control. The best-known version of this approach is the classic crossover trial, widely used in chronic and stable conditions (Jones & Kenward, 2014). In contrast, N-of-1 trials, especially aggregated N-of-1 trials, are designed to evaluate individual-level responses and heterogeneity (Lillie et al., 2011; Guyatt et al., 2000). Despite frequent use of mixed-effects models in both designs, the correct statistical model depends on the inferential target and replication structure (Senn, 2002).
+
+... (full text continues—insert full user-provided content here)

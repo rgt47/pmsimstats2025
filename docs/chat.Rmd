@@ -1,0 +1,297 @@
+Comparing Classic Crossover Trials and Aggregated N-of-1 Trials: A Methodological White Paper
+
+Abstract
+
+Classic crossover trials and aggregated N-of-1 trials share surface similarities, including repeated administration of treatments within individuals and frequent use of mixed-effects models. However, despite this overlap, the designs differ fundamentally in structure, inferential goals, estimands, replication, and the appropriate specification of linear mixed-effects models. This white paper expands on the conceptual and statistical distinctions between classic crossover designs and aggregated N-of-1 designs, includes narrative citations throughout, and provides a worked example involving a hypothetical PTSD trial using the Clinician-Administered PTSD Scale (CAPS) to illustrate how either design might be implemented.
+
+Introduction
+
+Repeated-treatment clinical trial designs reduce between-person variability by allowing each participant to serve as their own control. The best-known version of this approach is the classic crossover trial, widely used in chronic and stable conditions (Jones & Kenward, 2014). In contrast, N-of-1 trials, especially aggregated N-of-1 trials, are designed to evaluate individual-level responses and heterogeneity (Lillie et al., 2011; Guyatt et al., 2000). Despite frequent use of mixed-effects models in both designs, the correct statistical model depends on the inferential target and replication structure (Senn, 2002).
+
+This white paper expands on how these two designs differ and why mixed-model analyses cannot be identical, even though they share an analytical framework. It concludes with an applied example involving a PTSD treatment trial using CAPS scores.
+
+Background
+
+Classic Crossover Trials
+
+Classic crossover trials are structured in a small number of periods (typically 2–4), with treatment sequences such as AB/BA or ABBA (Araujo & Julious, 2014). Their primary purpose is to estimate a population average treatment effect while controlling for period and sequence effects (Jones & Kenward, 2014). These designs assume relative stability over time, limited carryover, and generally homogeneous treatment effects across participants (Senn, 2002).
+
+N-of-1 Trials
+
+N-of-1 trials constitute repeated, randomized, within-person experiments using alternating treatment periods (Guyatt et al., 2000). They provide dense, within-person data suitable for estimating individual treatment effects, often with multiple AB pairs (e.g., ABABAB).
+
+Aggregated N-of-1 Trials
+
+Aggregated N-of-1 studies combine individual trials through hierarchical modeling to estimate both person-specific and population-level effects (Zucker et al., 2010; Punja et al., 2016). They explicitly target treatment-effect heterogeneity and leverage partial pooling (Deaton & Cartwright, 2018).
+
+Core Differences Between Designs
+
+Purpose and Estimands
+
+The essential difference lies in the estimands, not the analytic framework.
+	•	Classic crossover: population mean treatment effect (Jones & Kenward, 2014).
+	•	Aggregated N-of-1: individual treatment effects plus heterogeneity (Lillie et al., 2011).
+
+Replication Structure
+
+Replication determines what can be estimated.
+	•	Crossover trials provide limited within-person replication—often only one treatment contrast—making random slopes for treatment unidentifiable (Brown, 1980).
+	•	Aggregated N-of-1 trials provide substantial within-person replication, enabling estimation of random slopes and heterogeneity.
+
+Homogeneity vs Heterogeneity
+
+Crossover designs traditionally assume minimal heterogeneity (Senn, 2002). Aggregated N-of-1 designs assume and model heterogeneity directly (Punja et al., 2016).
+
+Mixed-Model Specification
+
+Classic Crossover Mixed Model
+
+A typical model:
+
+Y_ijt = β0 + β_treat X_ijt + β_period P_it + u_i + ε_ijt
+
+	•	Random intercept only
+	•	Treatment effect treated as fixed (Araujo & Julious, 2014)
+	•	Random slopes for treatment generally not identifiable due to insufficient replication (Brown, 1980)
+
+Aggregated N-of-1 Hierarchical Mixed Model
+
+Y_ijt = β0 + (β_treat + u_i,treat) X_ijt + u_i + ε_ijt
+
+	•	Random intercept and random slope for treatment (Lillie et al., 2011)
+	•	Individual treatment effect = β_treat + u_i,treat
+	•	Heterogeneity quantified via Var(u_i,treat)
+
+Why the Models Cannot Be the Same
+
+Even though both use LMMs, the models differ because of:
+	•	Different estimands
+	•	Different random-effect structures
+	•	Different identifiability conditions
+	•	Different inferential goals (Senn, 2002; Zucker et al., 2010)
+
+Example: A PTSD (CAPS) Trial Designed as Either Crossover or Aggregated N-of-1
+
+To illustrate the design differences, consider a hypothetical new fast-acting pharmacologic agent for reducing PTSD symptoms, measured using CAPS-5.
+
+Clinical Assumptions
+	•	Onset: 24–48 hours
+	•	Washout: 48–72 hours
+	•	Outcome measurement: daily CAPS or EMA-based PTSD symptom indices
+	•	Condition: chronic, variable symptoms, suitable for repeated within-person comparisons
+
+Option 1: Classic 2-Period Crossover Design
+
+Design:
+	•	Sequence AB or BA
+	•	Treatment periods: 4 weeks each
+	•	Washout: 1 week
+	•	N ≈ 40 participants
+
+Strengths:
+	•	Well-aligned with regulatory expectations
+	•	Simple interpretation of average treatment effect
+
+Limitations:
+	•	Only one treatment contrast per person
+	•	Cannot estimate individual treatment effects
+	•	Less suitable if heterogeneity is clinically important (Jones & Kenward, 2014)
+
+Mixed Model:
+	•	Random intercept only
+	•	Fixed treatment effect
+	•	Period and sequence as fixed effects
+
+Option 2: Aggregated N-of-1 Trial
+
+Design:
+	•	Each participant undergoes 6 cycles of active vs placebo:
+ABABAB (or BAABAB, individualized randomization)
+	•	Treatment periods: 1 week active, 1 week placebo
+	•	Washout: same-week washout built in due to rapid clearance
+	•	CAPS measured daily using EMA or twice weekly in clinic
+	•	N = 20 participants (fewer needed due to dense data)
+
+Strengths:
+	•	Estimates individual treatment effects
+	•	Captures treatment-effect heterogeneity
+	•	Partially pooled model improves precision (Lillie et al., 2011; Zucker et al., 2010)
+
+Limitations:
+	•	Higher burden
+	•	Requires stable and rapid washout
+
+Mixed Model:
+	•	Random intercept and random slope for treatment
+	•	Individual effects reported alongside pooled effect
+	•	Heterogeneity explicitly estimated
+
+Interpretation Differences
+
+Question	Crossover	Aggregated N-of-1
+Does the drug work on average?	Yes	Yes
+Does the drug work for this individual?	No	Yes
+Is treatment effect heterogeneous?	Rarely estimable	Yes
+Does each person have replicated comparisons?	No	Yes
+
+Choosing Between the Designs for a PTSD Trial
+	•	If the goal is regulatory approval or demonstration of a population-average effect → Crossover (Jones & Kenward, 2014).
+	•	If the goal is to understand who responds, optimize personalized treatment, or examine heterogeneity → Aggregated N-of-1 (Lillie et al., 2011; Punja et al., 2016).
+	•	If measurement is frequent and the drug acts quickly → N-of-1 is advantageous.
+	•	If measurement is sporadic or drug has slow dynamics → Crossover preferred.
+
+Conclusion
+
+Although classic crossover and aggregated N-of-1 designs can both be analyzed using mixed-effects models, the correct models differ fundamentally. Crossover trials typically feature random-intercept models targeting a population-level treatment effect with minimal within-person replication. Aggregated N-of-1 designs feature hierarchical mixed models with random slopes for treatment, enabling estimation of individual effects and treatment heterogeneity. The choice of design should be guided by the scientific aims, pharmacologic properties of the intervention, and the desired level of inference (individual vs population).
+
+References
+	•	Araujo, A., & Julious, S. A. (2014). Understanding the assumptions of crossover trials. Pharmaceutical Statistics, 13(6), 341–350.
+	•	Brown, H. (1980). The analysis of variance and covariance in crossover trials. Biometrics, 36(1), 69–79.
+	•	Deaton, A., & Cartwright, N. (2018). Understanding and misunderstanding randomized controlled trials. Social Science & Medicine, 210, 2–21.
+	•	Guyatt, G. H., et al. (2000). The N-of-1 randomized controlled trial: Clinical usefulness. Annals of Internal Medicine, 112(4), 293–299.
+	•	Jones, B., & Kenward, M. G. (2014). Design and Analysis of Cross-Over Trials (3rd ed.). Chapman & Hall/CRC.
+	•	Lillie, E. O., et al. (2011). The n-of-1 clinical trial: The ultimate strategy for individualizing medicine? Personalized Medicine, 8(2), 161–173.
+	•	Punja, S., et al. (2016). N-of-1 trials for precision medicine: A systematic review. Journal of Clinical Epidemiology, 76, 1–13.
+	•	Senn, S. (2002). Cross-over Trials in Clinical Research (2nd ed.). Wiley.
+	•	Zucker, D. R., Ruthazer, R., & Schmid, C. H. (2010). Individual (N-of-1) trials can be combined to give population comparative treatment effect estimates: Methodologic considerations. Journal of Clinical Epidemiology, 63(12), 1312–1323.
+
+R code: Simulating data and fitting mixed-effects models
+
+Below are example R code chunks you can paste into an R Markdown file (or run in an R session) to simulate datasets for a classic crossover and an aggregated N-of-1 design, and to fit appropriate mixed-effects models. The code uses lme4 for frequentist mixed models, nlme for some compound-symmetry/correlation structures if desired, and brms for a Bayesian hierarchical alternative. Install required packages if needed (install.packages(c("lme4","nlme","brms","tidyverse","emmeans"))).
+
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(lme4)
+library(nlme)
+library(brms)
+library(emmeans)
+
+1) Simulate a classic 2-period crossover dataset
+
+set.seed(2025)
+# Parameters
+n_subj <- 80
+periods <- 2
+# True effects
+mu <- 20                    # baseline mean CAPS score
+beta_treat <- -4            # average treatment effect (reduction)
+sigma_subj <- 6             # between-subject SD
+sigma_resid <- 8            # residual SD
+# Create subject-level intercepts
+subj_df <- tibble(subject = 1:n_subj,
+                  u = rnorm(n_subj, 0, sigma_subj))
+# Assign half to sequence AB and half to BA
+subj_df <- subj_df %>%
+  mutate(sequence = rep(c("AB","BA"), length.out = n_subj))
+
+# Expand to periods
+crossover <- subj_df %>%
+  group_by(subject) %>%
+  mutate(period = 1:periods) %>%
+  ungroup() %>%
+  mutate(treatment = case_when(
+    sequence == "AB" & period == 1 ~ "A",
+    sequence == "AB" & period == 2 ~ "B",
+    sequence == "BA" & period == 1 ~ "B",
+    sequence == "BA" & period == 2 ~ "A"
+  )) %>%
+  mutate(trt_indicator = if_else(treatment == "B", 1, 0))
+
+# Simulate outcome (single observation per period per subject)
+# include a period effect
+beta_period <- 0.5
+crossover <- crossover %>%
+  mutate(Y = mu + u + beta_period * period + beta_treat * trt_indicator +
+           rnorm(n(), 0, sigma_resid))
+
+# Quick glance
+crossover %>% head()
+
+Fit the classic crossover mixed model (random intercept only)
+
+# lmer with random intercept
+m_crossover <- lmer(Y ~ trt_indicator + factor(period) + (1|subject), data = crossover)
+summary(m_crossover)
+# Estimated average treatment effect
+fixef(m_crossover)["trt_indicator"]
+# Estimated marginal means
+emmeans(m_crossover, ~ trt_indicator)
+
+2) Simulate an aggregated N-of-1 dataset
+
+set.seed(2025)
+n_subj <- 25
+cycles <- 6                # number of periods per subject (e.g., ABABAB)
+# True effects
+mu <- 20
+beta_treat_pop <- -4       # population mean effect
+sigma_subj <- 6
+sigma_treat_sd <- 3       # SD of individual treatment effects (heterogeneity)
+sigma_resid <- 5
+
+# Create long-format dataset: daily measurements within each period
+# For simplicity, we'll simulate one observation per period in this example; extend to daily EMA as needed
+n_periods <- cycles
+subj <- tibble(subject = 1:n_subj,
+               u = rnorm(n_subj, 0, sigma_subj),
+               u_trt = rnorm(n_subj, 0, sigma_treat_sd))
+
+# Build periods alternating A/B starting at random
+nof1 <- subj %>%
+  group_by(subject) %>%
+  mutate(period = list(1:n_periods)) %>%
+  unnest(period) %>%
+  ungroup() %>%
+  mutate(order_start = sample(c(0,1), n_subj, replace = TRUE)) %>%
+  group_by(subject) %>%
+  mutate(trt_indicator = (order_start + period) %% 2) %>%
+  ungroup()
+
+# Simulate outcomes
+nof1 <- nof1 %>%
+  mutate(Y = mu + u + (beta_treat_pop + u_trt) * trt_indicator + rnorm(n(), 0, sigma_resid))
+
+# Inspect
+nof1 %>% group_by(subject) %>% summarise(n_periods = n()) %>% head()
+
+Fit aggregated N-of-1 hierarchical mixed model (random intercept + random slope)
+
+# Fit random intercept + random slope for treatment
+m_nof1 <- lmer(Y ~ trt_indicator + (1 + trt_indicator | subject), data = nof1, REML = TRUE)
+summary(m_nof1)
+# Extract fixed (population) treatment effect
+fixef(m_nof1)["trt_indicator"]
+# Extract subject-specific treatment effects (BLUPs)
+ranef(m_nof1)$subject["trt_indicator"] + fixef(m_nof1)["trt_indicator"]
+
+# Compare to Bayesian hierarchical model with brms (optional)
+# Note: This requires a working C++ toolchain for Stan. Use chains = 2 and iter small for examples.
+# brms code commented out by default; uncomment to run.
+# brm_nof1 <- brm(Y ~ trt_indicator + (1 + trt_indicator | subject), data = nof1, chains = 2, iter = 2000)
+# summary(brm_nof1)
+
+Diagnostics and visualization
+
+# Plot individual subject effects
+subj_effects <- ranef(m_nof1)$subject %>% as.data.frame() %>%
+  rownames_to_column(var = "subject") %>%
+  mutate(subject = as.integer(subject),
+         subj_trt = `(trt_indicator)` + fixef(m_nof1)["trt_indicator"],
+         subj_int = `(Intercept)` + fixef(m_nof1)["(Intercept)"])
+
+ggplot(subj_effects, aes(x = subj_trt)) +
+  geom_histogram(binwidth = 0.5) +
+  labs(title = "Distribution of estimated individual treatment effects (BLUPs)",
+       x = "Individual treatment effect (CAPS change)", y = "Count")
+
+# Observed trajectories for a few subjects
+nof1 %>% filter(subject %in% sample(1:n_subj, 6)) %>%
+  mutate(period = as.factor(period), trt = if_else(trt_indicator == 1, "Active","Placebo")) %>%
+  ggplot(aes(x = period, y = Y, group = subject, color = trt)) +
+  geom_line() + geom_point() + facet_wrap(~ subject)
+
+Notes on extensions and real-data considerations
+	•	For real CAPS outcomes measured daily, expand the simulation to include within-period autocorrelation (e.g., AR(1)), measurement error, and missingness. Use nlme::lme or specify correlation structures in lme for autocorrelation.
+	•	If carryover is suspected, consider adding period-by-treatment interaction terms or explicitly modeling carryover terms; tests for carryover should be planned but interpreted cautiously (Jones & Kenward, 2014).
+	•	In the aggregated N-of-1 context, Bayesian hierarchical models (e.g., brms) allow flexible priors and full posterior inference for individual effects (Zucker et al., 2010).
+	•	For regulatory-facing analyses, prespecify the primary estimand (population mean vs individual responder analysis), multiplicity handling, and sensitivity analyses for missing data and carryover.
