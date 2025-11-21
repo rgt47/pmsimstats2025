@@ -156,6 +156,106 @@ build_hendrickson_sigma <- function(n_timepoints, c.bm, params) {
 }
 
 # =============================================================================
+# TWO-STAGE DATA GENERATION (2x2 + 24x24)
+# =============================================================================
+
+# Partition sigma into components for two-stage generation
+partition_sigma <- function(Sigma, idx) {
+  # Response indices (1-24)
+  resp_idx <- c(idx$br, idx$er, idx$tr)
+  # Participant indices (25-26)
+  part_idx <- c(idx$bm, idx$bl)
+
+  list(
+    Sigma_11 = Sigma[resp_idx, resp_idx],           # 24x24 response covariance
+    Sigma_22 = Sigma[part_idx, part_idx],           # 2x2 participant covariance
+    Sigma_12 = Sigma[resp_idx, part_idx],           # 24x2 cross-covariance
+    Sigma_22_inv = solve(Sigma[part_idx, part_idx]) # 2x2 inverse (trivial)
+  )
+}
+
+# Generate one participant's data using two-stage approach
+generate_participant_twostage <- function(partitioned, idx) {
+  # Stage 1: Generate participant variables (biomarker, baseline) from 2x2
+  x2 <- mvrnorm(1, mu = c(0, 0), Sigma = partitioned$Sigma_22)
+
+  # Stage 2: Compute conditional distribution parameters
+  # Conditional mean: μ₁|₂ = Σ₁₂ Σ₂₂⁻¹ x₂
+  mu_cond <- partitioned$Sigma_12 %*% partitioned$Sigma_22_inv %*% x2
+
+  # Conditional covariance: Σ₁|₂ = Σ₁₁ - Σ₁₂ Σ₂₂⁻¹ Σ₂₁
+  Sigma_cond <- partitioned$Sigma_11 -
+                partitioned$Sigma_12 %*% partitioned$Sigma_22_inv %*% t(partitioned$Sigma_12)
+
+  # Generate responses from conditional distribution
+  x1 <- mvrnorm(1, mu = as.vector(mu_cond), Sigma = Sigma_cond)
+
+  # Extract components
+  n_tp <- length(idx$br)
+  list(
+    biomarker = x2[1] + biomarker_mean,
+    baseline = x2[2] + baseline_mean,
+    br_random = x1[1:n_tp],
+    er_random = x1[(n_tp+1):(2*n_tp)],
+    tr_random = x1[(2*n_tp+1):(3*n_tp)]
+  )
+}
+
+# =============================================================================
+# VERIFICATION: Compare two-stage vs direct 26x26
+# =============================================================================
+
+verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
+  cat("Verifying two-stage equivalence with", n_samples, "samples...\n")
+
+  # Partition sigma
+  partitioned <- partition_sigma(Sigma, idx)
+
+  # Generate samples using direct method
+  set.seed(999)
+  samples_direct <- mvrnorm(n_samples, mu = rep(0, nrow(Sigma)), Sigma = Sigma)
+
+  # Generate samples using two-stage method
+  set.seed(888)
+  samples_twostage <- matrix(0, n_samples, nrow(Sigma))
+  resp_idx <- c(idx$br, idx$er, idx$tr)
+  part_idx <- c(idx$bm, idx$bl)
+
+  for (i in 1:n_samples) {
+    result <- generate_participant_twostage(partitioned, idx)
+    samples_twostage[i, resp_idx] <- c(result$br_random, result$er_random, result$tr_random)
+    samples_twostage[i, part_idx] <- c(result$biomarker - biomarker_mean,
+                                        result$baseline - baseline_mean)
+  }
+
+  # Compare covariance matrices
+  cov_direct <- cov(samples_direct)
+  cov_twostage <- cov(samples_twostage)
+
+  max_cov_diff <- max(abs(cov_direct - cov_twostage))
+  mean_cov_diff <- mean(abs(cov_direct - cov_twostage))
+
+  # Compare means (should both be ~0)
+  max_mean_diff <- max(abs(colMeans(samples_direct) - colMeans(samples_twostage)))
+
+  cat(sprintf("  Max covariance difference: %.6f\n", max_cov_diff))
+  cat(sprintf("  Mean covariance difference: %.6f\n", mean_cov_diff))
+  cat(sprintf("  Max mean difference: %.6f\n", max_mean_diff))
+
+  # Check if differences are within sampling error
+  # Expected sampling error for covariance ~= 2*sigma^2/sqrt(n)
+  expected_error <- 2 * max(diag(Sigma))^2 / sqrt(n_samples)
+
+  if (max_cov_diff < expected_error * 3) {
+    cat("  ✓ PASSED: Differences within expected sampling error\n")
+    return(TRUE)
+  } else {
+    cat("  ✗ FAILED: Differences exceed expected sampling error\n")
+    return(FALSE)
+  }
+}
+
+# =============================================================================
 # HYBRID DESIGN STRUCTURE
 # =============================================================================
 
