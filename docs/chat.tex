@@ -1,0 +1,1178 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Comparing Classic Crossover Trials and Aggregated N-of-1 Trials},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Comparing Classic Crossover Trials and Aggregated N-of-1 Trials}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{A Methodological White Paper}
+\author{}
+\date{\vspace{-2.5em}2025-11-21}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\section{Abstract}\label{abstract}
+
+Classic crossover trials and aggregated N-of-1 trials share surface
+similarities, including repeated administration of treatments within
+individuals and frequent use of mixed-effects models. However, despite
+this overlap, the designs differ fundamentally in structure, inferential
+goals, estimands, replication, and the appropriate specification of
+linear mixed-effects models. This white paper expands on the conceptual
+and statistical distinctions between classic crossover designs and
+aggregated N-of-1 designs, includes narrative citations throughout, and
+provides a worked example involving a hypothetical PTSD trial using the
+Clinician-Administered PTSD Scale (CAPS) to illustrate how either design
+might be implemented.
+
+\section{Introduction}\label{introduction}
+
+Repeated-treatment clinical trial designs reduce between-person
+variability by allowing each participant to serve as their own control.
+The best-known version of this approach is the classic crossover trial,
+widely used in chronic and stable conditions (Jones \& Kenward, 2014).
+In contrast, N-of-1 trials, especially aggregated N-of-1 trials, are
+designed to evaluate individual-level responses and heterogeneity
+(Lillie et al., 2011; Guyatt et al., 2000). Despite frequent use of
+mixed-effects models in both designs, the correct statistical model
+depends on the inferential target and replication structure (Senn,
+2002).
+
+This white paper expands on how these two designs differ and why
+mixed-model analyses cannot be identical, even though they share an
+analytical framework. It concludes with an applied example involving a
+PTSD treatment trial using CAPS scores.
+
+\section{Background}\label{background}
+
+\subsection{Classic Crossover Trials}\label{classic-crossover-trials}
+
+Classic crossover trials are structured in a small number of periods
+(typically 2--4), with treatment sequences such as AB/BA or ABBA (Araujo
+\& Julious, 2014). Their primary purpose is to estimate a population
+average treatment effect while controlling for period and sequence
+effects (Jones \& Kenward, 2014). These designs assume relative
+stability over time, limited carryover, and generally homogeneous
+treatment effects across participants (Senn, 2002).
+
+\subsection{N-of-1 Trials}\label{n-of-1-trials}
+
+N-of-1 trials constitute repeated, randomized, within-person experiments
+using alternating treatment periods (Guyatt et al., 2000). They provide
+dense, within-person data suitable for estimating individual treatment
+effects, often with multiple AB pairs (e.g., ABABAB).
+
+\subsection{Aggregated N-of-1 Trials}\label{aggregated-n-of-1-trials}
+
+Aggregated N-of-1 studies combine individual trials through hierarchical
+modeling to estimate both person-specific and population-level effects
+(Zucker et al., 2010; Punja et al., 2016). They explicitly target
+treatment-effect heterogeneity and leverage partial pooling (Deaton \&
+Cartwright, 2018).
+
+\subsection{Hybrid Designs}\label{hybrid-designs}
+
+Between classic crossover and full N-of-1 designs lies a spectrum of
+hybrid approaches. These designs extend crossover trials to 3--4
+periods, allowing some within-person replication while maintaining
+feasibility. For example, a 4-path randomization (ABAB, ABBA, BAAB,
+BABA) provides two treatment contrasts per person---insufficient for
+robust individual effect estimation but enough to partially estimate
+heterogeneity (Senn, 2002). Hybrid designs represent a practical
+compromise when full N-of-1 density is infeasible but pure crossover
+replication is inadequate.
+
+\section{Core Differences Between
+Designs}\label{core-differences-between-designs}
+
+\subsection{Purpose and Estimands}\label{purpose-and-estimands}
+
+The essential difference lies in the estimands, not the analytic
+framework.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Classic crossover}: population mean treatment effect (Jones \&
+  Kenward, 2014).
+\item
+  \textbf{Aggregated N-of-1}: individual treatment effects plus
+  heterogeneity (Lillie et al., 2011).
+\end{itemize}
+
+\subsection{Replication Structure}\label{replication-structure}
+
+Replication determines what can be estimated.
+
+\begin{itemize}
+\tightlist
+\item
+  Crossover trials provide limited within-person replication---often
+  only one treatment contrast---making random slopes for treatment
+  unidentifiable (Brown, 1980).
+\item
+  Aggregated N-of-1 trials provide substantial within-person
+  replication, enabling estimation of random slopes and heterogeneity.
+\end{itemize}
+
+\subsection{Homogeneity vs
+Heterogeneity}\label{homogeneity-vs-heterogeneity}
+
+Crossover designs traditionally assume minimal heterogeneity (Senn,
+2002). Aggregated N-of-1 designs assume and model heterogeneity directly
+(Punja et al., 2016).
+
+\subsection{Carryover Effects}\label{carryover-effects}
+
+Carryover---the persistence of treatment effects into subsequent
+periods---is handled fundamentally differently across designs:
+
+\begin{itemize}
+\item
+  \textbf{Classic crossover}: Carryover is typically tested and assumed
+  negligible. If present, it confounds period and treatment effects,
+  potentially invalidating the design. Washout periods are employed to
+  eliminate carryover, and statistical tests for carryover are often
+  underpowered (Jones \& Kenward, 2014; Senn, 2002).
+\item
+  \textbf{Aggregated N-of-1}: Multiple treatment cycles enable explicit
+  modeling of carryover as a parameter. Carryover can be incorporated as
+  a fixed effect based on prior-period treatment, with magnitude
+  determined by pharmacokinetic half-life. This transforms carryover
+  from a nuisance to an estimable quantity.
+\item
+  \textbf{Hybrid designs}: With 3--4 periods, some carryover estimation
+  becomes possible, though less robust than in full N-of-1 designs.
+\end{itemize}
+
+The key distinction: crossover designs require carryover to be absent,
+while aggregated N-of-1 designs can accommodate and estimate it.
+
+\subsection{Biomarker-Treatment
+Interactions}\label{biomarker-treatment-interactions}
+
+A critical extension beyond average treatment effects is the estimation
+of treatment effect modification by baseline or time-varying biomarkers.
+This addresses the personalized medicine question: ``For whom does this
+treatment work best?''
+
+\begin{itemize}
+\item
+  \textbf{Classic crossover}: Can include baseline biomarker × treatment
+  interactions as fixed effects. However, with limited within-person
+  replication, only population-level effect modification is estimable.
+  The model answers: ``Do patients with high biomarker values respond
+  differently on average?''
+\item
+  \textbf{Aggregated N-of-1}: Dense within-person data enables
+  estimation of both:
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    Population-level biomarker × treatment interactions
+  \item
+    Individual-specific biomarker × treatment slopes (random slopes)
+  \end{enumerate}
+
+  This allows the model to answer: ``How does this specific patient's
+  biomarker value predict their treatment response?'' Time-varying
+  biomarkers can be incorporated, linking within-person biomarker
+  fluctuations to within-person treatment response variation.
+\item
+  \textbf{Hybrid designs}: Can estimate population-level biomarker ×
+  treatment interactions with some precision, but individual-specific
+  interaction terms remain difficult to identify.
+\end{itemize}
+
+The inclusion of biomarker interactions shifts the estimand from ``Does
+treatment work?'' to ``For whom and under what conditions does treatment
+work?''---a fundamentally different scientific question that aggregated
+N-of-1 designs are uniquely positioned to answer.
+
+\section{Mixed-Model Specification}\label{mixed-model-specification}
+
+\subsection{Classic Crossover Mixed
+Model}\label{classic-crossover-mixed-model}
+
+A typical model (where \(i\) indexes participants, \(t\) indexes
+periods):
+
+\[Y_{it} = \beta_0 + \beta_{treat} \times Treat_{it} + \beta_{period} \times Period_t + \beta_{bm} \times BM_i + \beta_{int} \times (Treat_{it} \times BM_i) + u_i + \varepsilon_{it}\]
+
+\begin{itemize}
+\tightlist
+\item
+  Random intercept only (\(u_i\))
+\item
+  Treatment effect treated as fixed (Araujo \& Julious, 2014)
+\item
+  Biomarker × treatment interaction estimable at population level
+\item
+  Random slopes for treatment generally not identifiable due to
+  insufficient replication (Brown, 1980)
+\end{itemize}
+
+\subsection{Aggregated N-of-1 Hierarchical Mixed
+Model}\label{aggregated-n-of-1-hierarchical-mixed-model}
+
+\[Y_{it} = \beta_0 + (\beta_{treat} + u_{i,treat}) \times Treat_{it} + \beta_{period} \times Period_t + \beta_{bm} \times BM_{it} + (\beta_{int} + u_{i,int}) \times (Treat_{it} \times BM_{it}) + u_i + \varepsilon_{it}\]
+
+\begin{itemize}
+\tightlist
+\item
+  Random intercept (\(u_i\)), random slope for treatment
+  (\(u_{i,treat}\)), and optionally random slope for biomarker
+  interaction (\(u_{i,int}\))
+\item
+  Individual treatment effect = \(\beta_{treat} + u_{i,treat}\)
+\item
+  Individual biomarker interaction = \(\beta_{int} + u_{i,int}\)
+\item
+  Heterogeneity quantified via \(Var(u_{i,treat})\) and
+  \(Var(u_{i,int})\)
+\item
+  Time-varying biomarkers (\(BM_{it}\)) can link within-person biomarker
+  changes to within-person treatment response
+\end{itemize}
+
+\subsection{Hybrid Design Mixed Model}\label{hybrid-design-mixed-model}
+
+\[Y_{it} = \beta_0 + \beta_{treat} \times Treat_{it} + \beta_{period} \times Period_t + \beta_{bm} \times BM_i + \beta_{int} \times (Treat_{it} \times BM_i) + \beta_{carry} \times Carry_{it} + u_i + \varepsilon_{it}\]
+
+\begin{itemize}
+\tightlist
+\item
+  Random intercept with fixed effects for treatment, biomarker
+  interaction, and carryover
+\item
+  With 3--4 periods, limited random slope estimation may be attempted
+  but often yields singular fits
+\item
+  Carryover explicitly modeled as fixed effect based on prior-period
+  treatment
+\end{itemize}
+
+\subsection{Why the Models Cannot Be the
+Same}\label{why-the-models-cannot-be-the-same}
+
+Even though both use LMMs, the models differ because of:
+
+\begin{itemize}
+\tightlist
+\item
+  Different estimands
+\item
+  Different random-effect structures
+\item
+  Different identifiability conditions
+\item
+  Different inferential goals (Senn, 2002; Zucker et al., 2010)
+\end{itemize}
+
+\section{Example: A PTSD (CAPS) Trial Designed as Either Crossover or
+Aggregated
+N-of-1}\label{example-a-ptsd-caps-trial-designed-as-either-crossover-or-aggregated-n-of-1}
+
+To illustrate the design differences, consider a hypothetical new
+fast-acting pharmacologic agent for reducing PTSD symptoms, measured
+using CAPS-5.
+
+\subsection{Clinical Assumptions}\label{clinical-assumptions}
+
+\begin{itemize}
+\tightlist
+\item
+  Onset: 24--48 hours
+\item
+  Washout: 48--72 hours
+\item
+  Outcome measurement: daily CAPS or EMA-based PTSD symptom indices
+\item
+  Condition: chronic, variable symptoms, suitable for repeated
+  within-person comparisons
+\end{itemize}
+
+\subsection{Option 1: Classic 2-Period Crossover
+Design}\label{option-1-classic-2-period-crossover-design}
+
+\textbf{Design:}
+
+\begin{itemize}
+\tightlist
+\item
+  Sequence AB or BA
+\item
+  Treatment periods: 4 weeks each
+\item
+  Washout: 1 week
+\item
+  N ≈ 40 participants
+\end{itemize}
+
+\textbf{Strengths:}
+
+\begin{itemize}
+\tightlist
+\item
+  Well-aligned with regulatory expectations
+\item
+  Simple interpretation of average treatment effect
+\end{itemize}
+
+\textbf{Limitations:}
+
+\begin{itemize}
+\tightlist
+\item
+  Only one treatment contrast per person
+\item
+  Cannot estimate individual treatment effects
+\item
+  Less suitable if heterogeneity is clinically important (Jones \&
+  Kenward, 2014)
+\end{itemize}
+
+\textbf{Mixed Model:}
+
+\begin{itemize}
+\tightlist
+\item
+  Random intercept only
+\item
+  Fixed treatment effect
+\item
+  Period and sequence as fixed effects
+\end{itemize}
+
+\subsection{Option 2: Aggregated N-of-1
+Trial}\label{option-2-aggregated-n-of-1-trial}
+
+\textbf{Design:}
+
+\begin{itemize}
+\tightlist
+\item
+  Each participant undergoes 6 cycles of active vs placebo: ABABAB (or
+  BAABAB, individualized randomization)
+\item
+  Treatment periods: 1 week active, 1 week placebo
+\item
+  Washout: same-week washout built in due to rapid clearance
+\item
+  CAPS measured daily using EMA or twice weekly in clinic
+\item
+  N = 20 participants (fewer needed due to dense data)
+\end{itemize}
+
+\subsubsection{Why Fewer Participants
+Suffice}\label{why-fewer-participants-suffice}
+
+The N-of-1 design achieves adequate power with fewer participants
+because:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Increased effective sample size}: Each participant contributes
+  multiple treatment contrasts (6 cycles = 6 contrasts vs 1 contrast in
+  crossover). With 20 participants × 6 cycles, the effective number of
+  treatment comparisons approaches 120.
+\item
+  \textbf{Reduced within-person variance}: Dense repeated measurements
+  within periods average out measurement error and day-to-day
+  fluctuations.
+\item
+  \textbf{Partial pooling}: Hierarchical models borrow strength across
+  participants. Participants with fewer observations or more noise are
+  shrunk toward the population mean, improving precision for both
+  individual and population estimates (Zucker et al., 2010).
+\item
+  \textbf{Direct estimation target}: If the goal is individual treatment
+  effects (not just population average), N-of-1 provides the data
+  structure required---crossover designs cannot achieve this regardless
+  of sample size.
+\end{enumerate}
+
+\textbf{Strengths:}
+
+\begin{itemize}
+\tightlist
+\item
+  Estimates individual treatment effects
+\item
+  Captures treatment-effect heterogeneity
+\item
+  Estimates biomarker × treatment interactions at individual level
+\item
+  Can explicitly model carryover effects
+\item
+  Partially pooled model improves precision (Lillie et al., 2011; Zucker
+  et al., 2010)
+\end{itemize}
+
+\textbf{Limitations:}
+
+\begin{itemize}
+\tightlist
+\item
+  Higher participant burden
+\item
+  Requires stable condition and rapid washout
+\item
+  More complex data management
+\end{itemize}
+
+\textbf{Mixed Model:}
+
+\begin{itemize}
+\tightlist
+\item
+  Random intercept and random slope for treatment
+\item
+  Biomarker × treatment interaction (fixed or random)
+\item
+  Carryover effect (fixed)
+\item
+  Individual effects reported alongside pooled effect
+\item
+  Heterogeneity explicitly estimated
+\end{itemize}
+
+\subsection{Interpretation
+Differences}\label{interpretation-differences}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2083}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2292}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.3958}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Question
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Crossover
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Hybrid
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Aggregated N-of-1
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Does the drug work on average? & Yes & Yes & Yes \\
+Does the drug work for this individual? & No & Limited & Yes \\
+Is treatment effect heterogeneous? & Rarely estimable & Partially &
+Yes \\
+Does biomarker predict response (population)? & Yes & Yes & Yes \\
+Does biomarker predict response (individual)? & No & No & Yes \\
+Can carryover be estimated? & No (assumed absent) & Partially & Yes \\
+Does each person have replicated comparisons? & No & Limited (2-3) & Yes
+(6+) \\
+\end{longtable}
+}
+
+\subsection{Choosing Between the Designs for a PTSD
+Trial}\label{choosing-between-the-designs-for-a-ptsd-trial}
+
+\begin{itemize}
+\tightlist
+\item
+  If the goal is regulatory approval or demonstration of a
+  population-average effect → Crossover (Jones \& Kenward, 2014).
+\item
+  If the goal is to understand who responds, optimize personalized
+  treatment, or examine heterogeneity → Aggregated N-of-1 (Lillie et
+  al., 2011; Punja et al., 2016).
+\item
+  If measurement is frequent and the drug acts quickly → N-of-1 is
+  advantageous.
+\item
+  If measurement is sporadic or drug has slow dynamics → Crossover
+  preferred.
+\end{itemize}
+
+\section{Conclusion}\label{conclusion}
+
+Although classic crossover and aggregated N-of-1 designs can both be
+analyzed using mixed-effects models, the correct models differ
+fundamentally. Crossover trials typically feature random-intercept
+models targeting a population-level treatment effect with minimal
+within-person replication. Aggregated N-of-1 designs feature
+hierarchical mixed models with random slopes for treatment, enabling
+estimation of individual effects and treatment heterogeneity. Hybrid
+designs occupy a middle ground, extending crossover to 3--4 periods for
+some heterogeneity estimation.
+
+A critical extension is biomarker × treatment interactions. All three
+designs can estimate population-level effect modification (does
+biomarker predict response on average?), but only aggregated N-of-1
+designs provide sufficient within-person replication to estimate
+individual-specific biomarker interactions. This shifts the estimand
+from ``Does treatment work?'' to ``For whom and under what conditions
+does treatment work?''---the fundamental question of personalized
+medicine.
+
+Similarly, carryover effects---typically a nuisance to be eliminated in
+crossover designs---can be explicitly modeled and estimated in
+aggregated N-of-1 designs due to multiple treatment cycles.
+
+The choice of design should be guided by:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Scientific aims}: Population average vs individual-level
+  inference
+\item
+  \textbf{Estimand}: Average treatment effect vs biomarker-stratified
+  effects vs individual effects
+\item
+  \textbf{Pharmacologic properties}: Onset, washout, and carryover
+  characteristics
+\item
+  \textbf{Feasibility}: Participant burden, measurement frequency, study
+  duration
+\end{itemize}
+
+When the goal is regulatory approval of a population-average effect,
+crossover designs remain appropriate. When the goal is precision
+medicine---identifying who responds and why---aggregated N-of-1 designs
+are uniquely positioned to answer these questions.
+
+\section{References}\label{references}
+
+\begin{itemize}
+\tightlist
+\item
+  Araujo, A., \& Julious, S. A. (2014). Understanding the assumptions of
+  crossover trials. \emph{Pharmaceutical Statistics}, 13(6), 341--350.
+\item
+  Brown, H. (1980). The analysis of variance and covariance in crossover
+  trials. \emph{Biometrics}, 36(1), 69--79.
+\item
+  Deaton, A., \& Cartwright, N. (2018). Understanding and
+  misunderstanding randomized controlled trials. \emph{Social Science \&
+  Medicine}, 210, 2--21.
+\item
+  Guyatt, G. H., et al.~(2000). The N-of-1 randomized controlled trial:
+  Clinical usefulness. \emph{Annals of Internal Medicine}, 112(4),
+  293--299.
+\item
+  Jones, B., \& Kenward, M. G. (2014). \emph{Design and Analysis of
+  Cross-Over Trials} (3rd ed.). Chapman \& Hall/CRC.
+\item
+  Lillie, E. O., et al.~(2011). The n-of-1 clinical trial: The ultimate
+  strategy for individualizing medicine? \emph{Personalized Medicine},
+  8(2), 161--173.
+\item
+  Punja, S., et al.~(2016). N-of-1 trials for precision medicine: A
+  systematic review. \emph{Journal of Clinical Epidemiology}, 76, 1--13.
+\item
+  Schmid, C. H., et al.~(2013). Effect of statin therapy on muscle
+  symptoms: An individual patient data meta-analysis. \emph{JAMA
+  Internal Medicine}, 173(16), 1--9.
+\item
+  Senn, S. (2002). \emph{Cross-over Trials in Clinical Research} (2nd
+  ed.). Wiley.
+\item
+  Zucker, D. R., Ruthazer, R., \& Schmid, C. H. (2010). Individual
+  (N-of-1) trials can be combined to give population comparative
+  treatment effect estimates: Methodologic considerations. \emph{Journal
+  of Clinical Epidemiology}, 63(12), 1312--1323.
+\end{itemize}
+
+\newpage
+
+\section{Appendix: R Code for Simulation and
+Analysis}\label{appendix-r-code-for-simulation-and-analysis}
+
+Below are example R code chunks to simulate datasets for a classic
+crossover and an aggregated N-of-1 design, and to fit appropriate
+mixed-effects models. The code uses \texttt{lme4} for frequentist mixed
+models, \texttt{nlme} for correlation structures if desired, and
+\texttt{brms} for a Bayesian hierarchical alternative.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(lme4)}
+\FunctionTok{library}\NormalTok{(nlme)}
+\FunctionTok{library}\NormalTok{(emmeans)}
+\CommentTok{\# library(brms)  \# Uncomment if using Bayesian models}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Simulate a Classic 2-Period Crossover Dataset with
+Biomarker}\label{simulate-a-classic-2-period-crossover-dataset-with-biomarker}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{2025}\NormalTok{)}
+
+\CommentTok{\# Parameters}
+\NormalTok{n\_subj }\OtherTok{\textless{}{-}} \DecValTok{80}
+\NormalTok{periods }\OtherTok{\textless{}{-}} \DecValTok{2}
+
+\CommentTok{\# True effects}
+\NormalTok{mu }\OtherTok{\textless{}{-}} \DecValTok{20}                    \CommentTok{\# baseline mean CAPS score}
+\NormalTok{beta\_treat }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\DecValTok{4}            \CommentTok{\# average treatment effect (reduction)}
+\NormalTok{beta\_bm }\OtherTok{\textless{}{-}} \DecValTok{2}                \CommentTok{\# biomarker main effect}
+\NormalTok{beta\_int }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\FloatTok{1.5}            \CommentTok{\# biomarker x treatment interaction}
+\NormalTok{beta\_period }\OtherTok{\textless{}{-}} \FloatTok{0.5}          \CommentTok{\# period effect}
+\NormalTok{sigma\_subj }\OtherTok{\textless{}{-}} \DecValTok{6}             \CommentTok{\# between{-}subject SD}
+\NormalTok{sigma\_resid }\OtherTok{\textless{}{-}} \DecValTok{8}            \CommentTok{\# residual SD}
+
+\CommentTok{\# Create subject{-}level intercepts and baseline biomarker}
+\NormalTok{subj\_df }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(}
+  \AttributeTok{subject =} \DecValTok{1}\SpecialCharTok{:}\NormalTok{n\_subj,}
+  \AttributeTok{u =} \FunctionTok{rnorm}\NormalTok{(n\_subj, }\DecValTok{0}\NormalTok{, sigma\_subj),}
+  \AttributeTok{bm =} \FunctionTok{rnorm}\NormalTok{(n\_subj, }\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\NormalTok{)}
+
+\CommentTok{\# Assign half to sequence AB and half to BA}
+\NormalTok{subj\_df }\OtherTok{\textless{}{-}}\NormalTok{ subj\_df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{sequence =} \FunctionTok{rep}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"AB"}\NormalTok{, }\StringTok{"BA"}\NormalTok{), }\AttributeTok{length.out =}\NormalTok{ n\_subj))}
+
+\CommentTok{\# Expand to periods}
+\NormalTok{crossover }\OtherTok{\textless{}{-}}\NormalTok{ subj\_df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(subject) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{reframe}\NormalTok{(}\AttributeTok{period =} \DecValTok{1}\SpecialCharTok{:}\NormalTok{periods, }\AttributeTok{u =}\NormalTok{ u, }\AttributeTok{bm =}\NormalTok{ bm, }\AttributeTok{sequence =}\NormalTok{ sequence) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{treatment =} \FunctionTok{case\_when}\NormalTok{(}
+\NormalTok{      sequence }\SpecialCharTok{==} \StringTok{"AB"} \SpecialCharTok{\&}\NormalTok{ period }\SpecialCharTok{==} \DecValTok{1} \SpecialCharTok{\textasciitilde{}} \StringTok{"A"}\NormalTok{,}
+\NormalTok{      sequence }\SpecialCharTok{==} \StringTok{"AB"} \SpecialCharTok{\&}\NormalTok{ period }\SpecialCharTok{==} \DecValTok{2} \SpecialCharTok{\textasciitilde{}} \StringTok{"B"}\NormalTok{,}
+\NormalTok{      sequence }\SpecialCharTok{==} \StringTok{"BA"} \SpecialCharTok{\&}\NormalTok{ period }\SpecialCharTok{==} \DecValTok{1} \SpecialCharTok{\textasciitilde{}} \StringTok{"B"}\NormalTok{,}
+\NormalTok{      sequence }\SpecialCharTok{==} \StringTok{"BA"} \SpecialCharTok{\&}\NormalTok{ period }\SpecialCharTok{==} \DecValTok{2} \SpecialCharTok{\textasciitilde{}} \StringTok{"A"}
+\NormalTok{    ),}
+    \AttributeTok{trt\_indicator =} \FunctionTok{if\_else}\NormalTok{(treatment }\SpecialCharTok{==} \StringTok{"B"}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{)}
+\NormalTok{  )}
+
+\CommentTok{\# Simulate outcome with biomarker interaction}
+\NormalTok{crossover }\OtherTok{\textless{}{-}}\NormalTok{ crossover }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{Y =}\NormalTok{ mu }\SpecialCharTok{+}\NormalTok{ u }\SpecialCharTok{+}
+\NormalTok{      beta\_period }\SpecialCharTok{*}\NormalTok{ period }\SpecialCharTok{+}
+\NormalTok{      beta\_treat }\SpecialCharTok{*}\NormalTok{ trt\_indicator }\SpecialCharTok{+}
+\NormalTok{      beta\_bm }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+}
+\NormalTok{      beta\_int }\SpecialCharTok{*}\NormalTok{ trt\_indicator }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+}
+      \FunctionTok{rnorm}\NormalTok{(}\FunctionTok{n}\NormalTok{(), }\DecValTok{0}\NormalTok{, sigma\_resid)}
+\NormalTok{  )}
+
+\CommentTok{\# Quick glance}
+\FunctionTok{head}\NormalTok{(crossover)}
+\CommentTok{\#\textgreater{} \# A tibble: 6 x 8}
+\CommentTok{\#\textgreater{}   subject period     u     bm sequence treatment trt\_indicator     Y}
+\CommentTok{\#\textgreater{}     \textless{}int\textgreater{}  \textless{}int\textgreater{} \textless{}dbl\textgreater{}  \textless{}dbl\textgreater{} \textless{}chr\textgreater{}    \textless{}chr\textgreater{}             \textless{}dbl\textgreater{} \textless{}dbl\textgreater{}}
+\CommentTok{\#\textgreater{} 1       1      1 3.72  {-}1.12  AB       A                     0 24.2 }
+\CommentTok{\#\textgreater{} 2       1      2 3.72  {-}1.12  AB       B                     1 35.4 }
+\CommentTok{\#\textgreater{} 3       2      1 0.214  1.47  BA       B                     1 16.7 }
+\CommentTok{\#\textgreater{} 4       2      2 0.214  1.47  BA       A                     0 23.4 }
+\CommentTok{\#\textgreater{} 5       3      1 4.64   0.205 AB       A                     0 18.6 }
+\CommentTok{\#\textgreater{} 6       3      2 4.64   0.205 AB       B                     1  8.08}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Fit the Classic Crossover Mixed Model with Biomarker
+Interaction}\label{fit-the-classic-crossover-mixed-model-with-biomarker-interaction}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# lmer with random intercept and biomarker x treatment interaction}
+\NormalTok{m\_crossover }\OtherTok{\textless{}{-}} \FunctionTok{lmer}\NormalTok{(}
+\NormalTok{  Y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ trt\_indicator }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+} \FunctionTok{factor}\NormalTok{(period) }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{|}\NormalTok{ subject),}
+  \AttributeTok{data =}\NormalTok{ crossover}
+\NormalTok{)}
+\FunctionTok{summary}\NormalTok{(m\_crossover)}
+\CommentTok{\#\textgreater{} Linear mixed model fit by REML [\textquotesingle{}lmerMod\textquotesingle{}]}
+\CommentTok{\#\textgreater{} Formula: Y \textasciitilde{} trt\_indicator * bm + factor(period) + (1 | subject)}
+\CommentTok{\#\textgreater{}    Data: crossover}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} REML criterion at convergence: 1174.6}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Scaled residuals: }
+\CommentTok{\#\textgreater{}      Min       1Q   Median       3Q      Max }
+\CommentTok{\#\textgreater{} {-}2.87787 {-}0.58310  0.08426  0.63764  1.77324 }
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Random effects:}
+\CommentTok{\#\textgreater{}  Groups   Name        Variance Std.Dev.}
+\CommentTok{\#\textgreater{}  subject  (Intercept) 34.53    5.876   }
+\CommentTok{\#\textgreater{}  Residual             71.07    8.431   }
+\CommentTok{\#\textgreater{} Number of obs: 160, groups:  subject, 80}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Fixed effects:}
+\CommentTok{\#\textgreater{}                  Estimate Std. Error t value}
+\CommentTok{\#\textgreater{} (Intercept)        20.321      1.360  14.940}
+\CommentTok{\#\textgreater{} trt\_indicator      {-}3.328      1.358  {-}2.451}
+\CommentTok{\#\textgreater{} bm                  2.493      1.229   2.028}
+\CommentTok{\#\textgreater{} factor(period)2     1.378      1.348   1.022}
+\CommentTok{\#\textgreater{} trt\_indicator:bm   {-}3.757      1.437  {-}2.615}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Correlation of Fixed Effects:}
+\CommentTok{\#\textgreater{}             (Intr) trt\_nd bm     fct()2}
+\CommentTok{\#\textgreater{} trt\_indictr {-}0.513                     }
+\CommentTok{\#\textgreater{} bm           0.207 {-}0.112              }
+\CommentTok{\#\textgreater{} factr(prd)2 {-}0.510  0.029 {-}0.088       }
+\CommentTok{\#\textgreater{} trt\_ndctr:b {-}0.170  0.191 {-}0.585  0.151}
+
+\CommentTok{\# Estimated average treatment effect (at mean biomarker = 0)}
+\FunctionTok{fixef}\NormalTok{(m\_crossover)[}\StringTok{"trt\_indicator"}\NormalTok{]}
+\CommentTok{\#\textgreater{} trt\_indicator }
+\CommentTok{\#\textgreater{}     {-}3.328289}
+
+\CommentTok{\# Estimated biomarker x treatment interaction (population{-}level)}
+\FunctionTok{fixef}\NormalTok{(m\_crossover)[}\StringTok{"trt\_indicator:bm"}\NormalTok{]}
+\CommentTok{\#\textgreater{} trt\_indicator:bm }
+\CommentTok{\#\textgreater{}         {-}3.75727}
+
+\CommentTok{\# Treatment effect at different biomarker levels}
+\FunctionTok{emmeans}\NormalTok{(m\_crossover, }\SpecialCharTok{\textasciitilde{}}\NormalTok{ trt\_indicator }\SpecialCharTok{|}\NormalTok{ bm, }\AttributeTok{at =} \FunctionTok{list}\NormalTok{(}\AttributeTok{bm =} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{)))}
+\CommentTok{\#\textgreater{} bm = {-}1:}
+\CommentTok{\#\textgreater{}  trt\_indicator emmean   SE  df lower.CL upper.CL}
+\CommentTok{\#\textgreater{}              0   18.5 1.53 141     15.5     21.5}
+\CommentTok{\#\textgreater{}              1   18.9 1.53 141     15.9     22.0}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} bm =  0:}
+\CommentTok{\#\textgreater{}  trt\_indicator emmean   SE  df lower.CL upper.CL}
+\CommentTok{\#\textgreater{}              0   21.0 1.17 141     18.7     23.3}
+\CommentTok{\#\textgreater{}              1   17.7 1.17 141     15.4     20.0}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} bm =  1:}
+\CommentTok{\#\textgreater{}  trt\_indicator emmean   SE  df lower.CL upper.CL}
+\CommentTok{\#\textgreater{}              0   23.5 1.85 141     19.8     27.2}
+\CommentTok{\#\textgreater{}              1   16.4 1.85 141     12.8     20.1}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Results are averaged over the levels of: period }
+\CommentTok{\#\textgreater{} Degrees{-}of{-}freedom method: kenward{-}roger }
+\CommentTok{\#\textgreater{} Confidence level used: 0.95}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Interpretation}: Can estimate population-level effect
+modification, but cannot estimate individual-specific interaction terms.
+
+\subsection{Simulate an Aggregated N-of-1 Dataset with Biomarker and
+Carryover}\label{simulate-an-aggregated-n-of-1-dataset-with-biomarker-and-carryover}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{2025}\NormalTok{)}
+
+\NormalTok{n\_subj }\OtherTok{\textless{}{-}} \DecValTok{25}
+\NormalTok{cycles }\OtherTok{\textless{}{-}} \DecValTok{6}
+\NormalTok{obs\_per\_period }\OtherTok{\textless{}{-}} \DecValTok{7}
+
+\CommentTok{\# True effects}
+\NormalTok{mu }\OtherTok{\textless{}{-}} \DecValTok{20}
+\NormalTok{beta\_treat\_pop }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\DecValTok{4}
+\NormalTok{beta\_bm }\OtherTok{\textless{}{-}} \DecValTok{2}
+\NormalTok{beta\_int\_pop }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\FloatTok{1.5}
+\NormalTok{beta\_carry }\OtherTok{\textless{}{-}} \FloatTok{1.5}
+
+\NormalTok{sigma\_subj }\OtherTok{\textless{}{-}} \DecValTok{6}
+\NormalTok{sigma\_treat\_sd }\OtherTok{\textless{}{-}} \DecValTok{3}
+\NormalTok{sigma\_int\_sd }\OtherTok{\textless{}{-}} \FloatTok{0.8}
+\NormalTok{sigma\_resid }\OtherTok{\textless{}{-}} \DecValTok{5}
+
+\CommentTok{\# Create subject{-}level random effects}
+\NormalTok{subj }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(}
+  \AttributeTok{subject =} \DecValTok{1}\SpecialCharTok{:}\NormalTok{n\_subj,}
+  \AttributeTok{u =} \FunctionTok{rnorm}\NormalTok{(n\_subj, }\DecValTok{0}\NormalTok{, sigma\_subj),}
+  \AttributeTok{u\_trt =} \FunctionTok{rnorm}\NormalTok{(n\_subj, }\DecValTok{0}\NormalTok{, sigma\_treat\_sd),}
+  \AttributeTok{u\_int =} \FunctionTok{rnorm}\NormalTok{(n\_subj, }\DecValTok{0}\NormalTok{, sigma\_int\_sd),}
+  \AttributeTok{bm\_baseline =} \FunctionTok{rnorm}\NormalTok{(n\_subj, }\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\NormalTok{)}
+
+\CommentTok{\# Build periods alternating A/B starting at random}
+\NormalTok{nof1 }\OtherTok{\textless{}{-}}\NormalTok{ subj }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{crossing}\NormalTok{(}\AttributeTok{period =} \DecValTok{1}\SpecialCharTok{:}\NormalTok{cycles) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(subject) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{order\_start =} \FunctionTok{first}\NormalTok{(}\FunctionTok{sample}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{), }\DecValTok{1}\NormalTok{))) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ungroup}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{trt\_indicator =}\NormalTok{ (order\_start }\SpecialCharTok{+}\NormalTok{ period) }\SpecialCharTok{\%\%} \DecValTok{2}\NormalTok{)}
+
+\CommentTok{\# Expand to daily observations within each period}
+\NormalTok{nof1 }\OtherTok{\textless{}{-}}\NormalTok{ nof1 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{crossing}\NormalTok{(}\AttributeTok{day =} \DecValTok{1}\SpecialCharTok{:}\NormalTok{obs\_per\_period) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(subject, period, day)}
+
+\CommentTok{\# Add time{-}varying biomarker}
+\NormalTok{nof1 }\OtherTok{\textless{}{-}}\NormalTok{ nof1 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{bm =}\NormalTok{ bm\_baseline }\SpecialCharTok{+} \FunctionTok{rnorm}\NormalTok{(}\FunctionTok{n}\NormalTok{(), }\DecValTok{0}\NormalTok{, }\FloatTok{0.3}\NormalTok{))}
+
+\CommentTok{\# Add carryover effect}
+\NormalTok{nof1 }\OtherTok{\textless{}{-}}\NormalTok{ nof1 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(subject) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{prior\_trt =} \FunctionTok{lag}\NormalTok{(trt\_indicator, }\AttributeTok{default =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{carryover =} \FunctionTok{if\_else}\NormalTok{(period }\SpecialCharTok{\textgreater{}} \DecValTok{1} \SpecialCharTok{\&}\NormalTok{ day }\SpecialCharTok{\textless{}=} \DecValTok{2}\NormalTok{, prior\_trt, }\DecValTok{0}\NormalTok{)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ungroup}\NormalTok{()}
+
+\CommentTok{\# Simulate outcomes}
+\NormalTok{nof1 }\OtherTok{\textless{}{-}}\NormalTok{ nof1 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{Y =}\NormalTok{ mu }\SpecialCharTok{+}\NormalTok{ u }\SpecialCharTok{+}
+\NormalTok{      (beta\_treat\_pop }\SpecialCharTok{+}\NormalTok{ u\_trt) }\SpecialCharTok{*}\NormalTok{ trt\_indicator }\SpecialCharTok{+}
+\NormalTok{      beta\_bm }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+}
+\NormalTok{      (beta\_int\_pop }\SpecialCharTok{+}\NormalTok{ u\_int) }\SpecialCharTok{*}\NormalTok{ trt\_indicator }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+}
+\NormalTok{      beta\_carry }\SpecialCharTok{*}\NormalTok{ carryover }\SpecialCharTok{+}
+      \FunctionTok{rnorm}\NormalTok{(}\FunctionTok{n}\NormalTok{(), }\DecValTok{0}\NormalTok{, sigma\_resid)}
+\NormalTok{  )}
+
+\CommentTok{\# Inspect}
+\NormalTok{nof1 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(subject) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{n\_obs =} \FunctionTok{n}\NormalTok{(), }\AttributeTok{n\_periods =} \FunctionTok{n\_distinct}\NormalTok{(period)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{head}\NormalTok{()}
+\CommentTok{\#\textgreater{} \# A tibble: 6 x 3}
+\CommentTok{\#\textgreater{}   subject n\_obs n\_periods}
+\CommentTok{\#\textgreater{}     \textless{}int\textgreater{} \textless{}int\textgreater{}     \textless{}int\textgreater{}}
+\CommentTok{\#\textgreater{} 1       1    42         6}
+\CommentTok{\#\textgreater{} 2       2    42         6}
+\CommentTok{\#\textgreater{} 3       3    42         6}
+\CommentTok{\#\textgreater{} 4       4    42         6}
+\CommentTok{\#\textgreater{} 5       5    42         6}
+\CommentTok{\#\textgreater{} 6       6    42         6}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Fit Aggregated N-of-1 Hierarchical Mixed Model with
+Biomarker
+Interaction}\label{fit-aggregated-n-of-1-hierarchical-mixed-model-with-biomarker-interaction}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Random intercept + random slope for treatment + biomarker interaction + carryover}
+\NormalTok{m\_nof1 }\OtherTok{\textless{}{-}} \FunctionTok{lmer}\NormalTok{(}
+\NormalTok{  Y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ trt\_indicator }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+}\NormalTok{ carryover }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+}\NormalTok{ trt\_indicator }\SpecialCharTok{|}\NormalTok{ subject),}
+  \AttributeTok{data =}\NormalTok{ nof1,}
+  \AttributeTok{REML =} \ConstantTok{TRUE}
+\NormalTok{)}
+\FunctionTok{summary}\NormalTok{(m\_nof1)}
+\CommentTok{\#\textgreater{} Linear mixed model fit by REML [\textquotesingle{}lmerMod\textquotesingle{}]}
+\CommentTok{\#\textgreater{} Formula: Y \textasciitilde{} trt\_indicator * bm + carryover + (1 + trt\_indicator | subject)}
+\CommentTok{\#\textgreater{}    Data: nof1}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} REML criterion at convergence: 6448.2}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Scaled residuals: }
+\CommentTok{\#\textgreater{}     Min      1Q  Median      3Q     Max }
+\CommentTok{\#\textgreater{} {-}3.2778 {-}0.6249 {-}0.0146  0.6205  3.3358 }
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Random effects:}
+\CommentTok{\#\textgreater{}  Groups   Name          Variance Std.Dev. Corr}
+\CommentTok{\#\textgreater{}  subject  (Intercept)   33.09    5.753        }
+\CommentTok{\#\textgreater{}           trt\_indicator 10.86    3.295    0.02}
+\CommentTok{\#\textgreater{}  Residual               23.89    4.887        }
+\CommentTok{\#\textgreater{} Number of obs: 1050, groups:  subject, 25}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Fixed effects:}
+\CommentTok{\#\textgreater{}                  Estimate Std. Error t value}
+\CommentTok{\#\textgreater{} (Intercept)       21.8463     1.1736  18.614}
+\CommentTok{\#\textgreater{} trt\_indicator     {-}3.9532     0.7293  {-}5.420}
+\CommentTok{\#\textgreater{} bm                 1.5937     0.5273   3.023}
+\CommentTok{\#\textgreater{} carryover          0.7476     0.4672   1.600}
+\CommentTok{\#\textgreater{} trt\_indicator:bm  {-}1.2804     0.5776  {-}2.217}
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} Correlation of Fixed Effects:}
+\CommentTok{\#\textgreater{}             (Intr) trt\_nd bm     crryvr}
+\CommentTok{\#\textgreater{} trt\_indictr {-}0.039                     }
+\CommentTok{\#\textgreater{} bm           0.061 {-}0.042              }
+\CommentTok{\#\textgreater{} carryover   {-}0.050  0.001 {-}0.046       }
+\CommentTok{\#\textgreater{} trt\_ndctr:b {-}0.028  0.110 {-}0.463  0.020}
+
+\CommentTok{\# Extract fixed (population) effects}
+\FunctionTok{fixef}\NormalTok{(m\_nof1)}
+\CommentTok{\#\textgreater{}      (Intercept)    trt\_indicator               bm        carryover }
+\CommentTok{\#\textgreater{}       21.8463025       {-}3.9531711        1.5937459        0.7476118 }
+\CommentTok{\#\textgreater{} trt\_indicator:bm }
+\CommentTok{\#\textgreater{}       {-}1.2803543}
+
+\CommentTok{\# Population treatment effect (at mean biomarker = 0)}
+\FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator"}\NormalTok{]}
+\CommentTok{\#\textgreater{} trt\_indicator }
+\CommentTok{\#\textgreater{}     {-}3.953171}
+
+\CommentTok{\# Population biomarker x treatment interaction}
+\FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator:bm"}\NormalTok{]}
+\CommentTok{\#\textgreater{} trt\_indicator:bm }
+\CommentTok{\#\textgreater{}        {-}1.280354}
+
+\CommentTok{\# Carryover effect}
+\FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"carryover"}\NormalTok{]}
+\CommentTok{\#\textgreater{} carryover }
+\CommentTok{\#\textgreater{} 0.7476118}
+
+\CommentTok{\# Extract subject{-}specific treatment effects (BLUPs)}
+\NormalTok{subj\_trt\_effects }\OtherTok{\textless{}{-}} \FunctionTok{ranef}\NormalTok{(m\_nof1)}\SpecialCharTok{$}\NormalTok{subject[[}\StringTok{"trt\_indicator"}\NormalTok{]] }\SpecialCharTok{+}
+  \FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator"}\NormalTok{]}
+\FunctionTok{head}\NormalTok{(subj\_trt\_effects)}
+\CommentTok{\#\textgreater{} [1] {-}6.690817 {-}7.458577 {-}3.954958 {-}5.074274 {-}1.525257 {-}9.434112}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Advanced Model with Random Biomarker
+Interaction}\label{advanced-model-with-random-biomarker-interaction}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# This estimates individual{-}specific biomarker x treatment interactions}
+\CommentTok{\# May need more data or regularization for convergence}
+\NormalTok{m\_nof1\_full }\OtherTok{\textless{}{-}} \FunctionTok{lmer}\NormalTok{(}
+\NormalTok{  Y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ trt\_indicator }\SpecialCharTok{*}\NormalTok{ bm }\SpecialCharTok{+}\NormalTok{ carryover }\SpecialCharTok{+}
+\NormalTok{    (}\DecValTok{1} \SpecialCharTok{+}\NormalTok{ trt\_indicator }\SpecialCharTok{+}\NormalTok{ trt\_indicator}\SpecialCharTok{:}\NormalTok{bm }\SpecialCharTok{|}\NormalTok{ subject),}
+  \AttributeTok{data =}\NormalTok{ nof1,}
+  \AttributeTok{REML =} \ConstantTok{TRUE}\NormalTok{,}
+  \AttributeTok{control =} \FunctionTok{lmerControl}\NormalTok{(}\AttributeTok{optimizer =} \StringTok{"bobyqa"}\NormalTok{)}
+\NormalTok{)}
+\FunctionTok{summary}\NormalTok{(m\_nof1\_full)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Diagnostics and
+Visualization}\label{diagnostics-and-visualization}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Plot individual subject treatment effects}
+\NormalTok{subj\_effects }\OtherTok{\textless{}{-}} \FunctionTok{ranef}\NormalTok{(m\_nof1)}\SpecialCharTok{$}\NormalTok{subject }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{as.data.frame}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{rownames\_to\_column}\NormalTok{(}\AttributeTok{var =} \StringTok{"subject"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{subject =} \FunctionTok{as.integer}\NormalTok{(subject),}
+    \AttributeTok{subj\_trt =}\NormalTok{ trt\_indicator }\SpecialCharTok{+} \FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator"}\NormalTok{]}
+\NormalTok{  )}
+
+\FunctionTok{ggplot}\NormalTok{(subj\_effects, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ subj\_trt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_histogram}\NormalTok{(}\AttributeTok{binwidth =} \FloatTok{0.5}\NormalTok{, }\AttributeTok{fill =} \StringTok{"steelblue"}\NormalTok{, }\AttributeTok{color =} \StringTok{"white"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_vline}\NormalTok{(}
+    \AttributeTok{xintercept =} \FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator"}\NormalTok{],}
+    \AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{,}
+    \AttributeTok{color =} \StringTok{"red"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Distribution of Individual Treatment Effects (BLUPs)"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Red line = population average effect"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Individual treatment effect (CAPS change)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Count"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={Distribution of individual treatment effects}]{chat_files/figure-latex/viz-individual-effects-1.pdf}}
+\caption{Distribution of individual treatment effects}
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Plot biomarker x treatment interaction}
+\NormalTok{bm\_range }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{2}\NormalTok{, }\DecValTok{2}\NormalTok{, }\AttributeTok{by =} \FloatTok{0.1}\NormalTok{)}
+\NormalTok{interaction\_df }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(}
+  \AttributeTok{bm =}\NormalTok{ bm\_range,}
+  \AttributeTok{trt\_effect =} \FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator"}\NormalTok{] }\SpecialCharTok{+}
+    \FunctionTok{fixef}\NormalTok{(m\_nof1)[}\StringTok{"trt\_indicator:bm"}\NormalTok{] }\SpecialCharTok{*}\NormalTok{ bm\_range}
+\NormalTok{)}
+
+\FunctionTok{ggplot}\NormalTok{(interaction\_df, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ bm, }\AttributeTok{y =}\NormalTok{ trt\_effect)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\AttributeTok{linewidth =} \FloatTok{1.2}\NormalTok{, }\AttributeTok{color =} \StringTok{"darkgreen"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_hline}\NormalTok{(}\AttributeTok{yintercept =} \DecValTok{0}\NormalTok{, }\AttributeTok{linetype =} \StringTok{"dotted"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Biomarker × Treatment Interaction"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Treatment effect as function of biomarker level"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Biomarker (standardized)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Treatment effect (CAPS change)"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={Biomarker by treatment interaction}]{chat_files/figure-latex/viz-interaction-1.pdf}}
+\caption{Biomarker by treatment interaction}
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Observed trajectories for sample subjects}
+\NormalTok{sample\_subj }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(}\FunctionTok{unique}\NormalTok{(nof1}\SpecialCharTok{$}\NormalTok{subject), }\DecValTok{6}\NormalTok{)}
+
+\NormalTok{nof1 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(subject }\SpecialCharTok{\%in\%}\NormalTok{ sample\_subj) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{time =}\NormalTok{ (period }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{) }\SpecialCharTok{*}\NormalTok{ obs\_per\_period }\SpecialCharTok{+}\NormalTok{ day,}
+    \AttributeTok{trt =} \FunctionTok{if\_else}\NormalTok{(trt\_indicator }\SpecialCharTok{==} \DecValTok{1}\NormalTok{, }\StringTok{"Active"}\NormalTok{, }\StringTok{"Placebo"}\NormalTok{)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ time, }\AttributeTok{y =}\NormalTok{ Y, }\AttributeTok{color =}\NormalTok{ trt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\AttributeTok{alpha =} \FloatTok{0.7}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}\AttributeTok{size =} \FloatTok{0.8}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{subject, }\AttributeTok{scales =} \StringTok{"free\_y"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Individual Patient Trajectories"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Day"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"CAPS score"}\NormalTok{,}
+    \AttributeTok{color =} \StringTok{"Treatment"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={Individual patient trajectories}]{chat_files/figure-latex/viz-trajectories-1.pdf}}
+\caption{Individual patient trajectories}
+\end{figure}
+
+\subsection{Notes on Extensions and Real-Data
+Considerations}\label{notes-on-extensions-and-real-data-considerations}
+
+\begin{itemize}
+\item
+  For real CAPS outcomes measured daily, expand the simulation to
+  include within-period autocorrelation (e.g., AR(1)), measurement
+  error, and missingness. Use \texttt{nlme::lme} or specify correlation
+  structures for autocorrelation.
+\item
+  If carryover is suspected, consider adding period-by-treatment
+  interaction terms or explicitly modeling carryover terms; tests for
+  carryover should be planned but interpreted cautiously (Jones \&
+  Kenward, 2014).
+\item
+  In the aggregated N-of-1 context, Bayesian hierarchical models (e.g.,
+  \texttt{brms}) allow flexible priors and full posterior inference for
+  individual effects (Zucker et al., 2010).
+\item
+  For regulatory-facing analyses, prespecify the primary estimand
+  (population mean vs individual responder analysis), multiplicity
+  handling, and sensitivity analyses for missing data and carryover.
+\end{itemize}
+
+\end{document}
