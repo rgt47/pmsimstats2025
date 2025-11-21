@@ -31,7 +31,7 @@ treatment_effect <- BR_rate    # Alias for display purposes
 # Biomarker moderation of treatment effect
 # Higher biomarker → stronger treatment response
 # This creates the treatment × biomarker interaction
-biomarker_moderation <- 0.45   # Per SD of biomarker, treatment effect changes by 45%
+# NOTE: biomarker_moderation is now set in the param_grid, not here
 
 baseline_mean <- 10.0          # Mean baseline response
 between_subject_sd <- 2.0      # SD of participant random effects
@@ -57,10 +57,23 @@ c.baseline_resp <- 0.4         # Baseline-response correlation
 allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 
 # Parameter grid - what we're testing
-param_grid <- expand_grid(
-  design = c("hybrid", "parallel"),
-  biomarker_correlation = c(0.3),
-  carryover_decay_rate = c(0, 0.25, 0.5, 0.75)    # Linear decay: points lost per week off drug
+# Note: carryover only applies to hybrid design (parallel has no treatment switches)
+# Include biomarker_moderation = 0 to evaluate Type I error (size of test)
+param_grid <- bind_rows(
+  # Hybrid design with carryover variations
+  expand_grid(
+    design = "hybrid",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    biomarker_correlation = c(0.3),
+    carryover_decay_rate = c(0, 0.5)
+  ),
+  # Parallel design (carryover = 0, not applicable)
+  expand_grid(
+    design = "parallel",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    biomarker_correlation = c(0.3),
+    carryover_decay_rate = c(0)
+  )
 )
 
 # =============================================================================
@@ -407,8 +420,8 @@ results <- tibble()
 
 for (i in 1:nrow(param_grid)) {
   params <- as.list(param_grid[i, ])
-  cat(sprintf("Condition %d: design=%s, biomarker=%.2f, carryover_decay=%.2f\n",
-              i, params$design, params$biomarker_correlation, params$carryover_decay_rate))
+  cat(sprintf("Condition %d: design=%s, bm_mod=%.2f, carryover=%.2f\n",
+              i, params$design, params$biomarker_moderation, params$carryover_decay_rate))
 
   # Run iterations
   for (iter in 1:n_iterations) {
@@ -449,6 +462,9 @@ for (i in 1:nrow(param_grid)) {
       group_by(participant_id) %>%
       mutate(timepoint_idx = row_number()) %>%
       ungroup()
+
+    # Get biomarker moderation for this condition
+    bm_mod <- params$biomarker_moderation
 
     # Generate trial data
     trial_data <- trial_design %>%
@@ -493,7 +509,7 @@ for (i in 1:nrow(param_grid)) {
         BR_mean = {
           # Treatment effect moderated by biomarker
           # Higher biomarker → stronger BR effect
-          effective_BR_rate <- BR_rate * (1 + biomarker_moderation * bm_centered)
+          effective_BR_rate <- BR_rate * (1 + bm_mod * bm_centered)
 
           br_accumulated <- lag(weeks_on_drug, default = 0) * effective_BR_rate
           first_off <- treatment == 0 & lag(treatment, default = 1) == 1
@@ -561,6 +577,7 @@ for (i in 1:nrow(param_grid)) {
       tibble(
         iteration = iter,
         design = params$design,
+        biomarker_moderation = params$biomarker_moderation,
         biomarker_correlation = effective_bm_corr,  # Use effective (grid) value
         carryover_decay_rate = params$carryover_decay_rate,
         effect_size = coefs[idx, "Estimate"],
@@ -572,6 +589,7 @@ for (i in 1:nrow(param_grid)) {
     }, error = function(e) {
       cat("  Error in iteration", iter, ":", conditionMessage(e), "\n")
       tibble(iteration = iter, design = params$design,
+             biomarker_moderation = params$biomarker_moderation,
              biomarker_correlation = effective_bm_corr,
              carryover_decay_rate = params$carryover_decay_rate, effect_size = NA,
              se = NA, t_value = NA, p_value = NA, significant = NA)
@@ -590,7 +608,7 @@ cat("RESULTS\n")
 cat(strrep("=", 50), "\n\n")
 
 summary_results <- results %>%
-  group_by(design, biomarker_correlation, carryover_decay_rate) %>%
+  group_by(design, biomarker_moderation, biomarker_correlation, carryover_decay_rate) %>%
   summarize(
     power = mean(significant, na.rm = TRUE),
     mean_effect = mean(effect_size, na.rm = TRUE),
@@ -609,35 +627,41 @@ library(viridis)
 
 # Adaptive visualization based on data structure
 plot_power_results <- function(data) {
+  has_moderation <- n_distinct(data$biomarker_moderation) > 1
   has_carryover <- n_distinct(data$carryover_decay_rate) > 1
-  has_biomarker <- n_distinct(data$biomarker_correlation) > 1
   has_design <- n_distinct(data$design) > 1
 
   # Convert to factors
   data <- data %>%
     mutate(
+      biomarker_moderation = factor(biomarker_moderation),
       carryover_decay_rate = factor(carryover_decay_rate),
-      biomarker_correlation = factor(biomarker_correlation),
       design = factor(design)
     )
 
-  if (has_carryover) {
-    # Bar chart by carryover, faceted by design if multiple
+  if (has_moderation) {
+    # Primary: biomarker moderation on x-axis
+    p <- ggplot(data, aes(x = biomarker_moderation, y = power, fill = design)) +
+      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
+                position = position_dodge(width = 0.8), vjust = -0.5, size = 3) +
+      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
+      labs(x = "Biomarker Moderation (effect size)", y = "Power")
+
+    # Facet by carryover if multiple values
+    if (has_carryover) {
+      p <- p + facet_wrap(~ carryover_decay_rate,
+                         labeller = labeller(carryover_decay_rate = function(x) paste("Carryover:", x)))
+    }
+
+  } else if (has_carryover) {
+    # Bar chart by carryover
     p <- ggplot(data, aes(x = carryover_decay_rate, y = power, fill = design)) +
       geom_col(position = position_dodge(width = 0.8), width = 0.7) +
       geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
                 position = position_dodge(width = 0.8), vjust = -0.5, size = 3) +
       scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
       labs(x = "Carryover Decay Rate (points/week)", y = "Power")
-
-  } else if (has_biomarker) {
-    # Bar chart by biomarker
-    p <- ggplot(data, aes(x = biomarker_correlation, y = power, fill = design)) +
-      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
-      geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
-                position = position_dodge(width = 0.8), vjust = -0.5, size = 3) +
-      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
-      labs(x = "Biomarker Correlation", y = "Power")
 
   } else {
     # Single bar per design
@@ -651,9 +675,9 @@ plot_power_results <- function(data) {
   # Common styling
   p <- p +
     scale_fill_viridis_d(name = "Design") +
-    labs(title = "Statistical Power: Constant Effect Model",
-         subtitle = sprintf("N=%d, treatment effect=%.1f, %d iterations",
-                           n_participants, treatment_effect, n_iterations)) +
+    labs(title = "Statistical Power by Biomarker Moderation",
+         subtitle = sprintf("N=%d, %d iterations per condition",
+                           n_participants, n_iterations)) +
     theme_minimal(base_size = 12) +
     theme(panel.grid = element_blank())
 
