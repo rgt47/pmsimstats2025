@@ -11,7 +11,6 @@ output:
 header-includes:
   - \usepackage{amsmath}
   - \usepackage{amssymb}
-  - \usepackage{bm}
   - \usepackage{booktabs}
 ---
 
@@ -265,13 +264,13 @@ where:
 For jointly normal variables:
 
 $$
-\mathbf{X}_1 | \mathbf{X}_2 \sim \mathcal{N}(\boldsymbol{\mu}_{1|2}, \Sigma_{1|2})
+\mathbf{X}_1 | \mathbf{X}_2 \sim \mathcal{N}(\mu_{1|2}, \Sigma_{1|2})
 $$
 
 where:
 
 \begin{align}
-\boldsymbol{\mu}_{1|2} &= \Sigma_{12} \Sigma_{22}^{-1} (\mathbf{X}_2 - \boldsymbol{\mu}_2) \\
+\mu_{1|2} &= \Sigma_{12} \Sigma_{22}^{-1} (\mathbf{X}_2 - \mu_2) \\
 \Sigma_{1|2} &= \Sigma_{11} - \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21}
 \end{align}
 

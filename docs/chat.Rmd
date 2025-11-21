@@ -36,11 +36,11 @@ This white paper expands on how these two designs differ and why mixed-model ana
 
 ## Classic Crossover Trials
 
-Classic crossover trials are structured in a small number of periods (typically 2–4), with treatment sequences such as AB/BA or ABBA (Araujo & Julious, 2014). Their primary purpose is to estimate a population average treatment effect while controlling for period and sequence effects (Mills et al., 2009). These designs assume relative stability over time, limited carryover, and generally homogeneous treatment effects across participants (Senn, 2002).
+Classic crossover trials are structured in a small number of periods (typically 2–4), with treatment sequences such as AB/BA or ABA/BAB (Araujo & Julious, 2014). Their primary purpose is to estimate a population average treatment effect while controlling for period and sequence effects (Mills et al., 2009). These designs assume relative stability over time, limited carryover, and generally homogeneous treatment effects across participants (Senn, 2002). A 3-period design (ABA/BAB) provides each participant with 3 treatment exposures, offering slightly more within-person replication than a 2-period design while remaining practical.
 
 ## N-of-1 Trials
 
-N-of-1 trials constitute repeated, randomized, within-person experiments using alternating treatment periods (Guyatt et al., 2000). They provide dense, within-person data suitable for estimating individual treatment effects, often with multiple AB pairs (e.g., ABABAB).
+N-of-1 trials constitute repeated, randomized, within-person experiments using alternating treatment periods (Guyatt et al., 2000). They provide dense, within-person data suitable for estimating individual treatment effects, with multiple treatment exposures (e.g., 3 cycles of active and placebo, yielding 3 on-treatment and 3 off-treatment periods).
 
 ## Aggregated N-of-1 Trials
 
@@ -149,24 +149,26 @@ To illustrate the design differences, consider a hypothetical new fast-acting ph
 - Outcome measurement: daily CAPS or EMA-based PTSD symptom indices
 - Condition: chronic, variable symptoms, suitable for repeated within-person comparisons
 
-## Option 1: Classic 2-Period Crossover Design
+## Option 1: Classic 3-Period Crossover Design
 
 **Design:**
 
-- Sequence AB or BA
-- Treatment periods: 4 weeks each
-- Washout: 1 week
+- Sequence ABA or BAB
+- Treatment periods: 3 weeks each (3 periods total)
+- Washout: 1 week between periods
 - N = approximately 40 participants
+- Each participant receives treatment 3 times (either 2A+1B or 1A+2B)
 
 **Strengths:**
 
 - Well-aligned with regulatory expectations
 - Simple interpretation of average treatment effect
+- More within-person replication than 2-period design
 
 **Limitations:**
 
-- Only one treatment contrast per person
-- Cannot estimate individual treatment effects
+- Limited treatment contrasts per person (not fully balanced within individual)
+- Cannot robustly estimate individual treatment effects
 - Less suitable if heterogeneity is clinically important (Dwan et al., 2019)
 
 **Mixed Model:**
@@ -179,17 +181,18 @@ To illustrate the design differences, consider a hypothetical new fast-acting ph
 
 **Design:**
 
-- Each participant undergoes 6 cycles of active vs placebo: ABABAB (or BAABAB, individualized randomization)
+- Each participant undergoes 3 cycles of active vs placebo: ABABAB (3 on-treatment, 3 off-treatment periods)
 - Treatment periods: 1 week active, 1 week placebo
 - Washout: same-week washout built in due to rapid clearance
 - CAPS measured daily using EMA or twice weekly in clinic
-- N = 20 participants (fewer needed due to dense data)
+- N = 25 participants (fewer needed due to dense data)
+- Each participant receives treatment 3 times (balanced: 3A + 3B)
 
 ### Why Fewer Participants Suffice
 
 The N-of-1 design achieves adequate power with fewer participants because:
 
-1. **Increased effective sample size**: Each participant contributes multiple treatment contrasts (6 cycles = 6 contrasts vs 1 contrast in crossover). With 20 participants × 6 cycles, the effective number of treatment comparisons approaches 120.
+1. **Increased effective sample size**: Each participant contributes multiple treatment contrasts (3 cycles = 3 balanced contrasts vs unbalanced contrasts in crossover). With 25 participants × 3 cycles, the effective number of treatment comparisons approaches 75.
 
 2. **Reduced within-person variance**: Dense repeated measurements within periods average out measurement error and day-to-day fluctuations.
 
@@ -229,7 +232,7 @@ The N-of-1 design achieves adequate power with fewer participants because:
 | Does biomarker predict response (population)? | Yes | Yes | Yes |
 | Does biomarker predict response (individual)? | No | No | Yes |
 | Can carryover be estimated? | No (assumed absent) | Partially | Yes |
-| Does each person have replicated comparisons? | No | Limited (2-3) | Yes (6+) |
+| Does each person have replicated comparisons? | Limited (3 periods) | Limited (3-4) | Yes (3+ balanced cycles) |
 
 ## Choosing Between the Designs for a PTSD Trial
 
