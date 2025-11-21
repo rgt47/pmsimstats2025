@@ -334,30 +334,28 @@ for (i in 1:nrow(param_grid)) {
     Sigma <- sigma_result$Sigma
     idx <- sigma_result$indices
 
-    # Mean vector (all zeros - we add means separately)
-    mu <- rep(0, nrow(Sigma))
+    # Partition sigma for two-stage generation
+    partitioned <- partition_sigma(Sigma, idx)
 
-    # Generate correlated data for each participant from 26-dim MVN
+    # Verify equivalence on first iteration of first condition
+    if (i == 1 && iter == 1) {
+      verify_twostage_equivalence(Sigma, idx, n_samples = 5000)
+    }
+
+    # Generate correlated data for each participant using TWO-STAGE approach
     all_participant_data <- list()
 
     for (pid in 1:n_participants) {
-      # Generate from multivariate normal
-      mvn_draw <- mvrnorm(1, mu = mu, Sigma = Sigma)
-
-      # Extract components
-      br_values <- mvn_draw[idx$br]         # BR residuals at each timepoint
-      er_values <- mvn_draw[idx$er]         # ER residuals at each timepoint
-      tr_values <- mvn_draw[idx$tr]         # TR residuals at each timepoint
-      biomarker <- mvn_draw[idx$bm] + biomarker_mean   # Biomarker (add mean)
-      baseline <- mvn_draw[idx$bl] + baseline_mean     # Baseline (add mean)
+      # Two-stage generation: (biomarker, baseline) then (BR, ER, TR | biomarker, baseline)
+      result <- generate_participant_twostage(partitioned, idx)
 
       all_participant_data[[pid]] <- tibble(
         participant_id = pid,
-        biomarker = biomarker,
-        baseline = baseline,
-        br_random = br_values,
-        er_random = er_values,
-        tr_random = tr_values
+        biomarker = result$biomarker,
+        baseline = result$baseline,
+        br_random = result$br_random,
+        er_random = result$er_random,
+        tr_random = result$tr_random
       )
     }
 
