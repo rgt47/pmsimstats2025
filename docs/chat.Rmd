@@ -452,7 +452,7 @@ emmeans(m_crossover, ~ trt_indicator | bm, at = list(bm = c(-1, 0, 1)))
 set.seed(2025)
 
 n_subj <- 25
-cycles <- 6
+cycles <- 3
 obs_per_period <- 7
 
 # True effects

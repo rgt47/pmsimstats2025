@@ -379,13 +379,58 @@ allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 
 # Complete Response Model
 
+## Biomarker Moderation of Treatment Effect
+
+A critical feature of the simulation is that participants with different biomarker levels respond differently to treatment. This creates the **treatment × biomarker interaction** that the analysis aims to detect.
+
+### The Moderation Mechanism
+
+The biological response rate is scaled by the participant's biomarker level:
+
+$$
+\text{BR}_{\text{effective}} = \text{BR}_{\text{rate}} \times \left(1 + \beta_{\text{mod}} \times \frac{\text{biomarker}_i - \mu_{\text{BM}}}{\sigma_{\text{BM}}}\right)
+$$
+
+where:
+
+- $\text{BR}_{\text{rate}}$: Base treatment effect (0.5 points/week)
+- $\beta_{\text{mod}}$: Moderation strength (0.15 = 15% change per SD)
+- $\mu_{\text{BM}}, \sigma_{\text{BM}}$: Population biomarker mean and SD
+
+### Example
+
+For a participant with biomarker 1 SD above the mean:
+
+$$
+\text{BR}_{\text{effective}} = 0.5 \times (1 + 0.15 \times 1) = 0.575 \text{ points/week}
+$$
+
+For a participant with biomarker 1 SD below the mean:
+
+$$
+\text{BR}_{\text{effective}} = 0.5 \times (1 + 0.15 \times (-1)) = 0.425 \text{ points/week}
+$$
+
+### Why Explicit Moderation vs. Correlation-Based
+
+The original Hendrickson approach creates the interaction through differential correlations:
+
+- On treatment: $\text{Cor}(\text{biomarker}, \text{BR}) = c_{\text{bm}}$
+- Off treatment: $\text{Cor}(\text{biomarker}, \text{BR}) = 0$
+
+This elegant approach embeds the interaction in the covariance structure. However, for the simplified model, explicit moderation is:
+
+1. **More transparent**: The interaction mechanism is visible in one formula
+2. **Easier to tune**: $\beta_{\text{mod}}$ directly controls interaction strength
+3. **Computationally simpler**: No need for treatment-conditional sigma matrices
+
 ## Total Response Formula
 
 Combining all simplifications, the response at timepoint $t$ for participant $i$ is:
 
 \begin{align}
 Y_{it} = & \underbrace{\text{baseline}_i}_{\text{from } \Sigma_{22}} \\
-& + \underbrace{\text{BR}_{\text{rate}} \times \text{weeks\_on\_drug}_{it} + \text{br\_random}_{it}}_{\text{Biological Response}} \\
+& + \underbrace{\text{BR}_{\text{effective}} \times \text{weeks\_on\_drug}_{it} + \text{br\_random}_{it}}_{\text{Biological Response (moderated)}} \\
 & + \underbrace{\text{ER}_{\text{rate}} \times \sum_{s \leq t} \text{expectancy}_{is} + \text{er\_random}_{it}}_{\text{Expectancy Response}} \\
 & + \underbrace{\text{TR}_{\text{rate}} \times (t - t_0) + \text{tr\_random}_{it}}_{\text{Time-variant Response}}
 \end{align}
@@ -393,6 +438,7 @@ Y_{it} = & \underbrace{\text{baseline}_i}_{\text{from } \Sigma_{22}} \\
 where:
 
 - $\text{baseline}_i$: Participant's baseline (from $\Sigma_{22}$, correlated with biomarker)
+- $\text{BR}_{\text{effective}}$: Biomarker-moderated treatment rate (see above)
 - $\text{br\_random}_{it}$, $\text{er\_random}_{it}$, $\text{tr\_random}_{it}$: Correlated random effects (from $\Sigma_{1|2}$)
 - Carryover modifies BR when off drug
 
@@ -404,6 +450,8 @@ The random components $(\text{br\_random}, \text{er\_random}, \text{tr\_random})
 2. **Across factors, same time**: Cross-correlation $c_{\text{cf1t}} = 0.2$
 3. **Across factors, different time**: Cross-correlation $c_{\text{cfct}} = 0.1$ with decay
 4. **With biomarker**: BR correlated at $c_{\text{bm}}$, ER/TR at $0.5 \times c_{\text{bm}}$
+
+**Note**: The sigma correlations provide realistic noise structure, but the treatment × biomarker interaction comes from the explicit moderation formula above.
 
 ---
 
@@ -548,6 +596,28 @@ generate_participant_twostage <- function(sigma_parts, idx) {
   # Stage 2: Generate responses | participant vars
   mu_cond <- Sigma_12 %*% Sigma_22_inv %*% x2
   x1 <- mvrnorm(1, mu = mu_cond, Sigma = sigma_parts$Sigma_cond)
+}
+```
+
+## Biomarker Moderation
+
+```r
+# Parameters
+biomarker_moderation <- 0.15  # 15% change per SD
+
+# In data generation (inside mutate)
+bm_centered = (biomarker - biomarker_mean) / biomarker_sd,
+
+BR_mean = {
+  # Treatment effect moderated by biomarker
+  effective_BR_rate <- BR_rate * (1 + biomarker_moderation * bm_centered)
+
+  # Accumulate while on drug, with carryover
+  ifelse(treatment == 1,
+         weeks_on_drug * effective_BR_rate,
+         ifelse(first_off,
+                br_accumulated * carryover_decay_rate,
+                0))
 }
 ```
 

@@ -20,12 +20,18 @@ conflicts_prefer(lmerTest::lmer)
 # =============================================================================
 
 n_participants <- 70
-n_iterations <- 5
+n_iterations <- 20
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5                 # Biological Response: drug improvement rate
 ER_rate <- 0.2                 # Expectancy Response: placebo improvement rate
 TR_rate <- 0.1                 # Time-variant Response: natural improvement rate
+treatment_effect <- BR_rate    # Alias for display purposes
+
+# Biomarker moderation of treatment effect
+# Higher biomarker → stronger treatment response
+# This creates the treatment × biomarker interaction
+biomarker_moderation <- 0.15   # Per SD of biomarker, treatment effect changes by 15%
 
 baseline_mean <- 10.0          # Mean baseline response
 between_subject_sd <- 3.0      # SD of participant random effects
@@ -439,20 +445,31 @@ for (i in 1:nrow(param_grid)) {
         # Track when drug stops for carryover calculation
         time_off = cumsum(treatment == 0),
 
+        # Carryover effect indicator (first week off drug after being on)
+        carryover_effect = as.numeric(treatment == 0 & lag(treatment, default = 1) == 1),
+
         # ===========================================
         # THREE-FACTOR RESPONSE MODEL (RATE-BASED + RANDOM VARIATION)
         # ===========================================
 
+        # Center biomarker for moderation calculation
+        bm_centered = (biomarker - biomarker_mean) / biomarker_sd,
+
         # 1. BR (Biological Response) - accumulates while on drug + random variation
         #    - Mean: BR_rate points per week on drug
+        #    - BIOMARKER MODERATION: effect scales with biomarker level
         #    - Carryover: partial at first off-drug timepoint, then 0
         #    - Random: from 26x26 sigma matrix (correlated across time)
         BR_mean = {
-          br_accumulated <- lag(weeks_on_drug, default = 0) * BR_rate
+          # Treatment effect moderated by biomarker
+          # Higher biomarker → stronger BR effect
+          effective_BR_rate <- BR_rate * (1 + biomarker_moderation * bm_centered)
+
+          br_accumulated <- lag(weeks_on_drug, default = 0) * effective_BR_rate
           first_off <- treatment == 0 & lag(treatment, default = 1) == 1
 
           ifelse(treatment == 1,
-                 weeks_on_drug * BR_rate,
+                 weeks_on_drug * effective_BR_rate,
                  ifelse(first_off,
                         br_accumulated * params$carryover_decay_rate,
                         0))
@@ -476,18 +493,19 @@ for (i in 1:nrow(param_grid)) {
         # ===========================================
         # Response = baseline + BR + ER + TR
         # Note: baseline already includes between-subject variability from sigma
-        # Note: biomarker moderation is captured in sigma correlations
+        # Note: biomarker moderation is applied explicitly to BR_mean above
         response = baseline + BR + ER + TR
       ) %>%
       ungroup()
 
     # Fit mixed model
     model_result <- tryCatch({
-      # Center biomarker for better interpretation
+      # Re-center biomarker using sample mean (for model interpretation)
+      # Note: data generation uses population parameters for standardization
       trial_data <- trial_data %>%
         mutate(bm_centered = biomarker - mean(biomarker))
 
-      if (params$carryover_t1half > 0) {
+      if (params$carryover_decay_rate > 0) {
         model <- lmer(response ~ treatment * bm_centered + week + carryover_effect +
                       (1 | participant_id),
                       data = trial_data)
