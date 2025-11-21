@@ -1,0 +1,35 @@
+\contentsline {section}{\numberline {1}Abstract}{2}{section.1}%
+\contentsline {section}{\numberline {2}Introduction}{2}{section.2}%
+\contentsline {section}{\numberline {3}Background}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Classic Crossover Trials}{2}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}N-of-1 Trials}{2}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Aggregated N-of-1 Trials}{2}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Hybrid Designs}{2}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Core Differences Between Designs}{3}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Purpose and Estimands}{3}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Replication Structure}{3}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Homogeneity vs Heterogeneity}{3}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Carryover Effects}{3}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Biomarker-Treatment Interactions}{3}{subsection.4.5}%
+\contentsline {section}{\numberline {5}Mixed-Model Specification}{4}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Classic Crossover Mixed Model}{4}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Aggregated N-of-1 Hierarchical Mixed Model}{4}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Hybrid Design Mixed Model}{4}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Why the Models Cannot Be the Same}{4}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Example: A PTSD (CAPS) Trial Designed as Either Crossover or Aggregated N-of-1}{5}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Clinical Assumptions}{5}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Option 1: Classic 2-Period Crossover Design}{5}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Option 2: Aggregated N-of-1 Trial}{5}{subsection.6.3}%
+\contentsline {subsubsection}{\numberline {6.3.1}Why Fewer Participants Suffice}{5}{subsubsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.4}Interpretation Differences}{6}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Choosing Between the Designs for a PTSD Trial}{7}{subsection.6.5}%
+\contentsline {section}{\numberline {7}Conclusion}{7}{section.7}%
+\contentsline {section}{\numberline {8}References}{7}{section.8}%
+\contentsline {section}{\numberline {9}Appendix: R Code for Simulation and Analysis}{9}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Simulate a Classic 2-Period Crossover Dataset with Biomarker}{9}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Fit the Classic Crossover Mixed Model with Biomarker Interaction}{10}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Simulate an Aggregated N-of-1 Dataset with Biomarker and Carryover}{11}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Fit Aggregated N-of-1 Hierarchical Mixed Model with Biomarker Interaction}{13}{subsection.9.4}%
+\contentsline {subsubsection}{\numberline {9.4.1}Advanced Model with Random Biomarker Interaction}{14}{subsubsection.9.4.1}%
+\contentsline {subsection}{\numberline {9.5}Diagnostics and Visualization}{14}{subsection.9.5}%
+\contentsline {subsection}{\numberline {9.6}Notes on Extensions and Real-Data Considerations}{17}{subsection.9.6}%

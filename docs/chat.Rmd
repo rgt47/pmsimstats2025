@@ -35,7 +35,7 @@ This white paper expands on how these two designs differ and why mixed-model ana
 
 ## Classic Crossover Trials
 
-Classic crossover trials are structured in a small number of periods (typically 2–4), with treatment sequences such as AB/BA or ABBA (Araujo & Julious, 2014). Their primary purpose is to estimate a population average treatment effect while controlling for period and sequence effects (Jones & Kenward, 2014). These designs assume relative stability over time, limited carryover, and generally homogeneous treatment effects across participants (Senn, 2002).
+Classic crossover trials are structured in a small number of periods (typically 2–4), with treatment sequences such as AB/BA or ABBA (Araujo & Julious, 2014). Their primary purpose is to estimate a population average treatment effect while controlling for period and sequence effects (Mills et al., 2009). These designs assume relative stability over time, limited carryover, and generally homogeneous treatment effects across participants (Senn, 2002).
 
 ## N-of-1 Trials
 
@@ -55,7 +55,7 @@ Between classic crossover and full N-of-1 designs lies a spectrum of hybrid appr
 
 The essential difference lies in the estimands, not the analytic framework.
 
-- **Classic crossover**: population mean treatment effect (Jones & Kenward, 2014).
+- **Classic crossover**: population mean treatment effect (Mills et al., 2009).
 - **Aggregated N-of-1**: individual treatment effects plus heterogeneity (Lillie et al., 2011).
 
 ## Replication Structure
@@ -155,7 +155,7 @@ To illustrate the design differences, consider a hypothetical new fast-acting ph
 - Sequence AB or BA
 - Treatment periods: 4 weeks each
 - Washout: 1 week
-- N ≈ 40 participants
+- N = approximately 40 participants
 
 **Strengths:**
 
@@ -260,7 +260,7 @@ When the goal is regulatory approval of a population-average effect, crossover d
 - Brown, H. (1980). The analysis of variance and covariance in crossover trials. *Biometrics*, 36(1), 69–79.
 - Deaton, A., & Cartwright, N. (2018). Understanding and misunderstanding randomized controlled trials. *Social Science & Medicine*, 210, 2–21.
 - Guyatt, G. H., et al. (2000). The N-of-1 randomized controlled trial: Clinical usefulness. *Annals of Internal Medicine*, 112(4), 293–299.
-- Jones, B., & Kenward, M. G. (2014). *Design and Analysis of Cross-Over Trials* (3rd ed.). Chapman & Hall/CRC.
+- Mills, E. J., Chan, A. W., Wu, P., Vail, A., Guyatt, G. H., & Altman, D. G. (2009). Design, analysis, and presentation of crossover trials. *Trials*, 10, 27.
 - Lillie, E. O., et al. (2011). The n-of-1 clinical trial: The ultimate strategy for individualizing medicine? *Personalized Medicine*, 8(2), 161–173.
 - Punja, S., et al. (2016). N-of-1 trials for precision medicine: A systematic review. *Journal of Clinical Epidemiology*, 76, 1–13.
 - Schmid, C. H., et al. (2013). Effect of statin therapy on muscle symptoms: An individual patient data meta-analysis. *JAMA Internal Medicine*, 173(16), 1–9.
