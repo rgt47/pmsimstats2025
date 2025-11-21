@@ -8,6 +8,7 @@ output:
     toc: true
     toc_depth: 3
     number_sections: true
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
@@ -236,6 +237,83 @@ The N-of-1 design achieves adequate power with fewer participants because:
 - If the goal is to understand who responds, optimize personalized treatment, or examine heterogeneity → Aggregated N-of-1 (Lillie et al., 2011; Punja et al., 2016).
 - If measurement is frequent and the drug acts quickly → N-of-1 is advantageous.
 - If measurement is sporadic or drug has slow dynamics → Crossover preferred.
+
+# Alternative Analyses for Testing Biomarker × Treatment Interactions
+
+While mixed-effects models provide the most statistically efficient analysis of biomarker × treatment interactions, they can obscure intuition about what drives statistical power. Alternative approaches based on summary statistics offer simpler, more interpretable heuristics for understanding when interactions are detectable and what data patterns indicate their presence.
+
+## The Core Insight: Interaction as Correlation
+
+Testing a biomarker × treatment interaction is mathematically equivalent to asking: **Does the individual treatment effect correlate with the biomarker?**
+
+For each subject $i$, compute the treatment effect as the difference in mean outcomes:
+$$\Delta_i = \bar{Y}_{i,active} - \bar{Y}_{i,placebo}$$
+
+The interaction test then reduces to asking whether $\Delta_i$ varies systematically with $BM_i$. This can be assessed through:
+
+1. **Pearson correlation** between $\Delta_i$ and $BM_i$
+2. **Simple linear regression** of $\Delta_i$ on $BM_i$
+3. **ANOVA** comparing mean $\Delta_i$ across biomarker groups
+
+These approaches yield nearly equivalent p-values but provide different effect size metrics that aid interpretation.
+
+## Signal-to-Noise Framework for Power
+
+Power to detect the interaction depends on a simple signal-to-noise ratio:
+
+$$\text{SNR} = \frac{|\beta_{int}| \cdot \sigma_{BM}}{\sigma_\Delta}$$
+
+This ratio equals the expected correlation $r$ between biomarker and treatment response. The components are:
+
+- **Signal** ($|\beta_{int}| \cdot \sigma_{BM}$): The interaction magnitude times biomarker spread. Larger interactions and greater biomarker variability increase the signal.
+
+- **Noise** ($\sigma_\Delta$): The standard deviation of individual treatment effects. This includes:
+  - Measurement error: $\sqrt{2\sigma^2_\varepsilon / n_{obs}}$ where $n_{obs}$ is observations per subject per treatment
+  - Treatment effect heterogeneity: $\sigma_{treat}$ (individual differences not explained by biomarker)
+
+## Implications for Study Design
+
+This framework reveals why aggregated N-of-1 designs have superior power for detecting interactions:
+
+1. **Dense measurements reduce $\sigma_\Delta$**: With many observations per subject, the treatment effect estimate has lower variance. In the N-of-1 simulation (21 observations per treatment), measurement error contributes minimally to $\sigma_\Delta$.
+
+2. **Unexplained heterogeneity is the enemy**: Individual differences in treatment response that are *not* predicted by the biomarker ($\sigma_{treat}$) increase noise without adding signal. This heterogeneity cannot be reduced by more observations—it requires either larger samples or better predictors.
+
+3. **Biomarker spread provides leverage**: Homogeneous biomarker values yield no ability to detect interactions regardless of sample size. Consider enrichment designs that ensure variability in the biomarker of interest.
+
+## Power Rules of Thumb
+
+Using the correlation framework, standard power calculations apply:
+
+| Expected $r$ | Required N (80% power) | Interpretation |
+|--------------|------------------------|----------------|
+| 0.10 | >750 | Rarely practical |
+| 0.20 | ~200 | Large study needed |
+| 0.30 | ~85 | Moderate study |
+| 0.40 | ~45 | Feasible |
+| 0.50 | ~30 | Small study sufficient |
+
+For a given design, compute the expected $r$ from model parameters to determine required sample size.
+
+## Pattern Recognition in Data
+
+Detectable interactions manifest as:
+
+- **Non-parallel lines** in treatment × biomarker interaction plots
+- **Significant correlation** between biomarker and per-subject treatment effect
+- **Monotonic trend** in mean treatment effect across biomarker tertiles
+- **Positive $R^2$** when regressing treatment effect on biomarker
+
+The summary statistic approach makes these patterns directly visible and interpretable, complementing the more complex mixed-model output.
+
+## Comparison with Mixed-Effects Models
+
+The summary statistic approach:
+
+- **Advantages**: Simpler computation, transparent power calculations, direct visualization of interaction patterns
+- **Disadvantages**: Ignores within-subject correlation structure, potentially less efficient
+
+In practice, the two approaches often yield similar power, particularly when within-subject correlations are modest. The summary statistic approach serves as a valuable complement for building intuition and planning studies, while mixed models remain preferred for final inference.
 
 # Conclusion
 
@@ -561,3 +639,232 @@ nof1 %>%
 - In the aggregated N-of-1 context, Bayesian hierarchical models (e.g., `brms`) allow flexible priors and full posterior inference for individual effects (Zucker et al., 2010).
 
 - For regulatory-facing analyses, prespecify the primary estimand (population mean vs individual responder analysis), multiplicity handling, and sensitivity analyses for missing data and carryover.
+
+## Alternative Analyses: Summary Statistic Approaches
+
+These methods complement the mixed-model analysis by providing interpretable heuristics for understanding interaction patterns.
+
+### Strategy 1: Summary Statistic Regression
+
+```{r summary-stat-regression}
+# Compute per-subject treatment effects from the N-of-1 data
+subj_summary <- nof1 %>%
+  group_by(subject, trt_indicator) %>%
+  summarise(mean_Y = mean(Y), .groups = "drop") %>%
+  pivot_wider(names_from = trt_indicator, values_from = mean_Y,
+              names_prefix = "trt_") %>%
+  mutate(delta = trt_1 - trt_0)  # Active - Placebo
+
+# Merge with baseline biomarker
+subj_summary <- nof1 %>%
+  distinct(subject, bm_baseline) %>%
+  right_join(subj_summary, by = "subject")
+
+# Simple linear regression of treatment effect on biomarker
+reg_summary <- lm(delta ~ bm_baseline, data = subj_summary)
+summary(reg_summary)
+
+# The slope directly estimates the interaction
+coef(reg_summary)["bm_baseline"]
+```
+
+### Strategy 2: Correlation Test
+
+```{r correlation-test}
+# Pearson correlation between biomarker and treatment effect
+cor_result <- cor.test(subj_summary$bm_baseline, subj_summary$delta)
+cor_result
+
+# Effect size: r ≈ 0.1 small, r ≈ 0.3 medium, r ≈ 0.5 large
+```
+
+### Strategy 3: ANOVA with Biomarker Tertiles
+
+```{r anova-tertiles}
+# Discretize biomarker into tertiles
+subj_summary <- subj_summary %>%
+  mutate(
+    bm_tertile = cut(
+      bm_baseline,
+      breaks = quantile(bm_baseline, c(0, 1/3, 2/3, 1)),
+      labels = c("Low", "Medium", "High"),
+      include.lowest = TRUE
+    )
+  )
+
+# One-way ANOVA
+anova_result <- anova(lm(delta ~ bm_tertile, data = subj_summary))
+anova_result
+
+# Effect size: eta-squared
+eta_sq <- anova_result["bm_tertile", "Sum Sq"] / sum(anova_result[, "Sum Sq"])
+cat("Eta-squared:", round(eta_sq, 3), "\n")
+
+# Cell means
+subj_summary %>%
+  group_by(bm_tertile) %>%
+  summarise(
+    n = n(),
+    mean_delta = mean(delta),
+    sd_delta = sd(delta),
+    .groups = "drop"
+  )
+```
+
+### Comparing Methods
+
+```{r compare-methods}
+# Compile results
+comparison <- tibble(
+  Method = c("Mixed Model", "Summary Regression", "Correlation", "ANOVA"),
+  Estimate = c(
+    fixef(m_nof1)["trt_indicator:bm"],
+    coef(reg_summary)["bm_baseline"],
+    cor_result$estimate,
+    eta_sq
+  ),
+  P_value = c(
+    summary(m_nof1)$coefficients["trt_indicator:bm", "Pr(>|t|)"],
+    summary(reg_summary)$coefficients["bm_baseline", "Pr(>|t|)"],
+    cor_result$p.value,
+    anova_result["bm_tertile", "Pr(>F)"]
+  )
+)
+
+comparison %>%
+  mutate(Estimate = round(Estimate, 3),
+         P_value = format.pval(P_value, digits = 3))
+```
+
+### Visualizing Interaction Patterns
+
+```{r viz-interaction-pattern, fig.cap="Treatment effect by biomarker group"}
+ggplot(subj_summary, aes(x = bm_tertile, y = delta, fill = bm_tertile)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_brewer(palette = "Blues") +
+  labs(
+    title = "Treatment Effect by Biomarker Group",
+    subtitle = "Trend indicates biomarker × treatment interaction",
+    x = "Biomarker Tertile",
+    y = "Individual Treatment Effect (Δ)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r viz-scatter-interaction, fig.cap="Biomarker vs treatment effect"}
+ggplot(subj_summary, aes(x = bm_baseline, y = delta)) +
+  geom_point(alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", se = TRUE, color = "darkblue") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    title = "Biomarker vs Individual Treatment Effect",
+    subtitle = paste("r =", round(cor_result$estimate, 2)),
+    x = "Baseline Biomarker",
+    y = "Individual Treatment Effect (Δ)"
+  ) +
+  theme_minimal()
+```
+
+## Analytic Power Calculations
+
+Closed-form power formulas help plan studies and understand parameter impacts.
+
+### Power Function for Correlation
+
+```{r power-function}
+power_correlation <- function(r, n, alpha = 0.05) {
+  ncp <- abs(r) * sqrt(n - 2) / sqrt(1 - r^2)
+  t_crit <- qt(1 - alpha/2, n - 2)
+  power <- pt(t_crit, n - 2, ncp, lower.tail = FALSE) +
+           pt(-t_crit, n - 2, ncp, lower.tail = TRUE)
+  return(power)
+}
+
+# Power table
+power_table <- expand_grid(
+  r = c(0.1, 0.2, 0.3, 0.4, 0.5),
+  n = c(20, 40, 70, 100, 150)
+) %>%
+  mutate(power = map2_dbl(r, n, power_correlation))
+
+power_table %>%
+  pivot_wider(names_from = n, values_from = power, names_prefix = "N=") %>%
+  mutate(across(starts_with("N="), ~round(., 2)))
+```
+
+```{r power-curves, fig.cap="Power curves for interaction detection"}
+ggplot(power_table, aes(x = n, y = power, color = factor(r))) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  geom_hline(yintercept = 0.8, linetype = "dashed", alpha = 0.5) +
+  scale_color_viridis_d(option = "plasma", end = 0.8) +
+  labs(
+    title = "Power to Detect Biomarker × Treatment Interaction",
+    x = "Number of Subjects",
+    y = "Power",
+    color = "Effect Size (r)"
+  ) +
+  theme_minimal()
+```
+
+### Computing Expected Effect Size from Parameters
+
+```{r expected-effect-size}
+compute_expected_r <- function(beta_int, bm_sd, sigma_resid,
+                                obs_per_trt, sigma_treat_sd = 0) {
+  var_delta <- 2 * sigma_resid^2 / obs_per_trt + sigma_treat_sd^2
+  r <- beta_int * bm_sd / sqrt(var_delta)
+  return(r)
+}
+
+# For our simulation:
+expected_r <- compute_expected_r(
+  beta_int = beta_int_pop,
+  bm_sd = 1,
+  sigma_resid = sigma_resid,
+  obs_per_trt = cycles * obs_per_period / 2,
+  sigma_treat_sd = sigma_treat_sd
+)
+
+cat("Expected r:", round(expected_r, 3), "\n")
+cat("Power (N=25):", round(power_correlation(expected_r, n_subj), 3), "\n")
+```
+
+### Power Grid Across Parameters
+
+```{r power-grid, fig.cap="Power across design parameters"}
+power_grid <- expand_grid(
+  n_subj = c(20, 40, 70, 100),
+  beta_int = c(-0.5, -1.0, -1.5, -2.0),
+  obs_per_trt = c(3, 7, 21),
+  sigma_treat_sd = c(0, 3)
+) %>%
+  mutate(
+    bm_sd = 1,
+    sigma_resid = 5,
+    expected_r = compute_expected_r(beta_int, bm_sd, sigma_resid,
+                                     obs_per_trt, sigma_treat_sd),
+    power = map2_dbl(abs(expected_r), n_subj, power_correlation)
+  )
+
+ggplot(power_grid, aes(x = n_subj, y = power,
+                        color = factor(beta_int),
+                        linetype = factor(sigma_treat_sd))) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", alpha = 0.3) +
+  facet_wrap(~paste("Obs/trt =", obs_per_trt)) +
+  scale_color_viridis_d(option = "plasma", end = 0.85) +
+  labs(
+    title = "Power Across Design Parameters",
+    x = "Number of Subjects",
+    y = "Power",
+    color = "β_int",
+    linetype = "σ_treat"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
