@@ -31,7 +31,7 @@ treatment_effect <- BR_rate    # Alias for display purposes
 # Biomarker moderation of treatment effect
 # Higher biomarker → stronger treatment response
 # This creates the treatment × biomarker interaction
-biomarker_moderation <- 0.25   # Per SD of biomarker, treatment effect changes by 25%
+biomarker_moderation <- 0.45   # Per SD of biomarker, treatment effect changes by 45%
 
 baseline_mean <- 10.0          # Mean baseline response
 between_subject_sd <- 2.0      # SD of participant random effects
