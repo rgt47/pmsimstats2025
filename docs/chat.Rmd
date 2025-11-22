@@ -48,7 +48,7 @@ Aggregated N-of-1 studies combine individual trials through hierarchical modelin
 
 ## Hybrid Designs
 
-Between classic crossover and full N-of-1 designs lies a spectrum of hybrid approaches. These designs extend crossover trials to 3–4 periods, allowing some within-person replication while maintaining feasibility. For example, a 4-path randomization (ABAB, ABBA, BAAB, BABA) provides two treatment contrasts per person—insufficient for robust individual effect estimation but enough to partially estimate heterogeneity (Senn, 2002). Hybrid designs represent a practical compromise when full N-of-1 density is infeasible but pure crossover replication is inadequate.
+Between classic crossover and full N-of-1 designs lies a spectrum of hybrid approaches. These designs extend crossover trials to 3–4 periods, allowing some within-person replication while maintaining feasibility. For example, a 4-path randomization (ABAB, ABBA, BAAB, BABA) provides two balanced treatment contrasts per person—insufficient for robust individual effect estimation but enough to partially estimate heterogeneity (Senn, 2002). A 3-period design (ABA/BAB) provides 3 treatment exposures with unbalanced treatment allocation within individuals. Hybrid designs represent a practical compromise when full N-of-1 density is infeasible but pure crossover replication is inadequate.
 
 # Core Differences Between Designs
 
@@ -63,8 +63,8 @@ The essential difference lies in the estimands, not the analytic framework.
 
 Replication determines what can be estimated.
 
-- Crossover trials provide limited within-person replication—often only one treatment contrast—making random slopes for treatment unidentifiable (Brown, 1980).
-- Aggregated N-of-1 trials provide substantial within-person replication, enabling estimation of random slopes and heterogeneity.
+- Crossover trials provide limited within-person replication—a 3-period design (ABA/BAB) provides 3 treatment exposures but unbalanced contrasts—making random slopes for treatment difficult to identify robustly (Brown, 1980).
+- Aggregated N-of-1 trials provide substantial within-person replication (3 balanced cycles = 3 exposures to each treatment), enabling estimation of random slopes and heterogeneity.
 
 ## Homogeneity vs Heterogeneity
 
@@ -320,7 +320,7 @@ In practice, the two approaches often yield similar power, particularly when wit
 
 # Conclusion
 
-Although classic crossover and aggregated N-of-1 designs can both be analyzed using mixed-effects models, the correct models differ fundamentally. Crossover trials typically feature random-intercept models targeting a population-level treatment effect with minimal within-person replication. Aggregated N-of-1 designs feature hierarchical mixed models with random slopes for treatment, enabling estimation of individual effects and treatment heterogeneity. Hybrid designs occupy a middle ground, extending crossover to 3–4 periods for some heterogeneity estimation.
+Although classic crossover and aggregated N-of-1 designs can both be analyzed using mixed-effects models, the correct models differ fundamentally. Crossover trials (e.g., 3-period ABA/BAB) typically feature random-intercept models targeting a population-level treatment effect with limited and unbalanced within-person replication. Aggregated N-of-1 designs (e.g., 3 balanced cycles with 3 exposures to each treatment) feature hierarchical mixed models with random slopes for treatment, enabling estimation of individual effects and treatment heterogeneity. Hybrid designs occupy a middle ground, extending crossover to 3–4 periods for some heterogeneity estimation.
 
 A critical extension is biomarker × treatment interactions. All three designs can estimate population-level effect modification (does biomarker predict response on average?), but only aggregated N-of-1 designs provide sufficient within-person replication to estimate individual-specific biomarker interactions. This shifts the estimand from "Does treatment work?" to "For whom and under what conditions does treatment work?"—the fundamental question of personalized medicine.
 
