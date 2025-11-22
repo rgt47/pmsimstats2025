@@ -836,7 +836,7 @@ expected_r <- compute_expected_r(
   beta_int = beta_int_pop,
   bm_sd = 1,
   sigma_resid = sigma_resid,
-  obs_per_trt = cycles * obs_per_period / 2,
+  obs_per_trt = (n_periods / 2) * obs_per_period,  # 3 periods per treatment × 7 obs
   sigma_treat_sd = sigma_treat_sd
 )
 
