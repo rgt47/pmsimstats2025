@@ -779,6 +779,187 @@ ggplot(subj_summary, aes(x = bm_baseline, y = delta)) +
   theme_minimal()
 ```
 
+## Dichotomized Biomarker Analysis
+
+While continuous biomarkers maximize statistical power, dichotomizing into High/Low groups makes interaction concepts more intuitive. The question becomes simply: "Does the treatment effect differ between biomarker groups?"
+
+### Create Dichotomized Biomarker (Median Split)
+
+```{r dichotomize-biomarker}
+# Create High/Low biomarker groups using median split
+subj_summary <- subj_summary %>%
+  mutate(
+    bm_group = if_else(
+      bm_baseline >= median(bm_baseline),
+      "High",
+      "Low"
+    ),
+    bm_group = factor(bm_group, levels = c("Low", "High"))
+  )
+
+# Check group sizes
+table(subj_summary$bm_group)
+```
+
+### Two-Sample t-Test: Treatment Effect by Biomarker Group
+
+```{r ttest-biomarker}
+# Compare treatment effects between High and Low biomarker groups
+ttest_result <- t.test(delta ~ bm_group, data = subj_summary)
+ttest_result
+
+# Effect size: Cohen's d
+low_delta <- subj_summary %>% filter(bm_group == "Low") %>% pull(delta)
+high_delta <- subj_summary %>% filter(bm_group == "High") %>% pull(delta)
+
+pooled_sd <- sqrt(((length(low_delta) - 1) * var(low_delta) +
+                    (length(high_delta) - 1) * var(high_delta)) /
+                   (length(low_delta) + length(high_delta) - 2))
+cohens_d <- (mean(high_delta) - mean(low_delta)) / pooled_sd
+
+cat("Cohen's d:", round(cohens_d, 3), "\n")
+```
+
+### Group Means Table
+
+```{r group-means}
+# Summary statistics by biomarker group
+group_summary <- subj_summary %>%
+  group_by(bm_group) %>%
+  summarise(
+    n = n(),
+    mean_delta = mean(delta),
+    sd_delta = sd(delta),
+    se_delta = sd(delta) / sqrt(n()),
+    ci_lower = mean_delta - 1.96 * se_delta,
+    ci_upper = mean_delta + 1.96 * se_delta,
+    .groups = "drop"
+  )
+
+group_summary
+```
+
+### Visualizing the Interaction with Dichotomized Biomarker
+
+The following visualizations make the interaction concept immediately intuitive.
+
+```{r viz-dichotomized-bar, fig.cap="Treatment effect by biomarker group (bar chart)"}
+# Bar chart with error bars
+ggplot(group_summary, aes(x = bm_group, y = mean_delta, fill = bm_group)) +
+  geom_col(alpha = 0.8, width = 0.6) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    width = 0.2
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(values = c("Low" = "#91bfdb", "High" = "#fc8d59")) +
+  labs(
+    title = "Treatment Effect by Biomarker Group",
+    subtitle = "Bars show mean treatment effect with 95% CI",
+    x = "Biomarker Group",
+    y = "Mean Treatment Effect (Δ CAPS)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r viz-dichotomized-box, fig.cap="Distribution of treatment effects by biomarker group"}
+# Boxplot showing distributions
+ggplot(subj_summary, aes(x = bm_group, y = delta, fill = bm_group)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(width = 0.15, alpha = 0.5, size = 2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(values = c("Low" = "#91bfdb", "High" = "#fc8d59")) +
+  labs(
+    title = "Distribution of Individual Treatment Effects",
+    subtitle = "By biomarker group (High vs Low)",
+    x = "Biomarker Group",
+    y = "Individual Treatment Effect (Δ)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r viz-interaction-lines, fig.cap="Interaction plot: mean outcome by treatment and biomarker group"}
+# Classic interaction plot showing non-parallel lines
+# Compute mean outcomes by treatment and biomarker group
+interaction_means <- nof1 %>%
+  left_join(
+    subj_summary %>% select(subject, bm_group),
+    by = "subject"
+  ) %>%
+  group_by(bm_group, trt_indicator) %>%
+  summarise(
+    mean_Y = mean(Y),
+    se_Y = sd(Y) / sqrt(n()),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    treatment = if_else(trt_indicator == 1, "Active", "Placebo")
+  )
+
+ggplot(interaction_means, aes(x = treatment, y = mean_Y,
+                               color = bm_group, group = bm_group)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(ymin = mean_Y - 1.96 * se_Y, ymax = mean_Y + 1.96 * se_Y),
+    width = 0.1
+  ) +
+  scale_color_manual(values = c("Low" = "#91bfdb", "High" = "#fc8d59")) +
+  labs(
+    title = "Interaction Plot: Treatment × Biomarker Group",
+    subtitle = "Non-parallel lines indicate interaction",
+    x = "Treatment",
+    y = "Mean CAPS Score",
+    color = "Biomarker\nGroup"
+  ) +
+  theme_minimal()
+```
+
+### Interpretation
+
+The dichotomized analysis provides intuitive answers:
+
+- **Bar chart**: Directly compares mean treatment effects. If bars differ in height, the biomarker predicts response.
+- **Boxplot**: Shows not just means but distributions. Overlapping boxes suggest weak interaction.
+- **Interaction plot**: Non-parallel lines = interaction. The steeper the angle between lines, the stronger the interaction.
+
+For this simulation, the High biomarker group shows a treatment effect of approximately `r round(group_summary$mean_delta[group_summary$bm_group == "High"], 1)` points, while the Low group shows `r round(group_summary$mean_delta[group_summary$bm_group == "Low"], 1)` points—a difference of `r round(abs(diff(group_summary$mean_delta)), 1)` points.
+
+### Trade-off: Intuition vs Power
+
+Dichotomizing a continuous biomarker sacrifices statistical power (typically 20-30% loss) but gains interpretability. For a white paper focused on building intuition, this trade-off is worthwhile. For actual clinical trials, analyze both:
+
+1. **Primary analysis**: Continuous biomarker (maximum power)
+2. **Secondary analysis**: Dichotomized groups (clinical interpretability)
+
+### Mixed Model with Dichotomized Biomarker
+
+```{r lmer-dichotomized}
+# Add biomarker group to N-of-1 data
+nof1_dichot <- nof1 %>%
+  left_join(
+    subj_summary %>% select(subject, bm_group),
+    by = "subject"
+  )
+
+# Fit model with categorical biomarker
+m_nof1_dichot <- lmer(
+
+  Y ~ trt_indicator * bm_group + carryover + (1 + trt_indicator | subject),
+  data = nof1_dichot,
+  REML = TRUE
+)
+summary(m_nof1_dichot)
+
+# Treatment effect in each group
+emmeans(m_nof1_dichot, ~ trt_indicator | bm_group)
+
+# Test for interaction
+anova(m_nof1_dichot)
+```
+
 ## Analytic Power Calculations
 
 Closed-form power formulas help plan studies and understand parameter impacts.
