@@ -574,6 +574,88 @@ Participants are randomized to one of four paths, ensuring balanced treatment se
 
 ---
 
+# Parallel Design
+
+## Design Structure
+
+The parallel design provides a simpler comparison where participants are randomized once at the start:
+
+- **Treatment group**: Active drug at all 8 timepoints
+- **Control group**: Placebo at all 8 timepoints
+- **Expectancy**: 0.5 throughout (all blinded)
+
+| Week | Treatment Group | Control Group |
+|------|-----------------|---------------|
+| 4, 8, 9, 10, 11, 12, 16, 20 | Active | Placebo |
+
+## Key Differences from Hybrid
+
+| Aspect | Hybrid | Parallel |
+|--------|--------|----------|
+| Within-subject comparison | Yes (crossover) | No |
+| Carryover effects | Relevant | Not applicable |
+| Sample efficiency | Higher | Lower |
+| Design complexity | Complex | Simple |
+
+### Why Parallel Has Lower Power
+
+The parallel design cannot leverage within-subject comparisons. Each participant only experiences one treatment condition, so:
+
+1. **No crossover**: Cannot compare same participant on/off drug
+2. **Between-subject only**: Treatment effect confounded with individual differences
+3. **Carryover irrelevant**: No treatment switches means carryover parameter has no effect
+
+---
+
+# Simulation Parameter Grid
+
+## Effect Size Variation
+
+To evaluate both Type I error and power across effect sizes, we vary the biomarker moderation parameter:
+
+| $\beta_{\text{mod}}$ | Interpretation | Purpose |
+|----------------------|----------------|---------|
+| 0.00 | No interaction | Type I error (size of test) |
+| 0.25 | Weak effect | Low power regime |
+| 0.35 | Moderate effect | Medium power |
+| 0.45 | Strong effect | High power regime |
+
+## Complete Parameter Grid
+
+```r
+param_grid <- bind_rows(
+  # Hybrid design with carryover variations
+  expand_grid(
+    design = "hybrid",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    carryover_decay_rate = c(0, 0.5)
+  ),
+  # Parallel design (carryover not applicable)
+  expand_grid(
+    design = "parallel",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    carryover_decay_rate = c(0)
+  )
+)
+```
+
+This yields 12 conditions: 8 for hybrid (4 moderation × 2 carryover) + 4 for parallel.
+
+## Expected Results
+
+Under the null ($\beta_{\text{mod}} = 0$):
+
+- Type I error should be approximately 5%
+- Any significant results are false positives
+
+Under alternatives ($\beta_{\text{mod}} > 0$):
+
+- Power should increase with effect size
+- Hybrid should outperform parallel due to within-subject comparisons
+- Higher carryover should reduce power for hybrid (blurs on/off distinction)
+
+---
+
 # Statistical Analysis
 
 ## Mixed Effects Model
