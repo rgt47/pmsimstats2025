@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # ============================================================================
 
 n_participants <- 70
-n_iterations <- 20
+n_iterations <- 100
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5  # Biological Response: drug improvement rate
@@ -64,14 +64,21 @@ param_grid <- bind_rows(
   # Hybrid design with carryover variations
   expand_grid(
     design = "hybrid",
-    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
-    carryover_decay_rate = c(0, 0.5)
+    carryover_decay_rate = c(0, 0.5, 0.75)
+  ),
+  # Crossover design (standard AB/BA crossover)
+  expand_grid(
+    design = "crossover",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
+    biomarker_correlation = c(0.3),
+    carryover_decay_rate = c(0, 0.5, 0.75)
   ),
   # Parallel design (carryover = 0, not applicable)
   expand_grid(
     design = "parallel",
-    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
     carryover_decay_rate = c(0)
   )
@@ -777,30 +784,33 @@ p <- plot_power_results(summary_results)
 print(p)
 
 # Heatmap visualization of power by carryover, design, and effect size
+# Layout: carryover on x-axis, effect size on y-axis, faceted by design
 plot_power_heatmap <- function(data) {
-  # Create combined factor for y-axis: design + carryover
   data <- data %>%
     mutate(
-      design_carryover = paste0(
+      carryover_decay_rate = factor(carryover_decay_rate),
+      biomarker_moderation = factor(
+        biomarker_moderation,
+        levels = rev(sort(unique(biomarker_moderation)))
+      ),
+      design = factor(
         tools::toTitleCase(as.character(design)),
-        "\n(carryover=", carryover_decay_rate, ")"
-      ),
-      design_carryover = factor(
-        design_carryover,
-        levels = unique(design_carryover[order(design, carryover_decay_rate)])
-      ),
-      biomarker_moderation = factor(biomarker_moderation)
+        levels = c("Hybrid", "Parallel")
+      )
     )
 
   p <- ggplot(
     data,
-    aes(x = biomarker_moderation, y = design_carryover, fill = power)
+    aes(x = carryover_decay_rate, y = biomarker_moderation, fill = power)
   ) +
     geom_tile(color = "white", linewidth = 0.5) +
     geom_text(
-      aes(label = sprintf("%.0f%%", power * 100)),
-      color = ifelse(data$power > 0.5, "white", "black"),
-      size = 4,
+      aes(
+        label = sprintf("%.0f%%", power * 100),
+        color = after_stat(ifelse(fill > 0.5, "white", "black"))
+      ),
+      color = "black",
+      size = 5,
       fontface = "bold"
     ) +
     scale_fill_viridis_c(
@@ -811,14 +821,15 @@ plot_power_heatmap <- function(data) {
     ) +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_discrete(expand = c(0, 0)) +
+    facet_wrap(~design, ncol = 2) +
     labs(
-      title = "Statistical Power Heatmap",
+      title = "Statistical Power by Design",
       subtitle = sprintf(
         "N=%d participants, %d iterations per condition",
         n_participants, n_iterations
       ),
-      x = "Biomarker Moderation (effect size)",
-      y = "Design (carryover decay rate)"
+      x = "Carryover Decay Rate",
+      y = "Biomarker Moderation\n(effect size)"
     ) +
     theme_minimal(base_size = 12) +
     theme(
@@ -826,7 +837,9 @@ plot_power_heatmap <- function(data) {
       axis.ticks = element_blank(),
       plot.title = element_text(hjust = 0.5, face = "bold"),
       plot.subtitle = element_text(hjust = 0.5),
-      legend.position = "right"
+      legend.position = "right",
+      strip.text = element_text(face = "bold", size = 12),
+      strip.background = element_rect(fill = "grey90", color = NA)
     )
 
   return(p)
