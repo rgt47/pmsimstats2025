@@ -770,10 +770,13 @@ for (i in 1:nrow(param_grid)) {
           stop(paste("Interaction term not found:", interaction_term))
         }
 
-        # Calculate p-value
+        # Use lmerTest's Satterthwaite p-value (proper df for mixed models)
+        # The old method used df = nrow(data) - nrow(coefs) which is WAY too
+        # large for cross-level interactions (biomarker is between-subject,
+        # treatment/time is within-subject). Proper df ≈ n_participants, not
+        # n_observations.
         t_val <- coefs[idx, "t value"]
-        df_approx <- nrow(trial_data) - nrow(coefs)
-        p_value <- 2 * pt(-abs(t_val), df = df_approx)
+        p_value <- coefs[idx, "Pr(>|t|)"]  # Satterthwaite approximation
 
         tibble(
           iteration = iter,
