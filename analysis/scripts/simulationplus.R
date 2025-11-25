@@ -59,14 +59,24 @@ allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 # Parameter grid - what we're testing
 # Note: carryover only applies to designs with treatment switches
 # Include biomarker_moderation = 0 to evaluate Type I error (size of test)
+# IMPORTANT: For Type I error evaluation (bm_mod = 0), biomarker_correlation
+# must ALSO be 0, otherwise the covariance structure creates a real correlation
+# between biomarker and response that manifests as spurious interactions.
 param_grid <- bind_rows(
   # Open-label design (no treatment switches, carryover N/A)
   # Hendrickson Design 1
   expand_grid(
     design = "ol",
-    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
+    biomarker_moderation = c(0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
     carryover = c(0)  # Not applicable - always on drug
+  ),
+  # Type I error condition for OL (biomarker_correlation = 0)
+  expand_grid(
+    design = "ol",
+    biomarker_moderation = c(0),
+    biomarker_correlation = c(0),  # No correlation for true null
+    carryover = c(0)
   ),
   # Open-label + Blinded Discontinuation design
   # Hendrickson Design 2
