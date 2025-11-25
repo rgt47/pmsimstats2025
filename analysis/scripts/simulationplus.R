@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # ============================================================================
 
 n_participants <- 70
-n_iterations <- 20
+n_iterations <- 50
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5  # Biological Response: drug improvement rate
