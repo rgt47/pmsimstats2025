@@ -1,810 +1,722 @@
-#' vig5.R: Self-contained Monte Carlo clinical trial design
-#' comparison
-#'
-#' This is a monolithic script that contains all the code needed to
-#' run the Monte Carlo simulation from the
-#' monte_carlo_design_comparison vignette. All helper functions and
-#' simulation code are included directly in this file.
+# Simplified N-of-1 Trial Simulation - Constant Effect Model
+# Maximum simplification for learning
 
-# Load required packages
-# Suppress package startup messages
-# and clear the workspace
 rm(list = ls())
 suppressPackageStartupMessages({
   library(tidyverse)
-  library(lmerTest)       # For mixed models
-  library(viridis)        # For viridis color scales
-  library(MASS)           # For mvrnorm
-  library(corpcor)        # For is.positive.definite and make.positive.definite
+  library(lmerTest)
+  library(MASS)
   library(conflicted)
 })
 
-# Suppress conflict messages
-suppressMessages({
-  conflicts_prefer(dplyr::select, .quiet = TRUE)
-  conflicts_prefer(dplyr::filter, .quiet = TRUE)
-  conflicts_prefer(dplyr::lag, .quiet = TRUE)
-  conflicts_prefer(lmerTest::lmer, .quiet = TRUE)
-})
+# Resolve conflicts
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::lag)
+conflicts_prefer(lmerTest::lmer)
 
-# Source the common simulation and analysis functions
-source("pm_functions.R")
+# =============================================================================
+# PARAMETERS
+# =============================================================================
 
-#===========================================================================
-# Function: run_monte_carlo
-# Description: Run a Monte Carlo simulation for a design and
-# parameters with support for multiple randomization paths
-#===========================================================================
-run_monte_carlo <- function(design_name, params,
-                            sigma_cache = NULL) {
-  # FIXED CORRELATIONS: Do NOT adjust based on carryover
-  # Correlations remain constant; only MEANS are affected by carryover
+n_participants <- 70
+n_iterations <- 20
 
-  # Update model parameters with current simulation parameters
-  current_model_params <- model_params
-  current_model_params$N <- params$n_participants
-  current_model_params$c.bm <- params$biomarker_correlation
-  current_model_params$carryover_t1half <- params$carryover_t1half
+# Three-factor response model - RATE-BASED (points per week)
+BR_rate <- 0.5 # Biological Response: drug improvement rate
+ER_rate <- 0.2 # Expectancy Response: placebo improvement rate
+TR_rate <- 0.1 # Time-variant Response: natural improvement rate
+treatment_effect <- BR_rate # Alias for display purposes
 
-  # Correlation values remain FIXED (Hendrickson approach)
-  # Already set in model_params: c.tv = 0.8, c.pb = 0.8, c.br = 0.8,
-  # c.cf1t = 0.2, c.cfct = 0.1
+# Biomarker moderation of treatment effect
+# Higher biomarker → stronger treatment response
+# This creates the treatment × biomarker interaction
+# NOTE: biomarker_moderation is now set in the param_grid, not here
 
-  # Get the full design with all paths
-  if (design_name == "hybrid") {
-    full_design <- designs$hybrid$full_design
-    design_paths <- designs$hybrid$design_paths
-  } else {
-    full_design <- designs$crossover$full_design
-    design_paths <- designs$crossover$design_paths
+baseline_mean <- 10.0 # Mean baseline response
+between_subject_sd <- 2.0 # SD of participant random effects
+within_subject_sd <- 1.8 # SD of measurement noise
+biomarker_mean <- 5.0 # Mean biomarker value
+biomarker_sd <- 2.0 # SD of biomarker
+
+# Correlation parameters (from Hendrickson)
+# Autocorrelations within each response type
+c.br <- 0.8 # BR autocorrelation across timepoints
+c.er <- 0.8 # ER autocorrelation across timepoints
+c.tr <- 0.8 # TR autocorrelation across timepoints
+
+# Cross-correlations between response types
+c.cf1t <- 0.2 # Same-time cross-correlation (BR-ER, BR-TR, ER-TR)
+c.cfct <- 0.1 # Different-time cross-correlation
+
+# Biomarker and baseline correlations
+c.bm_baseline <- 0.3 # Biomarker-baseline correlation
+c.baseline_resp <- 0.4 # Baseline-response correlation
+
+# Allowed correlation values (finite grid for consistent results)
+allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+
+# Parameter grid - what we're testing
+# Note: carryover only applies to hybrid design (parallel has no treatment switches)
+# Include biomarker_moderation = 0 to evaluate Type I error (size of test)
+param_grid <- bind_rows(
+  # Hybrid design with carryover variations
+  expand_grid(
+    design = "hybrid",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    biomarker_correlation = c(0.3),
+    carryover_decay_rate = c(0, 0.5)
+  ),
+  # Parallel design (carryover = 0, not applicable)
+  expand_grid(
+    design = "parallel",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45),
+    biomarker_correlation = c(0.3),
+    carryover_decay_rate = c(0)
+  )
+)
+
+# =============================================================================
+# BUILD SIGMA WITH GUARANTEED PD (Time-Based AR(1))
+# =============================================================================
+
+# Build sigma using independent construction with automatic scaling
+# Structure: responses (24) conditioned on participant vars (2)
+build_sigma_guaranteed_pd <- function(weeks, c.bm, params) {
+  n_tp <- length(weeks)
+
+  # Index ranges for final 26x26 (for compatibility)
+  br_idx <- 1:n_tp
+  er_idx <- (n_tp + 1):(2 * n_tp)
+  tr_idx <- (2 * n_tp + 1):(3 * n_tp)
+  bm_idx <- 3 * n_tp + 1
+  bl_idx <- 3 * n_tp + 2
+
+  # =========================================================================
+  # STAGE 1: Build Σ₂₂ (2×2) - Biomarker & Baseline
+  # =========================================================================
+  # Always PD for |correlation| < 1
+
+  Sigma_22 <- matrix(c(
+    biomarker_sd^2,                                    c.bm_baseline * biomarker_sd * between_subject_sd,
+    c.bm_baseline * biomarker_sd * between_subject_sd, between_subject_sd^2
+  ), 2, 2)
+
+  Sigma_22_inv <- solve(Sigma_22)
+
+  # =========================================================================
+  # STAGE 2: Build Σ₁₁ (24×24) - Responses with Time-Based AR(1)
+  # =========================================================================
+  # Guaranteed PD by construction
+
+  # Helper: Build AR(1) covariance block based on actual time lags
+  build_ar1_time <- function(weeks, rho, sigma) {
+    n <- length(weeks)
+    Cov <- matrix(0, n, n)
+    for (i in 1:n) {
+      for (j in 1:n) {
+        time_lag <- abs(weeks[i] - weeks[j])
+        Cov[i, j] <- sigma^2 * rho^time_lag
+      }
+    }
+    return(Cov)
   }
 
-  # Check if we have a valid cached sigma for this
-  # parameter/design combination
-  cache_key <- create_sigma_cache_key(design_name, params)
-  cached_sigma <- if (!is.null(sigma_cache)) {
-    sigma_cache[[cache_key]]
-  } else {
-    NULL
+  # Build diagonal blocks (within each response type)
+  Sigma_BR <- build_ar1_time(weeks, c.br, within_subject_sd)
+  Sigma_ER <- build_ar1_time(weeks, c.er, within_subject_sd)
+  Sigma_TR <- build_ar1_time(weeks, c.tr, within_subject_sd)
+
+  # Initialize 24x24 with diagonal blocks
+  Sigma_11 <- matrix(0, 3 * n_tp, 3 * n_tp)
+  Sigma_11[br_idx, br_idx] <- Sigma_BR
+  Sigma_11[er_idx, er_idx] <- Sigma_ER
+  Sigma_11[tr_idx, tr_idx] <- Sigma_TR
+
+  # Add cross-correlations between response types
+  # Use time-based decay for cross-correlations too
+  for (i in 1:n_tp) {
+    for (j in 1:n_tp) {
+      time_lag <- abs(weeks[i] - weeks[j])
+
+      if (i == j) {
+        # Same timepoint: use c.cf1t
+        cross_cov <- c.cf1t * within_subject_sd^2
+      } else {
+        # Different timepoint: use c.cfct with time decay
+        cross_cov <- c.cfct * within_subject_sd^2 * (0.9^time_lag)
+      }
+
+      # BR-ER
+      Sigma_11[br_idx[i], er_idx[j]] <- cross_cov
+      Sigma_11[er_idx[j], br_idx[i]] <- cross_cov
+
+      # BR-TR
+      Sigma_11[br_idx[i], tr_idx[j]] <- cross_cov
+      Sigma_11[tr_idx[j], br_idx[i]] <- cross_cov
+
+      # ER-TR
+      Sigma_11[er_idx[i], tr_idx[j]] <- cross_cov
+      Sigma_11[tr_idx[j], er_idx[i]] <- cross_cov
+    }
   }
 
-  # If no valid cached sigma, skip this parameter combination
-  if (is.null(cached_sigma)) {
-    cat("Skipping", design_name, "design for parameters:",
-        "biomarker_correlation =", params$biomarker_correlation,
-        "carryover_t1half =", params$carryover_t1half,
-        "(non-positive definite sigma matrix)\n")
-    return(tibble())
-  }
+  # =========================================================================
+  # STAGE 3: Build Σ₁₂ (24×2) - Cross-covariance (regression coefficients)
+  # =========================================================================
 
-  # Set number of iterations
-  n_iter <- params$n_iterations
+  Sigma_12 <- matrix(0, 3 * n_tp, 2)
 
-  # Use map_dfr for sequential processing
-  all_results <- map_dfr(1:n_iter, function(iter) {
+  # Column 1: Biomarker effects on responses
+  # BR strongly correlated with biomarker (this is what we're testing)
+  Sigma_12[br_idx, 1] <- c.bm * within_subject_sd * biomarker_sd
+  # ER and TR weakly correlated with biomarker
+  Sigma_12[er_idx, 1] <- c.bm * 0.5 * within_subject_sd * biomarker_sd
+  Sigma_12[tr_idx, 1] <- c.bm * 0.5 * within_subject_sd * biomarker_sd
 
-    # Generate data for each path separately, then combine
-    # This follows Hendrickson's approach of simulating each path
-    # independently
-    all_path_data <- map_dfr(1:length(design_paths),
-                              function(path_id) {
-      # Get participants assigned to this path
-      path_participants <- full_design %>%
-        filter(path == path_id) %>%
-        pull(participant_id) %>%
-        unique()
+  # Column 2: Baseline effects on responses
+  Sigma_12[br_idx, 2] <- c.baseline_resp * within_subject_sd * between_subject_sd
+  Sigma_12[er_idx, 2] <- c.baseline_resp * within_subject_sd * between_subject_sd
+  Sigma_12[tr_idx, 2] <- c.baseline_resp * within_subject_sd * between_subject_sd
 
-      # Calculate how many participants in this path
-      n_in_path <- length(path_participants)
+  # =========================================================================
+  # STAGE 4: Check Schur Complement & Snap to Grid if Needed
+  # =========================================================================
 
-      if (n_in_path == 0) return(tibble())
+  # Function to find largest allowed correlation that keeps matrix PD
+  find_valid_correlation <- function(Sigma_11, Sigma_22_inv, c.bm_requested,
+                                     allowed_vals, sigma_resp, sigma_bm, sigma_bl,
+                                     br_idx, er_idx, tr_idx) {
+    # Try correlations from requested down to 0
+    valid_vals <- allowed_vals[allowed_vals <= c.bm_requested]
+    valid_vals <- sort(valid_vals, decreasing = TRUE)
 
-      # Update model params for this path's sample size
-      path_model_params <- current_model_params
-      path_model_params$N <- n_in_path
+    for (c.bm_try in valid_vals) {
+      # Rebuild Sigma_12 with this correlation
+      Sigma_12_try <- matrix(0, nrow(Sigma_11), 2)
+      Sigma_12_try[br_idx, 1] <- c.bm_try * sigma_resp * sigma_bm
+      Sigma_12_try[er_idx, 1] <- c.bm_try * 0.5 * sigma_resp * sigma_bm
+      Sigma_12_try[tr_idx, 1] <- c.bm_try * 0.5 * sigma_resp * sigma_bm
+      Sigma_12_try[br_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+      Sigma_12_try[er_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+      Sigma_12_try[tr_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
 
-      # Generate data for this path
-      path_sim_data <- generate_data(
-        model_param = path_model_params,
-        resp_param = resp_param,
-        baseline_param = baseline_param,
-        trial_design = design_paths[[path_id]],
-        empirical = FALSE,
-        make_positive_definite = FALSE,
-        seed = iter * 1000 + path_id,  # Unique seed per path
-        scale_factor = params$carryover_scale,
-        cached_sigma = cached_sigma
-      )
+      # Check if PD
+      cross_term <- Sigma_12_try %*% Sigma_22_inv %*% t(Sigma_12_try)
+      Sigma_cond_try <- Sigma_11 - cross_term
+      min_eig <- min(eigen(Sigma_cond_try, only.values = TRUE)$values)
 
-      # Add path and actual participant IDs
-      path_sim_data %>%
-        mutate(
-          path = path_id,
-          participant_id = path_participants[participant_id]
-        )
-    })
-
-    # Now we have data for all participants across all paths
-    sim_data <- all_path_data
-
-    # Convert to format needed for analysis
-    # Extract timepoint columns and reshape to long format
-    timepoint_columns <- grep("^W\\d+$", names(sim_data),
-                              value = TRUE)
-
-    # Keep only needed columns (including path if present)
-    cols_to_keep <- c("participant_id", "biomarker",
-                      timepoint_columns)
-    if ("path" %in% names(sim_data)) {
-      cols_to_keep <- c(cols_to_keep, "path")
+      if (min_eig > 1e-6) {
+        return(list(c.bm = c.bm_try, Sigma_12 = Sigma_12_try, Sigma_cond = Sigma_cond_try))
+      }
     }
 
-    analysis_data <- sim_data %>%
-      select(all_of(cols_to_keep)) %>%
-      rename(bm = biomarker)
+    # Fallback to 0 correlation
+    Sigma_12_try <- matrix(0, nrow(Sigma_11), 2)
+    Sigma_12_try[br_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+    Sigma_12_try[er_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+    Sigma_12_try[tr_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
+    cross_term <- Sigma_12_try %*% Sigma_22_inv %*% t(Sigma_12_try)
+    Sigma_cond_try <- Sigma_11 - cross_term
 
-    # Convert to long format for analysis
-    analysis_data_long <- analysis_data %>%
-      pivot_longer(
-        cols = all_of(timepoint_columns),
-        names_to = "timepoint",
-        values_to = "response"
-      ) %>%
-      # Extract week number
-      mutate(week = as.integer(str_replace(timepoint, "W", "")))
+    return(list(c.bm = 0, Sigma_12 = Sigma_12_try, Sigma_cond = Sigma_cond_try))
+  }
 
-    # Merge with design info to get actual treatment assignments
-    # This handles multiple paths correctly
-    design_info <- full_design %>%
-      select(participant_id, week, treatment, path) %>%
-      distinct()
+  # Find valid correlation on the grid
+  result <- find_valid_correlation(
+    Sigma_11, Sigma_22_inv, c.bm,
+    allowed_correlations, within_subject_sd, biomarker_sd, between_subject_sd,
+    br_idx, er_idx, tr_idx
+  )
 
-    analysis_data_long <- analysis_data_long %>%
-      left_join(design_info, by = c("participant_id", "week")) %>%
-      # Add carryover variables by participant
+  Sigma_12 <- result$Sigma_12
+  Sigma_cond <- result$Sigma_cond
+  effective_c.bm <- result$c.bm
+
+  if (effective_c.bm < c.bm) {
+    cat(sprintf(
+      "  Snapped biomarker correlation: %.2f → %.2f (to ensure PD)\n",
+      c.bm, effective_c.bm
+    ))
+  }
+
+  # =========================================================================
+  # Return partitioned result
+  # =========================================================================
+
+  return(list(
+    Sigma_11 = Sigma_11,
+    Sigma_22 = Sigma_22,
+    Sigma_12 = Sigma_12,
+    Sigma_cond = Sigma_cond,
+    Sigma_22_inv = Sigma_22_inv,
+    requested_c.bm = c.bm,
+    effective_c.bm = effective_c.bm,
+    indices = list(br = br_idx, er = er_idx, tr = tr_idx, bm = bm_idx, bl = bl_idx)
+  ))
+}
+
+# =============================================================================
+# TWO-STAGE DATA GENERATION (2x2 + 24x24)
+# =============================================================================
+
+# Generate one participant's data using two-stage approach
+# Uses pre-computed partitioned sigma from build_sigma_guaranteed_pd
+generate_participant_twostage <- function(sigma_parts, idx) {
+  # Stage 1: Generate participant variables (biomarker, baseline) from 2x2
+  x2 <- mvrnorm(1, mu = c(0, 0), Sigma = sigma_parts$Sigma_22)
+
+  # Stage 2: Compute conditional mean given participant vars
+  # Conditional mean: μ₁|₂ = Σ₁₂ Σ₂₂⁻¹ x₂
+  mu_cond <- sigma_parts$Sigma_12 %*% sigma_parts$Sigma_22_inv %*% x2
+
+  # Generate responses from conditional distribution
+  # Sigma_cond is pre-computed and guaranteed PD
+  x1 <- mvrnorm(1, mu = as.vector(mu_cond), Sigma = sigma_parts$Sigma_cond)
+
+  # Extract components
+  n_tp <- length(idx$br)
+  list(
+    biomarker = x2[1] + biomarker_mean,
+    baseline = x2[2] + baseline_mean,
+    br_random = x1[1:n_tp],
+    er_random = x1[(n_tp + 1):(2 * n_tp)],
+    tr_random = x1[(2 * n_tp + 1):(3 * n_tp)]
+  )
+}
+
+# =============================================================================
+# VERIFICATION: Compare two-stage vs direct 26x26
+# =============================================================================
+
+verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
+  cat("Verifying two-stage equivalence with", n_samples, "samples...\n")
+
+  # Partition sigma
+  partitioned <- partition_sigma(Sigma, idx)
+
+  # Generate samples using direct method
+  set.seed(999)
+  samples_direct <- mvrnorm(n_samples, mu = rep(0, nrow(Sigma)), Sigma = Sigma)
+
+  # Generate samples using two-stage method
+  set.seed(888)
+  samples_twostage <- matrix(0, n_samples, nrow(Sigma))
+  resp_idx <- c(idx$br, idx$er, idx$tr)
+  part_idx <- c(idx$bm, idx$bl)
+
+  for (i in 1:n_samples) {
+    result <- generate_participant_twostage(partitioned, idx)
+    samples_twostage[i, resp_idx] <- c(result$br_random, result$er_random, result$tr_random)
+    samples_twostage[i, part_idx] <- c(
+      result$biomarker - biomarker_mean,
+      result$baseline - baseline_mean
+    )
+  }
+
+  # Compare covariance matrices
+  cov_direct <- cov(samples_direct)
+  cov_twostage <- cov(samples_twostage)
+
+  max_cov_diff <- max(abs(cov_direct - cov_twostage))
+  mean_cov_diff <- mean(abs(cov_direct - cov_twostage))
+
+  # Compare means (should both be ~0)
+  max_mean_diff <- max(abs(colMeans(samples_direct) - colMeans(samples_twostage)))
+
+  cat(sprintf("  Max covariance difference: %.6f\n", max_cov_diff))
+  cat(sprintf("  Mean covariance difference: %.6f\n", mean_cov_diff))
+  cat(sprintf("  Max mean difference: %.6f\n", max_mean_diff))
+
+  # Check if differences are within sampling error
+  # Expected sampling error for covariance ~= 2*sigma^2/sqrt(n)
+  expected_error <- 2 * max(diag(Sigma))^2 / sqrt(n_samples)
+
+  if (max_cov_diff < expected_error * 3) {
+    cat("  ✓ PASSED: Differences within expected sampling error\n")
+    return(TRUE)
+  } else {
+    cat("  ✗ FAILED: Differences exceed expected sampling error\n")
+    return(FALSE)
+  }
+}
+
+# =============================================================================
+# DESIGN STRUCTURES
+# =============================================================================
+
+# Measurement schedule (same for all designs)
+measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
+
+# -----------------------------------------------------------------------------
+# HYBRID DESIGN: Open-label run-in + blinded crossover
+# -----------------------------------------------------------------------------
+create_hybrid_design <- function(n_participants, measurement_weeks) {
+  # Randomize participants to 4 paths (balanced)
+  path_assignment <- sample(rep(1:4, length.out = n_participants))
+
+  # Create design matrix
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      path = path_assignment[participant_id],
+
+      # Treatment assignment based on path and week
+      # Weeks 4, 8: Open-label, all on active
+      # Week 9: Blinded, all on active
+      # Week 10: Blinded, randomized (paths 1,2 = active; paths 3,4 = placebo)
+      # Weeks 11, 12: Blinded, all on placebo
+      # Week 16: Blinded crossover
+      # Week 20: Blinded crossover
+      treatment = case_when(
+        week %in% c(4, 8) ~ 1, # Open-label: all active
+        week == 9 ~ 1, # Blinded: all active
+        week == 10 & path %in% c(1, 2) ~ 1, # Randomized: paths 1,2 active
+        week == 10 & path %in% c(3, 4) ~ 0, # Randomized: paths 3,4 placebo
+        week %in% c(11, 12) ~ 0, # All on placebo
+        week == 16 & path %in% c(1, 3) ~ 1, # Crossover period
+        week == 16 & path %in% c(2, 4) ~ 0,
+        week == 20 & path %in% c(1, 3) ~ 0, # Crossover period
+        week == 20 & path %in% c(2, 4) ~ 1,
+        TRUE ~ NA_real_
+      ),
+
+      # Expectancy: 1.0 = open-label (know they're on drug), 0.5 = blinded
+      expectancy = if_else(week %in% c(4, 8), 1.0, 0.5)
+    )
+}
+
+# -----------------------------------------------------------------------------
+# PARALLEL DESIGN: Randomized to treatment or placebo for entire study
+# -----------------------------------------------------------------------------
+create_parallel_design <- function(n_participants, measurement_weeks) {
+  # Randomize participants to treatment (1) or placebo (0) - balanced
+  treatment_assignment <- sample(rep(0:1, length.out = n_participants))
+
+  # Create design matrix
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      path = treatment_assignment[participant_id] + 1, # Path 1 = placebo, Path 2 = treatment
+
+      # Treatment: same throughout study based on randomization
+      treatment = treatment_assignment[participant_id],
+
+      # Expectancy: 0.5 throughout (all blinded)
+      expectancy = 0.5
+    )
+}
+
+# =============================================================================
+# RUN SIMULATION
+# =============================================================================
+
+cat("Running simulation with constant effect model...\n")
+cat("Treatment effect =", treatment_effect, "\n")
+cat("Participants =", n_participants, "\n")
+cat("Iterations per condition =", n_iterations, "\n\n")
+
+results <- tibble()
+
+for (i in 1:nrow(param_grid)) {
+  params <- as.list(param_grid[i, ])
+  cat(sprintf(
+    "Condition %d: design=%s, bm_mod=%.2f, carryover=%.2f\n",
+    i, params$design, params$biomarker_moderation, params$carryover_decay_rate
+  ))
+
+  # Run iterations
+  for (iter in 1:n_iterations) {
+    set.seed(iter * 1000 + i)
+
+    # Create design with fresh path randomization for this iteration
+    if (params$design == "hybrid") {
+      trial_design <- create_hybrid_design(n_participants, measurement_weeks)
+    } else if (params$design == "parallel") {
+      trial_design <- create_parallel_design(n_participants, measurement_weeks)
+    }
+
+    n_timepoints <- length(measurement_weeks)
+
+    # Build sigma with guaranteed PD using time-based AR(1)
+    sigma_parts <- build_sigma_guaranteed_pd(measurement_weeks, params$biomarker_correlation, params)
+    idx <- sigma_parts$indices
+    effective_bm_corr <- sigma_parts$effective_c.bm
+
+    # Generate correlated data for each participant using TWO-STAGE approach
+    all_participant_data <- list()
+
+    for (pid in 1:n_participants) {
+      # Two-stage generation: (biomarker, baseline) then (BR, ER, TR | biomarker, baseline)
+      result <- generate_participant_twostage(sigma_parts, idx)
+
+      all_participant_data[[pid]] <- tibble(
+        participant_id = pid,
+        biomarker = result$biomarker,
+        baseline = result$baseline,
+        br_random = result$br_random,
+        er_random = result$er_random,
+        tr_random = result$tr_random
+      )
+    }
+
+    participant_data <- bind_rows(all_participant_data) %>%
+      group_by(participant_id) %>%
+      mutate(timepoint_idx = row_number()) %>%
+      ungroup()
+
+    # Get biomarker moderation for this condition
+    bm_mod <- params$biomarker_moderation
+
+    # Generate trial data
+    trial_data <- trial_design %>%
+      group_by(participant_id) %>%
+      mutate(timepoint_idx = row_number()) %>%
+      ungroup() %>%
+      left_join(participant_data, by = c("participant_id", "timepoint_idx")) %>%
       group_by(participant_id) %>%
       arrange(week) %>%
       mutate(
-        # Calculate design-specific carryover effects
-        prev_treatment = lag(treatment, default = 0),
-        treatment_stopped = (prev_treatment == 1 & treatment == 0),
+        # ===========================================
+        # CUMULATIVE TIME TRACKING
+        # ===========================================
 
-        # Calculate carryover effect uniformly across designs
-        # Time since discontinuation
-        time_since_discontinuation = ifelse(
-          treatment == 0,
-          cumsum(treatment == 0),
-          0
-        ),
-        # Carryover effect (exponential decay)
-        carryover_effect = if (params$carryover_t1half > 0) {
-          ifelse(
-            time_since_discontinuation > 0,
-            (1/2)^(params$carryover_scale *
-                   time_since_discontinuation /
-                   params$carryover_t1half),
-            0
+        # Cumulative weeks on drug
+        weeks_on_drug = cumsum(treatment),
+
+        # Cumulative weeks with expectancy (weighted by expectancy level)
+        weeks_with_expectancy = cumsum(expectancy),
+
+        # Cumulative weeks in trial (for time trend)
+        weeks_in_trial = week - min(week),
+
+        # Track when drug stops for carryover calculation
+        time_off = cumsum(treatment == 0),
+
+        # Carryover effect indicator (first week off drug after being on)
+        carryover_effect = as.numeric(treatment == 0 & lag(treatment, default = 1) == 1),
+
+        # ===========================================
+        # THREE-FACTOR RESPONSE MODEL (RATE-BASED + RANDOM VARIATION)
+        # ===========================================
+
+        # Center biomarker for moderation calculation
+        bm_centered = (biomarker - biomarker_mean) / biomarker_sd,
+
+        # 1. BR (Biological Response) - accumulates while on drug + random variation
+        #    - Mean: BR_rate points per week on drug
+        #    - BIOMARKER MODERATION: effect scales with biomarker level
+        #    - Carryover: partial at first off-drug timepoint, then 0
+        #    - Random: from 26x26 sigma matrix (correlated across time)
+        BR_mean = {
+          # Treatment effect moderated by biomarker
+          # Higher biomarker → stronger BR effect
+          effective_BR_rate <- BR_rate * (1 + bm_mod * bm_centered)
+
+          br_accumulated <- lag(weeks_on_drug, default = 0) * effective_BR_rate
+          first_off <- treatment == 0 & lag(treatment, default = 1) == 1
+
+          ifelse(treatment == 1,
+            weeks_on_drug * effective_BR_rate,
+            ifelse(first_off,
+              br_accumulated * params$carryover_decay_rate,
+              0
+            )
           )
-        } else {
-          0
-        }
+        },
+        BR = BR_mean + br_random,
+
+        # 2. ER (Expectancy Response) - accumulates based on expectancy + random variation
+        #    - Mean: ER_rate points per week × expectancy level
+        #    - Random: from 26x26 sigma matrix
+        ER_mean = weeks_with_expectancy * ER_rate,
+        ER = ER_mean + er_random,
+
+        # 3. TR (Time-variant Response) - linear time trend + random variation
+        #    - Mean: TR_rate points per week
+        #    - Random: from 26x26 sigma matrix
+        TR_mean = weeks_in_trial * TR_rate,
+        TR = TR_mean + tr_random,
+
+        # ===========================================
+        # TOTAL RESPONSE
+        # ===========================================
+        # Response = baseline + BR + ER + TR
+        # Note: baseline already includes between-subject variability from sigma
+        # Note: biomarker moderation is applied explicitly to BR_mean above
+        response = baseline + BR + ER + TR
       ) %>%
       ungroup()
 
-    # Analyze with linear mixed model
-    # Following Hendrickson et al. (2020) approach:
-    # - Always include time effect (week) to account for period effects
-    # - Biomarker × treatment interaction as primary effect of interest
-    # - Carryover effect when applicable (enhancement over Hendrickson)
-    # - Random intercept for participant-level variation
-    model_result <- tryCatch({
+    # Fit mixed model
+    model_result <- tryCatch(
+      {
+        # Re-center biomarker using sample mean (for model interpretation)
+        # Note: data generation uses population parameters for standardization
+        trial_data <- trial_data %>%
+          mutate(bm_centered = biomarker - mean(biomarker))
 
-      # Include carryover effect in model if present
-      if (params$carryover_t1half > 0) {
-        model <- lmer(
-          response ~ treatment * bm + week + carryover_effect +
-            (1 | participant_id),
-          data = analysis_data_long
+        if (params$carryover_decay_rate > 0) {
+          model <- lmer(
+            response ~ treatment * bm_centered + week + carryover_effect +
+              (1 | participant_id),
+            data = trial_data
+          )
+        } else {
+          model <- lmer(
+            response ~ treatment * bm_centered + week +
+              (1 | participant_id),
+            data = trial_data
+          )
+        }
+
+        # Extract treatment × biomarker interaction
+        coefs <- summary(model)$coefficients
+        idx <- which(rownames(coefs) == "treatment:bm_centered")
+
+        if (length(idx) == 0) {
+          stop("Interaction term not found")
+        }
+
+        # Calculate p-value
+        t_val <- coefs[idx, "t value"]
+        df_approx <- nrow(trial_data) - nrow(coefs)
+        p_value <- 2 * pt(-abs(t_val), df = df_approx)
+
+        tibble(
+          iteration = iter,
+          design = params$design,
+          biomarker_moderation = params$biomarker_moderation,
+          biomarker_correlation = effective_bm_corr, # Use effective (grid) value
+          carryover_decay_rate = params$carryover_decay_rate,
+          effect_size = coefs[idx, "Estimate"],
+          se = coefs[idx, "Std. Error"],
+          t_value = t_val,
+          p_value = p_value,
+          significant = p_value < 0.05
         )
-      } else {
-        model <- lmer(
-          response ~ treatment * bm + week + (1 | participant_id),
-          data = analysis_data_long
+      },
+      error = function(e) {
+        cat("  Error in iteration", iter, ":", conditionMessage(e), "\n")
+        tibble(
+          iteration = iter, design = params$design,
+          biomarker_moderation = params$biomarker_moderation,
+          biomarker_correlation = effective_bm_corr,
+          carryover_decay_rate = params$carryover_decay_rate, effect_size = NA,
+          se = NA, t_value = NA, p_value = NA, significant = NA
         )
       }
-
-      # Extract model summary
-      model_summary <- summary(model)
-      coefs <- model_summary$coefficients
-
-      # Get row index for interaction term
-      interaction_idx <- which(rownames(coefs) == "treatment:bm")
-
-      # Extract statistics of interest
-      effect_size <- coefs[interaction_idx, "Estimate"]
-      std_error <- coefs[interaction_idx, "Std. Error"]
-      t_value <- coefs[interaction_idx, "t value"]
-
-      # Calculate p-value (2-sided test)
-      df <- model_summary$devcomp$dims[["n"]] - length(coefs[,1])
-      p_value <- 2 * pt(-abs(t_value), df = df)
-      significant <- p_value < 0.05
-
-      # Return results
-      tibble(
-        effect_size = effect_size,
-        std_error = std_error,
-        t_value = t_value,
-        p_value = p_value,
-        significant = significant,
-        error = FALSE
-      )
-    }, error = function(e) {
-      # Return NA values on error
-      tibble(
-        effect_size = NA_real_,
-        std_error = NA_real_,
-        t_value = NA_real_,
-        p_value = NA_real_,
-        significant = NA,
-        error = TRUE
-      )
-    })
-
-    # Add metadata for this iteration
-    model_result %>%
-      mutate(
-        iteration = iter,
-        design = design_name,
-        n_participants = params$n_participants,
-        biomarker_correlation = params$biomarker_correlation,
-        carryover_t1half = params$carryover_t1half
-      )
-  })
-
-  return(all_results)
-}
-#=========================================================================== 
-# End Function: run_monte_carlo
-#=========================================================================== 
-
-#=========================================================================== 
-# Function: run_parameter_sweep
-# Description: Run simulations for multiple parameter combinations
-#=========================================================================== 
-run_parameter_sweep <- function(param_grid) {
-  # Number of parameter combinations
-  n_combinations <- nrow(param_grid)
-
-  # Run simulations for each parameter combination
-  results <- map_dfr(1:n_combinations, function(i) {
-    # Extract current parameters
-    current_params <- as.list(param_grid[i,])
-    current_params$n_iterations <- base_params$n_iterations
-    current_params$treatment_effect <-
-      base_params$treatment_effect
-    current_params$carryover_scale <-
-      base_params$carryover_scale
-    current_params$between_subject_sd <-
-      base_params$between_subject_sd
-    current_params$within_subject_sd <-
-      base_params$within_subject_sd
-
-    # Run Monte Carlo for each design
-    # Run Hybrid N-of-1 design
-    hybrid_results <- run_monte_carlo("hybrid", current_params)
-
-    # Run Traditional Crossover design
-    crossover_results <- run_monte_carlo("crossover", current_params)
-
-    # Combine results
-    bind_rows(hybrid_results, crossover_results)
-  })
-
-  return(results)
-}
-#=========================================================================== 
-# End Function: run_parameter_sweep
-#=========================================================================== 
-
-#===========================================================================
-# Function: create_designs
-# Description: Create trial designs for a given number of
-# participants with Hendrickson's 4-path randomization structure
-#===========================================================================
-create_designs <- function(n_participants) {
-  # HYBRID N-OF-1 DESIGN (Design 4) - Hendrickson 4-path structure
-  # Implements 2x2 factorial randomization:
-  #   Factor 1: Blinded discontinuation (stay on vs discontinue)
-  #   Factor 2: Crossover sequence (AB vs BA)
-  #
-  # Phase structure (20 weeks total):
-  #   Weeks 1-8:   Open-label (all on treatment)
-  #   Weeks 9-12:  Blinded discontinuation (randomized)
-  #   Weeks 13-16: Crossover period 1 (randomized sequence)
-  #   Weeks 17-20: Crossover period 2 (opposite of period 1)
-
-  # Randomly assign participants to one of 4 paths
-  # Ensure roughly equal distribution across paths
-  path_assignment <- rep(1:4, length.out = n_participants)
-  path_assignment <- sample(path_assignment)  # Randomize
-
-  # Path definitions (matching Hendrickson's tdNof11):
-  # pathA: BD stay on (1,1), CO drug first (1,0)
-  # pathB: BD stay on (1,1), CO placebo first (0,1)
-  # pathC: BD discontinue (0,0), CO drug first (1,0)
-  # pathD: BD discontinue (0,0), CO placebo first (0,1)
-
-  hybrid_design <- expand_grid(
-    participant_id = 1:n_participants,
-    week = 1:20
-  ) %>%
-  mutate(
-    path = path_assignment[participant_id],
-    # Define treatment schedule based on path
-    treatment = case_when(
-      # Weeks 1-8: Open-label phase (all paths on treatment)
-      week <= 8 ~ 1,
-
-      # Weeks 9-12: Blinded discontinuation phase
-      # Paths A & B: stay on drug
-      # Paths C & D: discontinue (off drug)
-      week >= 9 & week <= 12 & path %in% c(1, 2) ~ 1,
-      week >= 9 & week <= 12 & path %in% c(3, 4) ~ 0,
-
-      # Weeks 13-16: Crossover period 1
-      # Paths A & C: on drug (drug-first sequence)
-      # Paths B & D: off drug (placebo-first sequence)
-      week >= 13 & week <= 16 & path %in% c(1, 3) ~ 1,
-      week >= 13 & week <= 16 & path %in% c(2, 4) ~ 0,
-
-      # Weeks 17-20: Crossover period 2 (switch)
-      # Paths A & C: off drug
-      # Paths B & D: on drug
-      week >= 17 & week <= 20 & path %in% c(1, 3) ~ 0,
-      week >= 17 & week <= 20 & path %in% c(2, 4) ~ 1,
-
-      TRUE ~ NA_real_
-    ),
-    # Define expectancy (blinding)
-    expectancy = case_when(
-      week <= 8 ~ 1,        # Open-label: know on drug
-      week >= 9 & week <= 20 ~ 0.5,  # Blinded phases
-      TRUE ~ NA_real_
-    ),
-    # Define periods for analysis
-    period = case_when(
-      week <= 8 ~ 1,        # Open-label
-      week >= 9 & week <= 12 ~ 2,   # Blinded discontinuation
-      week >= 13 & week <= 20 ~ 3,  # Crossover
-      TRUE ~ NA_real_
-    )
-  )
-
-  # TRADITIONAL CROSSOVER DESIGN (Design 3)
-  # Simple AB vs BA randomization (no change from original)
-  crossover_design <- expand_grid(
-    participant_id = 1:n_participants,
-    week = 1:20
-  ) %>%
-  mutate(
-    # Randomly assign to AB or BA sequence
-    sequence = if_else(participant_id %% 2 == 0, "AB", "BA"),
-    # Set path based on sequence (path 1 = AB, path 2 = BA)
-    path = if_else(participant_id %% 2 == 0, 1, 2),
-    # Set treatment based on sequence
-    treatment = case_when(
-      sequence == "AB" & week <= 10 ~ 1,
-      sequence == "AB" & week > 10 ~ 0,
-      sequence == "BA" & week <= 10 ~ 0,
-      sequence == "BA" & week > 10 ~ 1,
-      TRUE ~ NA_real_
-    ),
-    expectancy = 0.5,  # Blinded throughout
-    period = if_else(week <= 10, 1, 2)
-  )
-
-  # Return both designs in a list
-  return(list(
-    hybrid = hybrid_design,
-    crossover = crossover_design
-  ))
-}
-#=========================================================================== 
-# End Function: create_designs
-#=========================================================================== 
-
-#===========================================================================
-# Function: prepare_design_for_simulation
-# Description: Convert designs to a format compatible with
-# generate_data
-#=========================================================================== 
-prepare_design_for_simulation <- function(design_df) {
-  # Create a copy to avoid modifying the original
-  design <- design_df %>%
-    as_tibble()
-
-  # Add timepoint names that are compatible with generate_data
-  design <- design %>%
-    arrange(participant_id, week) %>%
-    mutate(
-      timepoint_name = paste0("W", week),
-      tod = treatment,  # Time on drug (1 = on, 0 = off)
-      # Use expectancy column if present, otherwise derive from
-      # treatment
-      e = if ("expectancy" %in% names(.)) expectancy else
-          if_else(tod > 0, 1, 0),
-      t_wk = 1  # Each timepoint is 1 week
-    ) %>%
-    group_by(participant_id) %>%
-    arrange(participant_id, week) %>%
-    mutate(
-      # Time on pharmacologic biomarker (cumulative when
-      # expectancy > 0)
-      tpb = cumsum(e),
-      # Calculate time since discontinuation for carryover
-      last_drug = lag(tod, default = 0),
-      drug_stopped = (last_drug == 1 & tod == 0),
-      # Time since discontinuation
-      tsd = if_else(tod == 0, cumsum(tod == 0), 0)
-    ) %>%
-    ungroup()
-
-  # Ensure the design has all required columns
-  design <- design %>%
-    select(timepoint_name, t_wk, e, tod, tsd, tpb)
-
-  return(design)
-}
-#=========================================================================== 
-# End Function: prepare_design_for_simulation
-#=========================================================================== 
-# ==================
-# ==================
-# ==================
-# ==================
-
-# ==================
-# Main script begins
-# ==================
-
-# Base set of parameters - these will be varied in the Monte Carlo
-# simulation. Parameters informed by Hendrickson et al. (2020) for
-# realistic clinical scenarios
-base_params <- list(
-  # Sample size - modest for pragmatic trial designs
-  n_participants = 30,
-
-  # Biomarker-response correlation (default - will be varied)
-  # Hendrickson et al. studied correlations in this range
-  # Moderate correlation - proven to work in positive definiteness
-  # testing
-  biomarker_correlation = 0.2,
-
-  # Treatment effect (baseline)
-  # Reduced from 5 for more realistic power
-  treatment_effect = 3.5,
-
-  # Carryover effect parameters
-  # Half-life of carryover effect in weeks
-  carryover_t1half = 1,
-  # Scale factor (set to 1 to match Hendrickson)
-  carryover_scale = 1,
-
-  # Random variation - increased to make signal detection more
-  # challenging
-  # Increased between-subject variability
-  between_subject_sd = 3.0,
-  # Increased within-subject variability
-  within_subject_sd = 2.8,
-
-  # Number of Monte Carlo iterations
-  n_iterations = 20
-)
-
-# Define parameter grid for simulation
-param_grid <- expand_grid(
-  n_participants = c(70),
-  # Reasonable range (will be forced positive definite)
-  biomarker_correlation = c(0.2, 0.4),
-  # Three carryover conditions: none, moderate, strong
-  carryover_t1half = c(0, 1.0, 2.0),
-  # Increased from 3.0 to improve power
-  treatment_effect = c(5.0)
-)
-# Define base correlation parameters for carryover adjustment
-# FIXED CORRELATION STRUCTURE (Hendrickson et al. 2020)
-# These values do NOT vary with carryover parameters.
-# Carryover affects MEANS only, not correlations.
-# See: correlation_structure_design.pdf, carryover_correlation_theory.tex
-
-# Create model_params compatible with generate_data function
-model_params <- list(
-  N = base_params$n_participants,
-  # Correlation between biomarker and response (VARIES in parameter sweep)
-  c.bm = base_params$biomarker_correlation,
-
-  # Carryover parameters (affects MEANS only)
-  carryover_t1half = base_params$carryover_t1half,
-
-  # FIXED CORRELATION VALUES (Hendrickson approach)
-  # These do NOT change with carryover_t1half
-  c.tv = 0.8,    # Autocorrelation: time_variant across time
-  c.pb = 0.8,    # Autocorrelation: pharm_biomarker across time
-  c.br = 0.8,    # Autocorrelation: bio_response across time
-  c.cf1t = 0.2,  # Cross-correlation: different factors, same time
-  c.cfct = 0.1   # Cross-correlation: different factors, different times
-)
-
-# Set up response parameters
-resp_param <- tibble(
-  cat = c("time_variant", "pharm_biomarker", "bio_response"),
-  # Maximum response value
-  max = c(1.0, 1.0, base_params$treatment_effect),
-  disp = c(2.0, 2.0, 2.0),  # Displacement
-  rate = c(0.3, 0.3, 0.3),  # Rate
-  # Standard deviation
-  sd = c(base_params$within_subject_sd,
-         base_params$within_subject_sd,
-         base_params$within_subject_sd)
-)
-
-# Set up baseline parameters
-baseline_param <- tibble(
-  cat = c("biomarker", "baseline"),
-  m = c(5.0, 10.0),  # Mean values
-  # Standard deviation
-  sd = c(2.0, base_params$between_subject_sd)
-)
-
-# Analysis options
-analysis_options <- list(
-  use_expectancy = TRUE,  # Use time information in model
-  random_slope = FALSE,   # No random slopes for simplicity
-  full_output = FALSE,    # Return only summary statistics
-  simple_carryover = FALSE, # Use complex carryover model
-  carryover_halflife = base_params$carryover_t1half,
-  carryover_scale_factor = base_params$carryover_scale
-)
-
-# Options for simulation
-sim_options <- list(
-  n_reps = base_params$n_iterations  # Number of Monte Carlo replications
-)
-
-# Create designs for base sample size for visualization
-original_designs <- create_designs(base_params$n_participants)
-
-# For HYBRID design: Create separate design templates for each path
-# following Hendrickson's approach
-hybrid_paths <- list()
-for (path_id in 1:4) {
-  path_design <- original_designs$hybrid %>%
-    filter(path == path_id, participant_id ==
-           min(participant_id[path == path_id]))
-
-  hybrid_paths[[path_id]] <- prepare_design_for_simulation(
-    path_design
-  )
-}
-
-# For CROSSOVER design: Create separate templates for AB and BA
-crossover_paths <- list()
-# Path 1: AB sequence (even IDs)
-crossover_paths[[1]] <- prepare_design_for_simulation(
-  original_designs$crossover %>%
-    filter(participant_id %% 2 == 0,
-           participant_id == min(participant_id[participant_id %%
-                                                   2 == 0]))
-)
-# Path 2: BA sequence (odd IDs)
-crossover_paths[[2]] <- prepare_design_for_simulation(
-  original_designs$crossover %>%
-    filter(participant_id %% 2 == 1,
-           participant_id == min(participant_id[participant_id %%
-                                                   2 == 1]))
-)
-
-# Store designs in a list with both full design and path templates
-designs <- list(
-  hybrid = list(
-    full_design = original_designs$hybrid,
-    design_paths = hybrid_paths,
-    name = "Hybrid N-of-1"
-  ),
-  crossover = list(
-    full_design = original_designs$crossover,
-    design_paths = crossover_paths,
-    name = "Traditional Crossover"
-  )
-)
-
-# ========================================== 
-# Main simulation
-# ========================================== 
-
-# Simulation parameters
-simulation_params <- list(
-  n_iterations = 20,
-  carryover_scale = base_params$carryover_scale,
-  between_subject_sd = base_params$between_subject_sd,
-  within_subject_sd = base_params$within_subject_sd
-)
-
-# Build sigma matrix cache for all parameter/design combinations
-cat("Building sigma matrix cache...\n")
-sigma_cache <- list()
-valid_combinations <- tibble()
-
-for (i in 1:nrow(param_grid)) {
-  current_params <- as.list(param_grid[i,])
-  current_params$n_iterations <- simulation_params$n_iterations
-  current_params$carryover_scale <- simulation_params$carryover_scale
-
-  # FIXED CORRELATIONS: Do NOT adjust based on carryover
-  # Correlation structure is independent of carryover parameters
-
-  # Update model parameters for this combination
-  current_model_params <- model_params
-  current_model_params$N <- current_params$n_participants
-  current_model_params$c.bm <-
-    current_params$biomarker_correlation
-  current_model_params$carryover_t1half <-
-    current_params$carryover_t1half
-
-  # Correlation values remain FIXED at Hendrickson values
-  # (already set in model_params: c.tv=0.8, c.pb=0.8, c.br=0.8,
-  # c.cf1t=0.2, c.cfct=0.1)
-
-  # Test both designs
-  # For sigma matrix, use first path template (all paths have same
-  # timepoints)
-  for (design_name in c("hybrid", "crossover")) {
-    # Select first path design template for sigma building
-    design_template <- designs[[design_name]]$design_paths[[1]]
-
-    # Try to build sigma matrix
-    factor_types <- c("time_variant", "pharm_biomarker",
-                      "bio_response")
-    factor_abbreviations <- c("tv", "pb", "br")
-
-    sigma_result <- build_sigma_matrix(
-      current_model_params, resp_param, baseline_param,
-      design_template, factor_types, factor_abbreviations,
-      verbose = TRUE
     )
 
-    cache_key <- create_sigma_cache_key(design_name,
-                                        current_params)
+    results <- bind_rows(results, model_result)
+  }
+}
 
-    if (!is.null(sigma_result)) {
-      # Positive definite - add to cache
-      sigma_cache[[cache_key]] <- sigma_result
-      valid_combinations <- bind_rows(
-        valid_combinations,
-        tibble(
-          design = design_name,
-          biomarker_correlation =
-            current_params$biomarker_correlation,
-          carryover_t1half = current_params$carryover_t1half
-        )
+# =============================================================================
+# SUMMARIZE RESULTS
+# =============================================================================
+
+cat("\n", strrep("=", 50), "\n")
+cat("RESULTS\n")
+cat(strrep("=", 50), "\n\n")
+
+summary_results <- results %>%
+  group_by(design, biomarker_moderation, biomarker_correlation, carryover_decay_rate) %>%
+  summarize(
+    power = mean(significant, na.rm = TRUE),
+    mean_effect = mean(effect_size, na.rm = TRUE),
+    sd_effect = sd(effect_size, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  )
+
+print(summary_results)
+
+# =============================================================================
+# VISUALIZATION
+# =============================================================================
+
+library(viridis)
+
+# Adaptive visualization based on data structure
+plot_power_results <- function(data) {
+  has_moderation <- n_distinct(data$biomarker_moderation) > 1
+  has_carryover <- n_distinct(data$carryover_decay_rate) > 1
+  has_design <- n_distinct(data$design) > 1
+
+  # Convert to factors
+  data <- data %>%
+    mutate(
+      biomarker_moderation = factor(biomarker_moderation),
+      carryover_decay_rate = factor(carryover_decay_rate),
+      design = factor(design)
+    )
+
+  if (has_moderation) {
+    # Primary: biomarker moderation on x-axis
+    p <- ggplot(data, aes(x = biomarker_moderation, y = power, fill = design)) +
+      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
+        position = position_dodge(width = 0.8), vjust = -0.5, size = 3
+      ) +
+      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
+      labs(x = "Biomarker Moderation (effect size)", y = "Power")
+
+    # Facet by carryover if multiple values
+    if (has_carryover) {
+      p <- p + facet_wrap(~carryover_decay_rate,
+        labeller = labeller(carryover_decay_rate = function(x) paste("Carryover:", x))
       )
-      cat("✓ Valid sigma for", design_name, "design,",
-          "biomarker_correlation =",
-          current_params$biomarker_correlation,
-          ", carryover_t1half =",
-          current_params$carryover_t1half, "\n")
-    } else {
-      # Non-positive definite - skip
-      cat("✗ Non-PD sigma for", design_name, "design,",
-          "biomarker_correlation =",
-          current_params$biomarker_correlation,
-          ", carryover_t1half =",
-          current_params$carryover_t1half, "\n")
     }
+  } else if (has_carryover) {
+    # Bar chart by carryover
+    p <- ggplot(data, aes(x = carryover_decay_rate, y = power, fill = design)) +
+      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100), group = design),
+        position = position_dodge(width = 0.8), vjust = -0.5, size = 3
+      ) +
+      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
+      labs(x = "Carryover Decay Rate (points/week)", y = "Power")
+  } else {
+    # Single bar per design
+    p <- ggplot(data, aes(x = design, y = power, fill = design)) +
+      geom_col(width = 0.6) +
+      geom_text(aes(label = sprintf("%.0f%%", power * 100)), vjust = -0.5, size = 5) +
+      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
+      labs(x = "Design", y = "Power")
   }
-}
 
-cat("\nSigma cache built. Valid combinations:\n")
-print(valid_combinations)
-
-# Initialize results storage
-simulation_results <- tibble()
-
-# For each parameter combination
-for (i in 1:nrow(param_grid)) {
-  # Extract current parameters
-  current_params <- as.list(param_grid[i,])
-  current_params$n_iterations <- simulation_params$n_iterations
-  current_params$carryover_scale <- simulation_params$carryover_scale
-
-  # Run for each design using our Monte Carlo function
-  for (design_name in c("hybrid", "crossover")) {
-    # Run the Monte Carlo simulation with sigma cache
-    design_results <- run_monte_carlo(design_name, current_params,
-                                      sigma_cache)
-
-    # Add to overall results
-    simulation_results <- bind_rows(simulation_results,
-                                    design_results)
-  }
-}
-
-# Calculate summary statistics across all iterations
-if (nrow(simulation_results) > 0) {
-  simulation_summary <- simulation_results %>%
-    group_by(design, n_participants, biomarker_correlation,
-             carryover_t1half) %>%
-    summarize(
-      power = mean(significant, na.rm = TRUE),
-      mean_effect = mean(effect_size, na.rm = TRUE),
-      mean_se = mean(std_error, na.rm = TRUE),
-      n_iterations = n(),
-      .groups = "drop"
-    )
-} else {
-  cat("\nNo valid simulation results - all parameter",
-      "combinations resulted in non-positive definite",
-      "matrices.\n")
-  cat("Consider using lower correlation parameters or",
-      "different parameter ranges.\n")
-  simulation_summary <- tibble()
-}
-
-# Display summary statistics
-if (nrow(simulation_summary) > 0) {
-  print(summary(simulation_summary$power))
-
-  # Save the simulation results for visualization and further analysis
-  sim_results <- list(
-    simulation_results = simulation_results,
-    simulation_summary = simulation_summary
-  )
-
-  # ========================================== 
-  # Visualization
-  # ========================================== 
-
-  # Simple heatmap of power by carryover by design
-  power_heatmap <- ggplot(
-      simulation_summary,
-      aes(x = factor(carryover_t1half), y = design,
-          fill = power)
-    ) +
-    geom_tile(color = "white") +
-    geom_text(aes(label = sprintf("%.2f", power)),
-              color = "black", size = 4, fontface = "bold") +
-    scale_fill_viridis_c(name = "Power",
-                         labels = scales::percent) +
+  # Common styling
+  p <- p +
+    scale_fill_viridis_d(name = "Design") +
     labs(
-      title = "Statistical Power by Design and Carryover Half-life",
-      x = "Carryover Half-life (weeks)",
-      y = "Design"
+      title = "Statistical Power by Biomarker Moderation",
+      subtitle = sprintf(
+        "N=%d, %d iterations per condition",
+        n_participants, n_iterations
+      )
     ) +
-    theme_minimal() +
-    theme(
-      legend.position = "right",
-      panel.grid = element_blank()
-    )
+    theme_minimal(base_size = 12) +
+    theme(panel.grid = element_blank())
 
-  print(power_heatmap)
-
-  # Display summary statistics
-  print(simulation_summary)
-  # dim
-  dim(simulation_summary)
-} else {
-  cat("\nNo visualization possible - no valid results to",
-      "display.\n")
-  cat("Enhanced carryover implementation successfully",
-      "integrated!\n")
-
-  # Save empty results
-  sim_results <- list(
-    simulation_results = simulation_results,
-    simulation_summary = simulation_summary
-  )
+  return(p)
 }
-# ========================================== 
-# End of script
-# ==========================================
+
+# Generate and save plot
+p <- plot_power_results(summary_results)
+print(p)
+
+# Save outputs
+output_dir <- "../output"
+if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+
+ggsave(file.path(output_dir, "power_results.pdf"), p, width = 8, height = 6)
+save(results, summary_results, file = file.path(output_dir, "simulation_results.RData"))
+
+cat("\nDone! Results saved to", output_dir, "\n")
+cat("- power_results.pdf\n")
+cat("- simulation_results.RData\n")
