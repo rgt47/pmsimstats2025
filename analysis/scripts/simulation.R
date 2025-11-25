@@ -772,9 +772,69 @@ plot_power_results <- function(data) {
   return(p)
 }
 
-# Generate and save plot
+# Generate and save bar plot
 p <- plot_power_results(summary_results)
 print(p)
+
+# Heatmap visualization of power by carryover, design, and effect size
+plot_power_heatmap <- function(data) {
+  # Create combined factor for y-axis: design + carryover
+  data <- data %>%
+    mutate(
+      design_carryover = paste0(
+        tools::toTitleCase(as.character(design)),
+        "\n(carryover=", carryover_decay_rate, ")"
+      ),
+      design_carryover = factor(
+        design_carryover,
+        levels = unique(design_carryover[order(design, carryover_decay_rate)])
+      ),
+      biomarker_moderation = factor(biomarker_moderation)
+    )
+
+  p <- ggplot(
+    data,
+    aes(x = biomarker_moderation, y = design_carryover, fill = power)
+  ) +
+    geom_tile(color = "white", linewidth = 0.5) +
+    geom_text(
+      aes(label = sprintf("%.0f%%", power * 100)),
+      color = ifelse(data$power > 0.5, "white", "black"),
+      size = 4,
+      fontface = "bold"
+    ) +
+    scale_fill_viridis_c(
+      name = "Power",
+      limits = c(0, 1),
+      labels = scales::percent,
+      option = "D"
+    ) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_discrete(expand = c(0, 0)) +
+    labs(
+      title = "Statistical Power Heatmap",
+      subtitle = sprintf(
+        "N=%d participants, %d iterations per condition",
+        n_participants, n_iterations
+      ),
+      x = "Biomarker Moderation (effect size)",
+      y = "Design (carryover decay rate)"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      panel.grid = element_blank(),
+      axis.ticks = element_blank(),
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5),
+      legend.position = "right"
+    )
+
+  return(p)
+}
+
+# Generate and save heatmap
+p_heatmap <- plot_power_heatmap(summary_results)
+print(p_heatmap)
 
 # Save outputs
 output_dir <- "../output"
@@ -786,6 +846,12 @@ ggsave(
   width = 8,
   height = 6
 )
+ggsave(
+  file.path(output_dir, "power_heatmap.pdf"),
+  p_heatmap,
+  width = 9,
+  height = 5
+)
 save(
   results,
   summary_results,
@@ -794,4 +860,5 @@ save(
 
 cat("\nDone! Results saved to", output_dir, "\n")
 cat("- power_results.pdf\n")
+cat("- power_heatmap.pdf\n")
 cat("- simulation_results.RData\n")
