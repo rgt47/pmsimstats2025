@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # ============================================================================
 
 n_participants <- 70
-n_iterations <- 100
+n_iterations <- 20
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5  # Biological Response: drug improvement rate
@@ -66,21 +66,21 @@ param_grid <- bind_rows(
     design = "hybrid",
     biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
-    carryover_decay_rate = c(0, 0.5, 0.75)
+    carryover = c(0, 0.5, 1)  # 0=none, 0.5=50% retained, 1=full carryover
   ),
   # Crossover design (standard AB/BA crossover)
   expand_grid(
     design = "crossover",
     biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
-    carryover_decay_rate = c(0, 0.5, 0.75)
+    carryover = c(0, 0.5, 1)
   ),
   # Parallel design (carryover = 0, not applicable)
   expand_grid(
     design = "parallel",
     biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
-    carryover_decay_rate = c(0)
+    carryover = c(0)
   )
 )
 
@@ -419,6 +419,41 @@ create_hybrid_design <- function(n_participants, measurement_weeks) {
 }
 
 # ---------------------------------------------------------------------------
+# CROSSOVER DESIGN: Standard AB/BA crossover (2 periods)
+# ---------------------------------------------------------------------------
+create_crossover_design <- function(n_participants, measurement_weeks) {
+  # Randomize participants to sequence AB (1) or BA (2) - balanced
+  sequence_assignment <- sample(rep(1:2, length.out = n_participants))
+
+  # Define crossover point (midpoint of study)
+  midpoint <- median(measurement_weeks)
+
+  # Create design matrix
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      # Path based on sequence
+      path = sequence_assignment[participant_id],
+
+      # Treatment: AB sequence gets treatment first, BA gets placebo first
+      # Period 1 (before midpoint): AB=1, BA=0
+      # Period 2 (after midpoint): AB=0, BA=1
+      treatment = case_when(
+        week <= midpoint & path == 1 ~ 1,
+        week <= midpoint & path == 2 ~ 0,
+        week > midpoint & path == 1 ~ 0,
+        week > midpoint & path == 2 ~ 1,
+        TRUE ~ NA_real_
+      ),
+
+      # Expectancy: 0.5 throughout (all blinded)
+      expectancy = 0.5
+    )
+}
+
+# ---------------------------------------------------------------------------
 # PARALLEL DESIGN: Randomized to treatment or placebo for entire study
 # ---------------------------------------------------------------------------
 create_parallel_design <- function(n_participants, measurement_weeks) {
@@ -457,7 +492,7 @@ for (i in 1:nrow(param_grid)) {
   params <- as.list(param_grid[i, ])
   cat(sprintf(
     "Condition %d: design=%s, bm_mod=%.2f, carryover=%.2f\n",
-    i, params$design, params$biomarker_moderation, params$carryover_decay_rate
+    i, params$design, params$biomarker_moderation, params$carryover
   ))
 
   # Run iterations
@@ -467,6 +502,8 @@ for (i in 1:nrow(param_grid)) {
     # Create design with fresh path randomization for this iteration
     if (params$design == "hybrid") {
       trial_design <- create_hybrid_design(n_participants, measurement_weeks)
+    } else if (params$design == "crossover") {
+      trial_design <- create_crossover_design(n_participants, measurement_weeks)
     } else if (params$design == "parallel") {
       trial_design <- create_parallel_design(n_participants, measurement_weeks)
     }
@@ -565,7 +602,7 @@ for (i in 1:nrow(param_grid)) {
           ifelse(treatment == 1,
             weeks_on_drug * effective_BR_rate,
             ifelse(first_off,
-              br_accumulated * params$carryover_decay_rate,
+              br_accumulated * params$carryover,
               0
             )
           )
@@ -604,7 +641,7 @@ for (i in 1:nrow(param_grid)) {
         trial_data <- trial_data %>%
           mutate(bm_centered = biomarker - mean(biomarker))
 
-        if (params$carryover_decay_rate > 0) {
+        if (params$carryover > 0) {
           model <- lmer(
             response ~ treatment * bm_centered + week + carryover_effect +
               (1 | participant_id),
@@ -636,7 +673,7 @@ for (i in 1:nrow(param_grid)) {
           design = params$design,
           biomarker_moderation = params$biomarker_moderation,
           biomarker_correlation = effective_bm_corr,  # Use effective value
-          carryover_decay_rate = params$carryover_decay_rate,
+          carryover = params$carryover,
           effect_size = coefs[idx, "Estimate"],
           se = coefs[idx, "Std. Error"],
           t_value = t_val,
@@ -651,7 +688,7 @@ for (i in 1:nrow(param_grid)) {
           design = params$design,
           biomarker_moderation = params$biomarker_moderation,
           biomarker_correlation = effective_bm_corr,
-          carryover_decay_rate = params$carryover_decay_rate,
+          carryover = params$carryover,
           effect_size = NA,
           se = NA,
           t_value = NA,
@@ -678,7 +715,7 @@ summary_results <- results %>%
     design,
     biomarker_moderation,
     biomarker_correlation,
-    carryover_decay_rate
+    carryover
   ) %>%
   summarize(
     power = mean(significant, na.rm = TRUE),
@@ -696,139 +733,52 @@ print(summary_results)
 
 library(viridis)
 
-# Adaptive visualization based on data structure
-plot_power_results <- function(data) {
-  has_moderation <- n_distinct(data$biomarker_moderation) > 1
-  has_carryover <- n_distinct(data$carryover_decay_rate) > 1
-  has_design <- n_distinct(data$design) > 1
-
-  # Convert to factors
-  data <- data %>%
-    mutate(
-      biomarker_moderation = factor(biomarker_moderation),
-      carryover_decay_rate = factor(carryover_decay_rate),
-      design = factor(design)
-    )
-
-  if (has_moderation) {
-    # Primary: biomarker moderation on x-axis
-    p <- ggplot(
-      data,
-      aes(x = biomarker_moderation, y = power, fill = design)
-    ) +
-      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
-      geom_text(
-        aes(label = sprintf("%.0f%%", power * 100), group = design),
-        position = position_dodge(width = 0.8),
-        vjust = -0.5,
-        size = 3
-      ) +
-      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
-      labs(x = "Biomarker Moderation (effect size)", y = "Power")
-
-    # Facet by carryover if multiple values
-    if (has_carryover) {
-      p <- p + facet_wrap(
-        ~carryover_decay_rate,
-        labeller = labeller(
-          carryover_decay_rate = function(x) paste("Carryover:", x)
-        )
-      )
-    }
-  } else if (has_carryover) {
-    # Bar chart by carryover
-    p <- ggplot(
-      data,
-      aes(x = carryover_decay_rate, y = power, fill = design)
-    ) +
-      geom_col(position = position_dodge(width = 0.8), width = 0.7) +
-      geom_text(
-        aes(label = sprintf("%.0f%%", power * 100), group = design),
-        position = position_dodge(width = 0.8),
-        vjust = -0.5,
-        size = 3
-      ) +
-      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
-      labs(x = "Carryover Decay Rate (points/week)", y = "Power")
-  } else {
-    # Single bar per design
-    p <- ggplot(data, aes(x = design, y = power, fill = design)) +
-      geom_col(width = 0.6) +
-      geom_text(
-        aes(label = sprintf("%.0f%%", power * 100)),
-        vjust = -0.5,
-        size = 5
-      ) +
-      scale_y_continuous(limits = c(0, 1.1), labels = scales::percent) +
-      labs(x = "Design", y = "Power")
-  }
-
-  # Common styling
-  p <- p +
-    scale_fill_viridis_d(name = "Design") +
-    labs(
-      title = "Statistical Power by Biomarker Moderation",
-      subtitle = sprintf(
-        "N=%d, %d iterations per condition",
-        n_participants, n_iterations
-      )
-    ) +
-    theme_minimal(base_size = 12) +
-    theme(panel.grid = element_blank())
-
-  return(p)
-}
-
-# Generate and save bar plot
-p <- plot_power_results(summary_results)
-print(p)
-
 # Heatmap visualization of power by carryover, design, and effect size
 # Layout: carryover on x-axis, effect size on y-axis, faceted by design
 plot_power_heatmap <- function(data) {
   data <- data %>%
     mutate(
-      carryover_decay_rate = factor(carryover_decay_rate),
+      carryover = factor(carryover),
       biomarker_moderation = factor(
         biomarker_moderation,
         levels = rev(sort(unique(biomarker_moderation)))
       ),
       design = factor(
         tools::toTitleCase(as.character(design)),
-        levels = c("Hybrid", "Parallel")
+        levels = c("Hybrid", "Crossover", "Parallel")
       )
     )
 
   p <- ggplot(
     data,
-    aes(x = carryover_decay_rate, y = biomarker_moderation, fill = power)
+    aes(x = carryover, y = biomarker_moderation, fill = power)
   ) +
     geom_tile(color = "white", linewidth = 0.5) +
     geom_text(
-      aes(
-        label = sprintf("%.0f%%", power * 100),
-        color = after_stat(ifelse(fill > 0.5, "white", "black"))
-      ),
+      aes(label = sprintf("%.0f%%", power * 100)),
       color = "black",
-      size = 5,
+      size = 4,
       fontface = "bold"
     ) +
-    scale_fill_viridis_c(
+    scale_fill_gradient2(
       name = "Power",
+      low = "#d73027",
+      mid = "#fee08b",
+      high = "#1a9850",
+      midpoint = 0.5,
       limits = c(0, 1),
-      labels = scales::percent,
-      option = "D"
+      labels = scales::percent
     ) +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_discrete(expand = c(0, 0)) +
-    facet_wrap(~design, ncol = 2) +
+    facet_wrap(~design, ncol = 3) +
     labs(
       title = "Statistical Power by Design",
       subtitle = sprintf(
         "N=%d participants, %d iterations per condition",
         n_participants, n_iterations
       ),
-      x = "Carryover Decay Rate",
+      x = "Carryover (proportion retained)",
       y = "Biomarker Moderation\n(effect size)"
     ) +
     theme_minimal(base_size = 12) +
@@ -854,16 +804,10 @@ output_dir <- "../output"
 if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
 ggsave(
-  file.path(output_dir, "power_results.pdf"),
-  p,
-  width = 8,
-  height = 6
-)
-ggsave(
   file.path(output_dir, "power_heatmap.pdf"),
   p_heatmap,
-  width = 9,
-  height = 5
+  width = 12,
+  height = 7
 )
 save(
   results,
@@ -872,6 +816,5 @@ save(
 )
 
 cat("\nDone! Results saved to", output_dir, "\n")
-cat("- power_results.pdf\n")
 cat("- power_heatmap.pdf\n")
 cat("- simulation_results.RData\n")
