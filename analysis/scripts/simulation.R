@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # ============================================================================
 
 n_participants <- 70
-n_iterations <- 20
+n_iterations <- 50
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5  # Biological Response: drug improvement rate
@@ -57,20 +57,37 @@ c.baseline_resp <- 0.4 # Baseline-response correlation
 allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 
 # Parameter grid - what we're testing
-# Note: carryover only applies to hybrid design (parallel has no treatment
-# switches)
+# Note: carryover only applies to designs with treatment switches
 # Include biomarker_moderation = 0 to evaluate Type I error (size of test)
 param_grid <- bind_rows(
-  # Hybrid design with carryover variations
+  # Open-label design (no treatment switches, carryover N/A)
+  # Hendrickson Design 1
   expand_grid(
-    design = "hybrid",
+    design = "ol",
     biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
-    carryover = c(0, 0.5, 1)  # 0=none, 0.5=50% retained, 1=full carryover
+    carryover = c(0)  # Not applicable - always on drug
+  ),
+  # Open-label + Blinded Discontinuation design
+  # Hendrickson Design 2
+  expand_grid(
+    design = "ol_bdc",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
+    biomarker_correlation = c(0.3),
+    carryover = c(0, 0.5, 1)
   ),
   # Crossover design (standard AB/BA crossover)
+  # Hendrickson Design 3
   expand_grid(
     design = "crossover",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
+    biomarker_correlation = c(0.3),
+    carryover = c(0, 0.5, 1)
+  ),
+  # Hybrid design with carryover variations
+  # Hendrickson Design 4 (N-of-1)
+  expand_grid(
+    design = "hybrid",
     biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
     carryover = c(0, 0.5, 1)
@@ -379,6 +396,72 @@ verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
 measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
 
 # ---------------------------------------------------------------------------
+# OPEN-LABEL (OL) DESIGN: All participants on active drug throughout
+# Hendrickson Design 1 - simplest design, everyone gets treatment
+# ---------------------------------------------------------------------------
+create_ol_design <- function(n_participants, measurement_weeks) {
+  # All participants on active drug for entire trial
+  # Single path - no randomization needed
+
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      path = 1,  # Single path for all
+
+      # Treatment: always active (1) throughout
+      treatment = 1,
+
+      # Expectancy: 1.0 throughout (open-label, know they're on drug)
+      expectancy = 1.0
+    )
+}
+
+# ---------------------------------------------------------------------------
+# OPEN-LABEL + BLINDED DISCONTINUATION (OL+BDC) DESIGN
+# Hendrickson Design 2 - open-label followed by blinded discontinuation
+# 16 weeks active, then 4 weeks blinded discontinuation
+# ---------------------------------------------------------------------------
+create_ol_bdc_design <- function(n_participants, measurement_weeks) {
+  # Randomize participants to 2 paths for the blinded week
+  # Path 1: stays on active during week 2 of discontinuation
+  # Path 2: switches to placebo during week 2 of discontinuation
+  path_assignment <- sample(rep(1:2, length.out = n_participants))
+
+  # Define discontinuation start (after week 16 in Hendrickson)
+  # Map to our measurement schedule: weeks 4,8,9,10,11,12,16,20
+  # Discontinuation phase: weeks 16 and 20
+  discontinuation_start <- 16
+
+  expand_grid(
+    participant_id = 1:n_participants,
+    week = measurement_weeks
+  ) %>%
+    mutate(
+      path = path_assignment[participant_id],
+
+      # Treatment assignment:
+      # Before discontinuation: all on active
+      # Week 16 (first discontinuation week): all on active
+      # Week 20 (later discontinuation):
+      #   - Hendrickson has weeks 17-18 randomized, 19-20 placebo
+      #   - Simplified: path 1 stays active at week 16, placebo at week 20
+      #   - path 2 goes to placebo at both week 16 and 20
+      treatment = case_when(
+        week < discontinuation_start ~ 1,           # Open-label: active
+        week == 16 ~ 1,                             # First disc week: active
+        week == 20 & path == 1 ~ 0,                 # Path 1: placebo at end
+        week == 20 & path == 2 ~ 0,                 # Path 2: placebo at end
+        TRUE ~ 1
+      ),
+
+      # Expectancy: 1.0 for open-label, 0.5 for blinded discontinuation
+      expectancy = if_else(week < discontinuation_start, 1.0, 0.5)
+    )
+}
+
+# ---------------------------------------------------------------------------
 # HYBRID DESIGN: Open-label run-in + blinded crossover
 # ---------------------------------------------------------------------------
 create_hybrid_design <- function(n_participants, measurement_weeks) {
@@ -500,7 +583,11 @@ for (i in 1:nrow(param_grid)) {
     set.seed(iter * 1000 + i)
 
     # Create design with fresh path randomization for this iteration
-    if (params$design == "hybrid") {
+    if (params$design == "ol") {
+      trial_design <- create_ol_design(n_participants, measurement_weeks)
+    } else if (params$design == "ol_bdc") {
+      trial_design <- create_ol_bdc_design(n_participants, measurement_weeks)
+    } else if (params$design == "hybrid") {
       trial_design <- create_hybrid_design(n_participants, measurement_weeks)
     } else if (params$design == "crossover") {
       trial_design <- create_crossover_design(n_participants, measurement_weeks)
@@ -634,6 +721,8 @@ for (i in 1:nrow(param_grid)) {
       ungroup()
 
     # Fit mixed model
+    # Note: OL design uses time × biomarker interaction (no treatment variation)
+    # Other designs use treatment × biomarker interaction
     model_result <- tryCatch(
       {
         # Re-center biomarker using sample mean (for model interpretation)
@@ -641,26 +730,44 @@ for (i in 1:nrow(param_grid)) {
         trial_data <- trial_data %>%
           mutate(bm_centered = biomarker - mean(biomarker))
 
-        if (params$carryover > 0) {
+        if (params$design == "ol") {
+          # OL DESIGN: Everyone on treatment, use time × biomarker interaction
+          # Following Hendrickson: S_i,t = β_i,0 + β1·bm + β2·t + β3·bm·t
+          # A non-zero β3 indicates biomarker predicts rate of improvement
           model <- lmer(
-            response ~ treatment * bm_centered + week + carryover_effect +
-              (1 | participant_id),
+            response ~ bm_centered * week + (1 | participant_id),
             data = trial_data
           )
+
+          # Extract time × biomarker interaction
+          coefs <- summary(model)$coefficients
+          interaction_term <- "bm_centered:week"
+
         } else {
-          model <- lmer(
-            response ~ treatment * bm_centered + week +
-              (1 | participant_id),
-            data = trial_data
-          )
+          # OTHER DESIGNS: Use treatment × biomarker interaction
+          if (params$carryover > 0) {
+            model <- lmer(
+              response ~ treatment * bm_centered + week + carryover_effect +
+                (1 | participant_id),
+              data = trial_data
+            )
+          } else {
+            model <- lmer(
+              response ~ treatment * bm_centered + week +
+                (1 | participant_id),
+              data = trial_data
+            )
+          }
+
+          # Extract treatment × biomarker interaction
+          coefs <- summary(model)$coefficients
+          interaction_term <- "treatment:bm_centered"
         }
 
-        # Extract treatment × biomarker interaction
-        coefs <- summary(model)$coefficients
-        idx <- which(rownames(coefs) == "treatment:bm_centered")
+        idx <- which(rownames(coefs) == interaction_term)
 
         if (length(idx) == 0) {
-          stop("Interaction term not found")
+          stop(paste("Interaction term not found:", interaction_term))
         }
 
         # Calculate p-value
