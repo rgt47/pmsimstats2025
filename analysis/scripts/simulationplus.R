@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # ============================================================================
 
 n_participants <- 70
-n_iterations <- 50
+n_iterations <- 20
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5  # Biological Response: drug improvement rate
@@ -842,7 +842,17 @@ library(viridis)
 
 # Heatmap visualization of power by carryover, design, and effect size
 # Layout: carryover on x-axis, effect size on y-axis, faceted by design
+# Now includes all 5 Hendrickson designs: OL, OL+BDC, Crossover, Hybrid, Parallel
 plot_power_heatmap <- function(data) {
+  # Create readable design labels matching Hendrickson nomenclature
+  design_labels <- c(
+    "ol" = "OL\n(Design 1)",
+    "ol_bdc" = "OL+BDC\n(Design 2)",
+    "crossover" = "Crossover\n(Design 3)",
+    "hybrid" = "Hybrid/N-of-1\n(Design 4)",
+    "parallel" = "Parallel"
+  )
+
   data <- data %>%
     mutate(
       carryover = factor(carryover),
@@ -851,8 +861,8 @@ plot_power_heatmap <- function(data) {
         levels = rev(sort(unique(biomarker_moderation)))
       ),
       design = factor(
-        tools::toTitleCase(as.character(design)),
-        levels = c("Hybrid", "Crossover", "Parallel")
+        design_labels[as.character(design)],
+        levels = design_labels
       )
     )
 
@@ -878,9 +888,9 @@ plot_power_heatmap <- function(data) {
     ) +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_discrete(expand = c(0, 0)) +
-    facet_wrap(~design, ncol = 3) +
+    facet_wrap(~design, ncol = 5) +
     labs(
-      title = "Statistical Power by Design",
+      title = "Statistical Power by Design (Hendrickson et al. 2020)",
       subtitle = sprintf(
         "N=%d participants, %d iterations per condition",
         n_participants, n_iterations
@@ -913,7 +923,7 @@ if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 ggsave(
   file.path(output_dir, "power_heatmap.pdf"),
   p_heatmap,
-  width = 12,
+  width = 16,
   height = 7
 )
 save(
