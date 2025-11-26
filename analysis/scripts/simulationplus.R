@@ -4,7 +4,7 @@
 rm(list = ls())
 suppressPackageStartupMessages({
   library(tidyverse)
-  library(lmerTest)
+  library(nlme)
   library(MASS)
   library(conflicted)
 })
@@ -13,7 +13,7 @@ suppressPackageStartupMessages({
 conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::lag)
-conflicts_prefer(lmerTest::lmer)
+conflicts_prefer(nlme::lme)
 
 # ============================================================================
 # PARAMETERS
@@ -768,7 +768,8 @@ for (i in 1:nrow(param_grid)) {
       ) %>%
       ungroup()
 
-    # Fit mixed model
+    # Fit mixed model with AR(1) residual correlation structure
+    # Using nlme::lme instead of lmer to properly model AR(1) residuals
     # Note: OL design uses time × biomarker interaction (no treatment variation)
     # Other designs use treatment × biomarker interaction
     model_result <- tryCatch(
@@ -782,33 +783,40 @@ for (i in 1:nrow(param_grid)) {
           # OL DESIGN: Everyone on treatment, use time × biomarker interaction
           # Following Hendrickson: S_i,t = β_i,0 + β1·bm + β2·t + β3·bm·t
           # A non-zero β3 indicates biomarker predicts rate of improvement
-          model <- lmer(
-            response ~ bm_centered * week + (1 | participant_id),
-            data = trial_data
+          model <- lme(
+            response ~ bm_centered * week,
+            random = ~ 1 | participant_id,
+            correlation = corCAR1(form = ~ week | participant_id),
+            data = trial_data,
+            control = lmeControl(opt = "optim")
           )
 
           # Extract time × biomarker interaction
-          coefs <- summary(model)$coefficients
+          coefs <- summary(model)$tTable
           interaction_term <- "bm_centered:week"
 
         } else {
           # OTHER DESIGNS: Use treatment × biomarker interaction
           if (params$carryover > 0) {
-            model <- lmer(
-              response ~ treatment * bm_centered + week + carryover_effect +
-                (1 | participant_id),
-              data = trial_data
+            model <- lme(
+              response ~ treatment * bm_centered + week + carryover_effect,
+              random = ~ 1 | participant_id,
+              correlation = corCAR1(form = ~ week | participant_id),
+              data = trial_data,
+              control = lmeControl(opt = "optim")
             )
           } else {
-            model <- lmer(
-              response ~ treatment * bm_centered + week +
-                (1 | participant_id),
-              data = trial_data
+            model <- lme(
+              response ~ treatment * bm_centered + week,
+              random = ~ 1 | participant_id,
+              correlation = corCAR1(form = ~ week | participant_id),
+              data = trial_data,
+              control = lmeControl(opt = "optim")
             )
           }
 
           # Extract treatment × biomarker interaction
-          coefs <- summary(model)$coefficients
+          coefs <- summary(model)$tTable
           interaction_term <- "treatment:bm_centered"
         }
 
@@ -818,13 +826,10 @@ for (i in 1:nrow(param_grid)) {
           stop(paste("Interaction term not found:", interaction_term))
         }
 
-        # Use lmerTest's Satterthwaite p-value (proper df for mixed models)
-        # The old method used df = nrow(data) - nrow(coefs) which is WAY too
-        # large for cross-level interactions (biomarker is between-subject,
-        # treatment/time is within-subject). Proper df ≈ n_participants, not
-        # n_observations.
-        t_val <- coefs[idx, "t value"]
-        p_value <- coefs[idx, "Pr(>|t|)"]  # Satterthwaite approximation
+        # nlme provides t-value and p-value in tTable
+        # df are computed using containment method (appropriate for mixed models)
+        t_val <- coefs[idx, "t-value"]
+        p_value <- coefs[idx, "p-value"]
 
         tibble(
           iteration = iter,
@@ -832,8 +837,8 @@ for (i in 1:nrow(param_grid)) {
           biomarker_moderation = params$biomarker_moderation,
           biomarker_correlation = effective_bm_corr,  # Use effective value
           carryover = params$carryover,
-          effect_size = coefs[idx, "Estimate"],
-          se = coefs[idx, "Std. Error"],
+          effect_size = coefs[idx, "Value"],
+          se = coefs[idx, "Std.Error"],
           t_value = t_val,
           p_value = p_value,
           significant = p_value < 0.05
