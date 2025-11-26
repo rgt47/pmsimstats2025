@@ -78,20 +78,34 @@ param_grid <- bind_rows(
     biomarker_correlation = c(0),  # No correlation for true null
     carryover = c(0)
   ),
-  # Open-label + Blinded Discontinuation design
+  # Open-label + Blinded Discontinuation design (power conditions)
   # Hendrickson Design 2
   expand_grid(
     design = "ol_bdc",
-    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
+    biomarker_moderation = c(0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
     carryover = c(0, 0.5, 1)
   ),
-  # Crossover design (standard AB/BA crossover)
+  # Type I error condition for OL+BDC (no bm-response correlation)
+  expand_grid(
+    design = "ol_bdc",
+    biomarker_moderation = c(0),
+    biomarker_correlation = c(0),
+    carryover = c(0, 0.5, 1)
+  ),
+  # Crossover design (power conditions)
   # Hendrickson Design 3
   expand_grid(
     design = "crossover",
-    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),
+    biomarker_moderation = c(0.25, 0.35, 0.45, 0.55, 0.65),
     biomarker_correlation = c(0.3),
+    carryover = c(0, 0.5, 1)
+  ),
+  # Type I error condition for Crossover (no bm-response correlation)
+  expand_grid(
+    design = "crossover",
+    biomarker_moderation = c(0),
+    biomarker_correlation = c(0),
     carryover = c(0, 0.5, 1)
   ),
   # Hybrid design with carryover variations
@@ -403,7 +417,7 @@ verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
 # ============================================================================
 
 # Measurement schedule (same for all designs)
-measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
+measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 17, 18, 19, 20)
 
 # ---------------------------------------------------------------------------
 # OPEN-LABEL (OL) DESIGN: All participants on active drug throughout
