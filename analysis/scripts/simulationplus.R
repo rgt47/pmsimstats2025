@@ -416,8 +416,10 @@ verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
 # DESIGN STRUCTURES
 # ============================================================================
 
-# Measurement schedule (same for all designs)
-measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 17, 18, 19, 20)
+# Measurement schedules vary by design (always 8 points)
+measurement_weeks_hybrid <- c(4, 8, 9, 10, 11, 12, 16, 20)
+measurement_weeks_ol_bdc <- c(4, 8, 12, 16, 17, 18, 19, 20)
+measurement_weeks_other <- c(2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20)  # OL, Crossover, Parallel
 
 # ---------------------------------------------------------------------------
 # OPEN-LABEL (OL) DESIGN: All participants on active drug throughout
@@ -445,18 +447,15 @@ create_ol_design <- function(n_participants, measurement_weeks) {
 # ---------------------------------------------------------------------------
 # OPEN-LABEL + BLINDED DISCONTINUATION (OL+BDC) DESIGN
 # Hendrickson Design 2 - open-label followed by blinded discontinuation
-# 16 weeks active, then 4 weeks blinded discontinuation
+# Weeks 1-16: open-label active
+# Weeks 17-20: blinded discontinuation (mirrors Hybrid weeks 9-12)
+#   Week 17: all active
+#   Week 18: randomized (paths 1,2 active; paths 3,4 placebo)
+#   Weeks 19-20: all placebo
 # ---------------------------------------------------------------------------
 create_ol_bdc_design <- function(n_participants, measurement_weeks) {
-  # Randomize participants to 2 paths for the blinded week
-  # Path 1: stays on active during week 2 of discontinuation
-  # Path 2: switches to placebo during week 2 of discontinuation
-  path_assignment <- sample(rep(1:2, length.out = n_participants))
-
-  # Define discontinuation start (after week 16 in Hendrickson)
-  # Map to our measurement schedule: weeks 4,8,9,10,11,12,16,20
-  # Discontinuation phase: weeks 16 and 20
-  discontinuation_start <- 16
+  # Randomize participants to 4 paths (balanced) - same as Hybrid
+  path_assignment <- sample(rep(1:4, length.out = n_participants))
 
   expand_grid(
     participant_id = 1:n_participants,
@@ -465,23 +464,22 @@ create_ol_bdc_design <- function(n_participants, measurement_weeks) {
     mutate(
       path = path_assignment[participant_id],
 
-      # Treatment assignment:
-      # Before discontinuation: all on active
-      # Week 16 (first discontinuation week): all on active
-      # Week 20 (later discontinuation):
-      #   - Hendrickson has weeks 17-18 randomized, 19-20 placebo
-      #   - Simplified: path 1 stays active at week 16, placebo at week 20
-      #   - path 2 goes to placebo at both week 16 and 20
+      # Treatment assignment mirrors Hybrid weeks 9-12:
+      # Weeks 4-16: Open-label, all on active
+      # Week 17: Blinded, all on active (= Hybrid week 9)
+      # Week 18: Blinded, randomized (= Hybrid week 10)
+      # Weeks 19-20: Blinded, all on placebo (= Hybrid weeks 11-12)
       treatment = case_when(
-        week < discontinuation_start ~ 1,           # Open-label: active
-        week == 16 ~ 1,                             # First disc week: active
-        week == 20 & path == 1 ~ 0,                 # Path 1: placebo at end
-        week == 20 & path == 2 ~ 0,                 # Path 2: placebo at end
+        week <= 16 ~ 1,                             # Open-label: all active
+        week == 17 ~ 1,                             # Blinded: all active
+        week == 18 & path %in% c(1, 2) ~ 1,         # Randomized: paths 1,2 active
+        week == 18 & path %in% c(3, 4) ~ 0,         # Randomized: paths 3,4 placebo
+        week %in% c(19, 20) ~ 0,                    # Blinded: all placebo
         TRUE ~ 1
       ),
 
       # Expectancy: 1.0 for open-label, 0.5 for blinded discontinuation
-      expectancy = if_else(week < discontinuation_start, 1.0, 0.5)
+      expectancy = if_else(week <= 16, 1.0, 0.5)
     )
 }
 
