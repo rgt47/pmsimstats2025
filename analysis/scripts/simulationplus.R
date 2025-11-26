@@ -20,7 +20,7 @@ conflicts_prefer(lmerTest::lmer)
 # ============================================================================
 
 n_participants <- 70
-n_iterations <- 50
+n_iterations <- 20
 
 # Three-factor response model - RATE-BASED (points per week)
 BR_rate <- 0.5  # Biological Response: drug improvement rate
@@ -266,18 +266,34 @@ build_sigma_guaranteed_pd <- function(weeks, c.bm, params) {
       }
     }
 
-    # Fallback to 0 correlation
-    Sigma_12_try <- matrix(0, nrow(Sigma_11), 2)
-    Sigma_12_try[br_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
-    Sigma_12_try[er_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
-    Sigma_12_try[tr_idx, 2] <- c.baseline_resp * sigma_resp * sigma_bl
-    cross_term <- Sigma_12_try %*% Sigma_22_inv %*% t(Sigma_12_try)
-    Sigma_cond_try <- Sigma_11 - cross_term
+    # Fallback: try reducing baseline correlation too if needed
+    for (bl_scale in c(1.0, 0.5, 0.25, 0)) {
+      Sigma_12_try <- matrix(0, nrow(Sigma_11), 2)
+      scaled_bl <- c.baseline_resp * bl_scale
+      Sigma_12_try[br_idx, 2] <- scaled_bl * sigma_resp * sigma_bl
+      Sigma_12_try[er_idx, 2] <- scaled_bl * sigma_resp * sigma_bl
+      Sigma_12_try[tr_idx, 2] <- scaled_bl * sigma_resp * sigma_bl
+      cross_term <- Sigma_12_try %*% Sigma_22_inv %*% t(Sigma_12_try)
+      Sigma_cond_try <- Sigma_11 - cross_term
+      min_eig <- min(eigen(Sigma_cond_try, only.values = TRUE)$values)
 
+      if (min_eig > 1e-6) {
+        if (bl_scale < 1.0) {
+          cat(sprintf("  Also reduced baseline correlation to %.2f\n", scaled_bl))
+        }
+        return(list(
+          c.bm = 0,
+          Sigma_12 = Sigma_12_try,
+          Sigma_cond = Sigma_cond_try
+        ))
+      }
+    }
+
+    # Ultimate fallback: no cross-correlations
     return(list(
       c.bm = 0,
-      Sigma_12 = Sigma_12_try,
-      Sigma_cond = Sigma_cond_try
+      Sigma_12 = matrix(0, nrow(Sigma_11), 2),
+      Sigma_cond = Sigma_11
     ))
   }
 
@@ -603,6 +619,16 @@ for (i in 1:nrow(param_grid)) {
   # Run iterations
   for (iter in 1:n_iterations) {
     set.seed(iter * 1000 + i)
+
+    # Create design with fresh path randomization for this iteration
+    # Select measurement schedule based on design
+    if (params$design == "hybrid") {
+      measurement_weeks <- measurement_weeks_hybrid
+    } else if (params$design == "ol_bdc") {
+      measurement_weeks <- measurement_weeks_ol_bdc
+    } else {
+      measurement_weeks <- measurement_weeks_other  # OL, Crossover, Parallel
+    }
 
     # Create design with fresh path randomization for this iteration
     if (params$design == "ol") {
