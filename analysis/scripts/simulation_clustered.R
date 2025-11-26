@@ -543,3 +543,6 @@ save(
 cat("\nDone! Results saved to", output_dir, "\n")
 cat("- power_heatmap_clustered.pdf\n")
 cat("- simulation_clustered_results.RData\n")
+
+# Close log file
+sink()

@@ -295,6 +295,11 @@ create_parallel_design <- function(n_participants, measurement_weeks) {
 # RUN SIMULATION
 # ============================================================================
 
+# Set up logging
+log_file <- "../output/simulation_evenly_spaced_log.txt"
+if (!dir.exists("../output")) dir.create("../output", recursive = TRUE)
+sink(log_file, split = TRUE)
+
 cat("Running EVENLY-SPACED designs simulation...\n")
 cat("Designs: OL, Crossover, Parallel (4 measurement points)\n")
 cat("Schedule: weeks", paste(measurement_weeks, collapse = ", "), "\n")
@@ -567,3 +572,6 @@ save(
 cat("\nDone! Results saved to", output_dir, "\n")
 cat("- power_heatmap_evenly_spaced.pdf\n")
 cat("- simulation_evenly_spaced_results.RData\n")
+
+# Close log file
+sink()

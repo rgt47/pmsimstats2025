@@ -1,0 +1,131 @@
+Running CLUSTERED designs simulation...
+Designs: Hybrid, OL+BDC (8 measurement points with clusters)
+Treatment effect = 0.5 
+Participants = 70 
+Iterations per condition = 20 
+
+Condition 1: design=ol_bdc, bm_mod=0.25, carryover=0.00
+Condition 2: design=ol_bdc, bm_mod=0.25, carryover=0.50
+Condition 3: design=ol_bdc, bm_mod=0.25, carryover=1.00
+Condition 4: design=ol_bdc, bm_mod=0.35, carryover=0.00
+Condition 5: design=ol_bdc, bm_mod=0.35, carryover=0.50
+  Error in iteration 15 : system is computationally singular: reciprocal condition number = 1.20364e-17 
+Condition 6: design=ol_bdc, bm_mod=0.35, carryover=1.00
+Condition 7: design=ol_bdc, bm_mod=0.45, carryover=0.00
+Condition 8: design=ol_bdc, bm_mod=0.45, carryover=0.50
+Condition 9: design=ol_bdc, bm_mod=0.45, carryover=1.00
+Condition 10: design=ol_bdc, bm_mod=0.55, carryover=0.00
+  Error in iteration 19 : system is computationally singular: reciprocal condition number = 1.20746e-17 
+Condition 11: design=ol_bdc, bm_mod=0.55, carryover=0.50
+Condition 12: design=ol_bdc, bm_mod=0.55, carryover=1.00
+  Error in iteration 12 : system is computationally singular: reciprocal condition number = 1.20806e-17 
+Condition 13: design=ol_bdc, bm_mod=0.65, carryover=0.00
+Condition 14: design=ol_bdc, bm_mod=0.65, carryover=0.50
+Condition 15: design=ol_bdc, bm_mod=0.65, carryover=1.00
+Condition 16: design=ol_bdc, bm_mod=0.00, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Error in iteration 18 : system is computationally singular: reciprocal condition number = 1.20419e-17 
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+Condition 17: design=ol_bdc, bm_mod=0.00, carryover=0.50
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+Condition 18: design=ol_bdc, bm_mod=0.00, carryover=1.00
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+  Also reduced baseline correlation to 0.20
+Condition 19: design=hybrid, bm_mod=0.00, carryover=0.00
+Condition 20: design=hybrid, bm_mod=0.00, carryover=0.50
+Condition 21: design=hybrid, bm_mod=0.00, carryover=1.00
+Condition 22: design=hybrid, bm_mod=0.25, carryover=0.00
+Condition 23: design=hybrid, bm_mod=0.25, carryover=0.50
+Condition 24: design=hybrid, bm_mod=0.25, carryover=1.00
+Condition 25: design=hybrid, bm_mod=0.35, carryover=0.00
+  Error in iteration 4 : system is computationally singular: reciprocal condition number = 1.78453e-17 
+Condition 26: design=hybrid, bm_mod=0.35, carryover=0.50
+Condition 27: design=hybrid, bm_mod=0.35, carryover=1.00
+Condition 28: design=hybrid, bm_mod=0.45, carryover=0.00
+Condition 29: design=hybrid, bm_mod=0.45, carryover=0.50
+Condition 30: design=hybrid, bm_mod=0.45, carryover=1.00
+Condition 31: design=hybrid, bm_mod=0.55, carryover=0.00
+Condition 32: design=hybrid, bm_mod=0.55, carryover=0.50
+Condition 33: design=hybrid, bm_mod=0.55, carryover=1.00
+Condition 34: design=hybrid, bm_mod=0.65, carryover=0.00
+Condition 35: design=hybrid, bm_mod=0.65, carryover=0.50
+Condition 36: design=hybrid, bm_mod=0.65, carryover=1.00
+
+ ================================================== 
+RESULTS - CLUSTERED DESIGNS
+================================================== 
+
+# A tibble: 36 × 8
+   design biomarker_moderation biomarker_correlation carryover power mean_effect
+   <chr>                 <dbl>                 <dbl>     <dbl> <dbl>       <dbl>
+ 1 hybrid                 0                      0.3       0   0          0.0277
+ 2 hybrid                 0                      0.3       0.5 0.05      -0.0156
+ 3 hybrid                 0                      0.3       1   0.05      -0.0169
+ 4 hybrid                 0.25                   0.3       0   0.2        0.163 
+ 5 hybrid                 0.25                   0.3       0.5 0.1        0.123 
+ 6 hybrid                 0.25                   0.3       1   0.1        0.0608
+ 7 hybrid                 0.35                   0.3       0   0.632      0.298 
+ 8 hybrid                 0.35                   0.3       0.5 0.05       0.133 
+ 9 hybrid                 0.35                   0.3       1   0.15       0.0860
+10 hybrid                 0.45                   0.3       0   0.75       0.377 
+# ℹ 26 more rows
+# ℹ 2 more variables: sd_effect <dbl>, n <int>
+
+Done! Results saved to ../output 
+- power_heatmap_clustered.pdf
+- simulation_clustered_results.RData
