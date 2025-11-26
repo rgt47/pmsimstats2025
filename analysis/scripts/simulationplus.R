@@ -435,7 +435,9 @@ verify_twostage_equivalence <- function(Sigma, idx, n_samples = 10000) {
 # Measurement schedules vary by design (always 8 points)
 measurement_weeks_hybrid <- c(4, 8, 9, 10, 11, 12, 16, 20)
 measurement_weeks_ol_bdc <- c(4, 8, 12, 16, 17, 18, 19, 20)
-measurement_weeks_other <- c(2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20)  # OL, Crossover, Parallel
+# 6 evenly-spaced points for OL, Crossover, Parallel (20-week trial)
+# Fewer points reduces Σ₁₁ dimension, helping maintain PD with c.bm = 0.3
+measurement_weeks_other <- c(0, 4, 8, 12, 16, 20)  # OL, Crossover, Parallel
 
 # ---------------------------------------------------------------------------
 # OPEN-LABEL (OL) DESIGN: All participants on active drug throughout

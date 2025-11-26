@@ -996,3 +996,288 @@ Condition 44: design=hybrid, bm_mod=0.00, carryover=0.50
 Condition 45: design=hybrid, bm_mod=0.00, carryover=1.00
 Condition 46: design=hybrid, bm_mod=0.25, carryover=0.00
 Condition 47: design=hybrid, bm_mod=0.25, carryover=0.50
+Condition 48: design=hybrid, bm_mod=0.25, carryover=1.00
+Condition 49: design=hybrid, bm_mod=0.35, carryover=0.00
+Condition 50: design=hybrid, bm_mod=0.35, carryover=0.50
+Condition 51: design=hybrid, bm_mod=0.35, carryover=1.00
+Condition 52: design=hybrid, bm_mod=0.45, carryover=0.00
+Condition 53: design=hybrid, bm_mod=0.45, carryover=0.50
+Condition 54: design=hybrid, bm_mod=0.45, carryover=1.00
+Condition 55: design=hybrid, bm_mod=0.55, carryover=0.00
+  Error in iteration 5 : system is computationally singular: reciprocal condition number = 1.78426e-17 
+Condition 56: design=hybrid, bm_mod=0.55, carryover=0.50
+Condition 57: design=hybrid, bm_mod=0.55, carryover=1.00
+Condition 58: design=hybrid, bm_mod=0.65, carryover=0.00
+Condition 59: design=hybrid, bm_mod=0.65, carryover=0.50
+Condition 60: design=hybrid, bm_mod=0.65, carryover=1.00
+Condition 61: design=parallel, bm_mod=0.00, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+Condition 62: design=parallel, bm_mod=0.25, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+Condition 63: design=parallel, bm_mod=0.35, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+Condition 64: design=parallel, bm_mod=0.45, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+Condition 65: design=parallel, bm_mod=0.55, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+Condition 66: design=parallel, bm_mod=0.65, carryover=0.00
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+  Also reduced baseline correlation to 0.20
+  Snapped biomarker correlation: 0.30 → 0.00 (to ensure PD)
+
+ ================================================== 
+RESULTS
+================================================== 
+
+# A tibble: 66 × 8
+   design biomarker_moderation biomarker_correlation carryover power mean_effect
+   <chr>                 <dbl>                 <dbl>     <dbl> <dbl>       <dbl>
+ 1 cross…                 0                        0       0    0.15      0.0157
+ 2 cross…                 0                        0       0.5  0         0.0241
+ 3 cross…                 0                        0       1    0        -0.0217
+ 4 cross…                 0.25                     0       0    0.25      0.205 
+ 5 cross…                 0.25                     0       0.5  0.1       0.0791
+ 6 cross…                 0.25                     0       1    0.05      0.0603
+ 7 cross…                 0.35                     0       0    0.25      0.273 
+ 8 cross…                 0.35                     0       0.5  0.15      0.143 
+ 9 cross…                 0.35                     0       1    0.1       0.122 
+10 cross…                 0.45                     0       0    0.45      0.342 
+# ℹ 56 more rows
+# ℹ 2 more variables: sd_effect <dbl>, n <int>
+Loading required package: viridisLite
+
+Done! Results saved to ../output 
+- power_heatmap.pdf
+- simulation_results.RData
