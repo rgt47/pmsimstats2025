@@ -822,11 +822,233 @@ validate_correlation_structure <- function(model_params,
 
 create_sigma_cache_key <- function(design_name, params) {
   # Create unique key for each parameter/design combination
-  paste(design_name, 
+  paste(design_name,
         params$n_participants,
         params$biomarker_correlation,
         params$carryover_t1half,
         sep = "_")
+}
+
+#===========================================================================
+# Function: validate_parameter_grid
+# Description: Pre-simulation validation of all parameter combinations
+#===========================================================================
+validate_parameter_grid <- function(param_grid,
+                                    trial_design,
+                                    model_params,
+                                    resp_param,
+                                    baseline_param,
+                                    verbose = TRUE) {
+  #' Validate all parameter combinations before simulation starts
+  #'
+  #' This function tests each parameter combination for positive definiteness
+  #' and returns a detailed report of problematic combinations.
+  #'
+  #' @param param_grid Tibble of parameter combinations to test
+  #' @param trial_design Trial design tibble with timepoint information
+  #' @param model_params Base model parameters (fixed correlations)
+  #' @param resp_param Response parameters (variances, effects)
+  #' @param baseline_param Baseline parameters (biomarker, baseline)
+  #' @param verbose If TRUE, print detailed validation report
+  #'
+  #' @return List with:
+  #'   - valid_combinations: Tibble of combinations that pass validation
+  #'   - invalid_combinations: Tibble of combinations that fail
+  #'   - summary: Validation summary statistics
+  #'   - report: Character vector of validation messages
+
+  cat("\n")
+  cat("="*80, "\n")
+  cat("PRE-SIMULATION PARAMETER VALIDATION\n")
+  cat("="*80, "\n\n")
+
+  # Initialize tracking lists
+  valid_rows <- c()
+  invalid_rows <- c()
+  invalid_reasons <- character()
+  condition_numbers <- numeric()
+
+  # Test each parameter combination
+  for (i in 1:nrow(param_grid)) {
+    current_params <- param_grid[i, ]
+
+    # Update model_params with current biomarker correlation
+    test_params <- model_params
+    test_params$c.bm <- current_params$biomarker_correlation
+
+    # Try to build sigma matrix
+    sigma_result <- tryCatch({
+      build_sigma_matrix(
+        test_params, resp_param, baseline_param, trial_design,
+        factor_types = c("time_variant", "pharm_biomarker", "bio_response"),
+        factor_abbreviations = c("tv", "pb", "br"),
+        verbose = FALSE
+      )
+    }, error = function(e) {
+      return(NULL)
+    })
+
+    # Check result
+    if (is.null(sigma_result)) {
+      invalid_rows <- c(invalid_rows, i)
+      invalid_reasons <- c(
+        invalid_reasons,
+        sprintf("Row %d: Non-positive definite matrix (c.bm=%.2f)",
+                i, current_params$biomarker_correlation)
+      )
+    } else {
+      # Compute condition number
+      sigma <- sigma_result$sigma
+      eigenvalues <- eigen(sigma, only.values = TRUE)$values
+      kappa <- max(eigenvalues) / max(min(eigenvalues), 1e-10)
+      condition_numbers[i] <- kappa
+
+      # Flag if ill-conditioned (kappa > 100)
+      if (kappa > 100) {
+        cat(sprintf(
+          "⚠ WARNING [Row %d]: Ill-conditioned matrix (κ = %.1f, c.bm = %.2f)\n",
+          i, kappa, current_params$biomarker_correlation
+        ))
+        valid_rows <- c(valid_rows, i)
+      } else {
+        valid_rows <- c(valid_rows, i)
+      }
+    }
+  }
+
+  # Compile results
+  valid_grid <- param_grid[valid_rows, ]
+  invalid_grid <- param_grid[invalid_rows, ]
+
+  # Print summary
+  cat("\n", strrep("="*80, 1), "\n")
+  cat("VALIDATION SUMMARY\n")
+  cat(strrep("="*80, 1), "\n")
+  cat(sprintf("Total combinations tested: %d\n", nrow(param_grid)))
+  cat(sprintf("✓ Valid combinations:       %d (%.1f%%)\n",
+              nrow(valid_grid), 100*nrow(valid_grid)/nrow(param_grid)))
+  cat(sprintf("✗ Invalid combinations:     %d (%.1f%%)\n\n",
+              nrow(invalid_grid), 100*nrow(invalid_grid)/nrow(param_grid)))
+
+  # Print invalid combinations with reasons
+  if (nrow(invalid_grid) > 0) {
+    cat("PROBLEMATIC COMBINATIONS:\n")
+    cat(strrep("-"*80, 1), "\n")
+    for (j in 1:length(invalid_reasons)) {
+      cat(sprintf("  %s\n", invalid_reasons[j]))
+    }
+    cat("\n")
+
+    # Print the invalid combinations table
+    cat("Details of invalid combinations:\n")
+    print(invalid_grid)
+    cat("\n")
+  }
+
+  # Condition number statistics
+  if (length(condition_numbers) > 0) {
+    cond_valid <- condition_numbers[valid_rows]
+    cat(sprintf(
+      "Condition number (κ) statistics for valid combinations:\n  Mean:   %.1f\n  Median: %.1f\n  Min:    %.1f (best conditioned)\n  Max:    %.1f (worst conditioned)\n\n",
+      mean(cond_valid, na.rm = TRUE),
+      median(cond_valid, na.rm = TRUE),
+      min(cond_valid, na.rm = TRUE),
+      max(cond_valid, na.rm = TRUE)
+    ))
+  }
+
+  # Recommendations
+  if (nrow(invalid_grid) > 0) {
+    cat("RECOMMENDATIONS:\n")
+    cat(strrep("-"*80, 1), "\n")
+
+    # Check if it's a biomarker correlation issue
+    if (all(grepl("c.bm", invalid_reasons))) {
+      cat("  • All failures are due to biomarker correlation (c.bm) values being too high\n")
+      cat("  • Consider reducing the maximum biomarker_correlation in param_grid\n")
+      cat("  • Current constraint: c.bm ≤ 0.6\n")
+      cat("  • You may need to reduce to: c.bm ≤ 0.4 or lower\n\n")
+    }
+
+    cat("  • Alternatively, adjust correlation structure parameters:\n")
+    cat("    - Reduce c.cf1t (same-time cross-correlation, currently 0.2)\n")
+    cat("    - Reduce c.cfct (different-time cross-correlation, currently 0.1)\n")
+    cat("    - Increase c.autocorr (would require modifying Hendrickson parameters)\n\n")
+  }
+
+  # Final status
+  cat(strrep("="*80, 1), "\n")
+  if (nrow(invalid_grid) == 0) {
+    cat("✓ ALL PARAMETER COMBINATIONS ARE VALID\n")
+    cat("  Ready to proceed with simulation!\n")
+  } else {
+    cat("⚠ SOME PARAMETER COMBINATIONS ARE INVALID\n")
+    cat(sprintf("  %d combinations excluded from simulation\n", nrow(invalid_grid)))
+  }
+  cat(strrep("="*80, 1), "\n\n")
+
+  # Return results
+  return(list(
+    valid_combinations = valid_grid,
+    invalid_combinations = invalid_grid,
+    n_valid = nrow(valid_grid),
+    n_invalid = nrow(invalid_grid),
+    condition_numbers = condition_numbers[valid_rows],
+    invalid_reasons = invalid_reasons
+  ))
+}
+
+#===========================================================================
+# Function: report_parameter_validation
+# Description: Print detailed validation report with recommendations
+#===========================================================================
+report_parameter_validation <- function(validation_result, param_grid) {
+  #' Generate a detailed validation report
+  #'
+  #' @param validation_result Output from validate_parameter_grid()
+  #' @param param_grid Original parameter grid tested
+
+  cat("\n")
+  cat("="*80, "\n")
+  cat("DETAILED PARAMETER VALIDATION REPORT\n")
+  cat("="*80, "\n\n")
+
+  cat("GRID COMPOSITION:\n")
+  cat(sprintf("  • n_participants:        %s\n",
+              paste(unique(param_grid$n_participants), collapse = ", ")))
+  cat(sprintf("  • biomarker_correlation: %s\n",
+              paste(unique(param_grid$biomarker_correlation), collapse = ", ")))
+  cat(sprintf("  • carryover_t1half:      %s\n",
+              paste(unique(param_grid$carryover_t1half), collapse = ", ")))
+
+  cat("\nVALIDATION RESULTS:\n")
+  cat(sprintf("  ✓ Valid:   %3d combinations (%5.1f%%)\n",
+              validation_result$n_valid,
+              100 * validation_result$n_valid / nrow(param_grid)))
+  cat(sprintf("  ✗ Invalid: %3d combinations (%5.1f%%)\n",
+              validation_result$n_invalid,
+              100 * validation_result$n_invalid / nrow(param_grid)))
+
+  if (validation_result$n_invalid > 0) {
+    cat("\nINVALID COMBINATIONS:\n")
+    for (reason in validation_result$invalid_reasons) {
+      cat(sprintf("  • %s\n", reason))
+    }
+  }
+
+  if (length(validation_result$condition_numbers) > 0) {
+    cat("\nNUMERICAL STABILITY:\n")
+    cond_nums <- validation_result$condition_numbers
+    cat(sprintf("  • κ (condition number) range: [%.1f, %.1f]\n",
+                min(cond_nums), max(cond_nums)))
+    cat(sprintf("  • Mean κ: %.1f (geometric: %.1f)\n",
+                mean(cond_nums),
+                exp(mean(log(cond_nums)))))
+    cat(sprintf("  • Status: %s\n",
+                if(max(cond_nums) < 100) "✓ Well-conditioned" else "⚠ Some ill-conditioning detected"))
+  }
+
+  cat("\n")
 }
 
 #===========================================================================
