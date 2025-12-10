@@ -9,16 +9,14 @@ Condition 2: design=ol_bdc, bm_mod=0.25, carryover=0.50
 Condition 3: design=ol_bdc, bm_mod=0.25, carryover=1.00
 Condition 4: design=ol_bdc, bm_mod=0.35, carryover=0.00
 Condition 5: design=ol_bdc, bm_mod=0.35, carryover=0.50
-  Error in iteration 15 : system is computationally singular: reciprocal condition number = 1.20364e-17 
 Condition 6: design=ol_bdc, bm_mod=0.35, carryover=1.00
 Condition 7: design=ol_bdc, bm_mod=0.45, carryover=0.00
 Condition 8: design=ol_bdc, bm_mod=0.45, carryover=0.50
 Condition 9: design=ol_bdc, bm_mod=0.45, carryover=1.00
+  Error in iteration 3 : system is computationally singular: reciprocal condition number = 1.56306e-17 
 Condition 10: design=ol_bdc, bm_mod=0.55, carryover=0.00
-  Error in iteration 19 : system is computationally singular: reciprocal condition number = 1.20746e-17 
 Condition 11: design=ol_bdc, bm_mod=0.55, carryover=0.50
 Condition 12: design=ol_bdc, bm_mod=0.55, carryover=1.00
-  Error in iteration 12 : system is computationally singular: reciprocal condition number = 1.20806e-17 
 Condition 13: design=ol_bdc, bm_mod=0.65, carryover=0.00
 Condition 14: design=ol_bdc, bm_mod=0.65, carryover=0.50
 Condition 15: design=ol_bdc, bm_mod=0.65, carryover=1.00
@@ -41,7 +39,7 @@ Condition 16: design=ol_bdc, bm_mod=0.00, carryover=0.00
   Also reduced baseline correlation to 0.20
   Also reduced baseline correlation to 0.20
   Also reduced baseline correlation to 0.20
-  Error in iteration 18 : system is computationally singular: reciprocal condition number = 1.20419e-17 
+  Error in iteration 18 : system is computationally singular: reciprocal condition number = 1.56577e-17 
   Also reduced baseline correlation to 0.20
   Also reduced baseline correlation to 0.20
 Condition 17: design=ol_bdc, bm_mod=0.00, carryover=0.50
@@ -89,3 +87,16 @@ Condition 18: design=ol_bdc, bm_mod=0.00, carryover=1.00
 Condition 19: design=hybrid, bm_mod=0.00, carryover=0.00
 Condition 20: design=hybrid, bm_mod=0.00, carryover=0.50
 Condition 21: design=hybrid, bm_mod=0.00, carryover=1.00
+Condition 22: design=hybrid, bm_mod=0.25, carryover=0.00
+Condition 23: design=hybrid, bm_mod=0.25, carryover=0.50
+Condition 24: design=hybrid, bm_mod=0.25, carryover=1.00
+Condition 25: design=hybrid, bm_mod=0.35, carryover=0.00
+  Error in iteration 4 : system is computationally singular: reciprocal condition number = 2.31308e-17 
+Condition 26: design=hybrid, bm_mod=0.35, carryover=0.50
+Condition 27: design=hybrid, bm_mod=0.35, carryover=1.00
+Condition 28: design=hybrid, bm_mod=0.45, carryover=0.00
+Condition 29: design=hybrid, bm_mod=0.45, carryover=0.50
+Condition 30: design=hybrid, bm_mod=0.45, carryover=1.00
+Condition 31: design=hybrid, bm_mod=0.55, carryover=0.00
+Condition 32: design=hybrid, bm_mod=0.55, carryover=0.50
+Condition 33: design=hybrid, bm_mod=0.55, carryover=1.00
