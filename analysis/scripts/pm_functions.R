@@ -858,9 +858,9 @@ validate_parameter_grid <- function(param_grid,
   #'   - report: Character vector of validation messages
 
   cat("\n")
-  cat("="*80, "\n")
+  cat(strrep("=", 80), "\n")
   cat("PRE-SIMULATION PARAMETER VALIDATION\n")
-  cat("="*80, "\n\n")
+  cat(strrep("=", 80), "\n\n")
 
   # Initialize tracking lists
   valid_rows <- c()
@@ -921,9 +921,9 @@ validate_parameter_grid <- function(param_grid,
   invalid_grid <- param_grid[invalid_rows, ]
 
   # Print summary
-  cat("\n", strrep("="*80, 1), "\n")
+  cat("\n", strrep("=", 80), "\n")
   cat("VALIDATION SUMMARY\n")
-  cat(strrep("="*80, 1), "\n")
+  cat(strrep("=", 80), "\n")
   cat(sprintf("Total combinations tested: %d\n", nrow(param_grid)))
   cat(sprintf("✓ Valid combinations:       %d (%.1f%%)\n",
               nrow(valid_grid), 100*nrow(valid_grid)/nrow(param_grid)))
@@ -933,7 +933,7 @@ validate_parameter_grid <- function(param_grid,
   # Print invalid combinations with reasons
   if (nrow(invalid_grid) > 0) {
     cat("PROBLEMATIC COMBINATIONS:\n")
-    cat(strrep("-"*80, 1), "\n")
+    cat(strrep("-", 80), "\n")
     for (j in 1:length(invalid_reasons)) {
       cat(sprintf("  %s\n", invalid_reasons[j]))
     }
@@ -960,7 +960,7 @@ validate_parameter_grid <- function(param_grid,
   # Recommendations
   if (nrow(invalid_grid) > 0) {
     cat("RECOMMENDATIONS:\n")
-    cat(strrep("-"*80, 1), "\n")
+    cat(strrep("-", 80), "\n")
 
     # Check if it's a biomarker correlation issue
     if (all(grepl("c.bm", invalid_reasons))) {
@@ -977,7 +977,7 @@ validate_parameter_grid <- function(param_grid,
   }
 
   # Final status
-  cat(strrep("="*80, 1), "\n")
+  cat(strrep("=", 80), "\n")
   if (nrow(invalid_grid) == 0) {
     cat("✓ ALL PARAMETER COMBINATIONS ARE VALID\n")
     cat("  Ready to proceed with simulation!\n")
@@ -985,7 +985,7 @@ validate_parameter_grid <- function(param_grid,
     cat("⚠ SOME PARAMETER COMBINATIONS ARE INVALID\n")
     cat(sprintf("  %d combinations excluded from simulation\n", nrow(invalid_grid)))
   }
-  cat(strrep("="*80, 1), "\n\n")
+  cat(strrep("=", 80), "\n\n")
 
   # Return results
   return(list(
@@ -1009,9 +1009,9 @@ report_parameter_validation <- function(validation_result, param_grid) {
   #' @param param_grid Original parameter grid tested
 
   cat("\n")
-  cat("="*80, "\n")
+  cat(strrep("=", 80), "\n")
   cat("DETAILED PARAMETER VALIDATION REPORT\n")
-  cat("="*80, "\n\n")
+  cat(strrep("=", 80), "\n\n")
 
   cat("GRID COMPOSITION:\n")
   cat(sprintf("  • n_participants:        %s\n",

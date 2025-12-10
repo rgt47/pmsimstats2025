@@ -35,14 +35,15 @@ within_subject_sd <- 1.8    # SD of measurement noise
 biomarker_mean <- 5.0       # Mean biomarker value
 biomarker_sd <- 2.0         # SD of biomarker
 
-# Correlation parameters (from Hendrickson)
-c.br <- 0.8  # BR autocorrelation across timepoints
-c.er <- 0.8  # ER autocorrelation across timepoints
-c.tr <- 0.8  # TR autocorrelation across timepoints
-c.cf1t <- 0.2  # Same-time cross-correlation
-c.cfct <- 0.1  # Different-time cross-correlation
-c.bm_baseline <- 0.3   # Biomarker-baseline correlation
-c.baseline_resp <- 0.4 # Baseline-response correlation
+# Correlation parameters (adapted from Hendrickson)
+# Reduced to improve matrix conditioning and positive definiteness
+c.br <- 0.75  # BR autocorrelation (reduced from 0.8)
+c.er <- 0.75  # ER autocorrelation (reduced from 0.8)
+c.tr <- 0.75  # TR autocorrelation (reduced from 0.8)
+c.cf1t <- 0.12  # Same-time cross-correlation (reduced from 0.2)
+c.cfct <- 0.05  # Different-time cross-correlation (reduced from 0.1)
+c.bm_baseline <- 0.25  # Biomarker-baseline correlation (reduced from 0.3)
+c.baseline_resp <- 0.3 # Baseline-response correlation (reduced from 0.4)
 
 # Allowed correlation values (finite grid for consistent results)
 allowed_correlations <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
@@ -71,128 +72,6 @@ param_grid <- bind_rows(
     carryover = c(0, 0.5, 1)
   )
 )
-
-# ============================================================================
-# PRE-SIMULATION PARAMETER VALIDATION
-# ============================================================================
-
-cat("\n")
-cat("=" %+% strrep("=", 79) %+% "\n")
-cat("PRE-SIMULATION PARAMETER VALIDATION\n")
-cat("=" %+% strrep("=", 79) %+% "\n\n")
-
-# Create response and baseline parameters for validation
-resp_param <- tibble(
-  cat = c("biological_response", "expectancy_response", "time_variant_response"),
-  max = c(1.0, 1.0, 1.0),
-  sd = c(within_subject_sd, within_subject_sd, within_subject_sd)
-)
-
-baseline_param <- tibble(
-  cat = c("biomarker", "baseline"),
-  m = c(biomarker_mean, baseline_mean),
-  sd = c(biomarker_sd, between_subject_sd)
-)
-
-# Create model parameters for validation
-model_params <- list(
-  N = n_participants,
-  c.br = c.br,
-  c.er = c.er,
-  c.tr = c.tr,
-  c.cf1t = c.cf1t,
-  c.cfct = c.cfct,
-  c.bm_baseline = c.bm_baseline,
-  c.baseline_resp = c.baseline_resp
-)
-
-# Validate for each design separately (different measurement schedules)
-designs_to_validate <- list(
-  hybrid = measurement_weeks_hybrid,
-  ol_bdc = measurement_weeks_ol_bdc
-)
-
-all_valid_rows <- tibble()
-
-for (design_name in names(designs_to_validate)) {
-  cat(sprintf("Validating %s design (measurement weeks: %s)...\n",
-              toupper(design_name),
-              paste(designs_to_validate[[design_name]], collapse = ", ")))
-
-  # Create representative trial design for this design
-  measurement_weeks <- designs_to_validate[[design_name]]
-
-  if (design_name == "hybrid") {
-    trial_design <- create_hybrid_design(n_participants, measurement_weeks)
-  } else {
-    trial_design <- create_ol_bdc_design(n_participants, measurement_weeks)
-  }
-
-  # Filter param_grid to this design
-  design_params <- param_grid %>% filter(design == design_name)
-
-  # Validate parameter grid for this design
-  validation_result <- validate_parameter_grid(
-    param_grid = design_params,
-    trial_design = trial_design,
-    model_params = model_params,
-    resp_param = resp_param,
-    baseline_param = baseline_param,
-    verbose = FALSE
-  )
-
-  # Report validation results
-  cat(sprintf("  Valid combinations:   %d / %d (%.1f%%)\n",
-              validation_result$n_valid,
-              nrow(design_params),
-              100 * validation_result$n_valid / nrow(design_params)))
-
-  if (validation_result$n_invalid > 0) {
-    cat(sprintf("  Invalid combinations: %d\n\n", validation_result$n_invalid))
-    cat("  Details of invalid combinations:\n")
-    print(validation_result$invalid_combinations)
-    cat("\n  Reasons for failure:\n")
-    for (reason in validation_result$invalid_reasons) {
-      cat(sprintf("    • %s\n", reason))
-    }
-    cat("\n")
-  }
-
-  # Report condition numbers
-  if (length(validation_result$condition_numbers) > 0) {
-    cond <- validation_result$condition_numbers
-    cat(sprintf("  Condition number (κ) statistics:\n"))
-    cat(sprintf("    Mean:   %.1f\n", mean(cond)))
-    cat(sprintf("    Median: %.1f\n", median(cond)))
-    cat(sprintf("    Min:    %.1f (best conditioned)\n", min(cond)))
-    cat(sprintf("    Max:    %.1f (worst conditioned)\n", max(cond)))
-
-    if (max(cond) > 100) {
-      cat(sprintf("    ⚠ WARNING: Some matrices are ill-conditioned (κ > 100)\n"))
-      cat(sprintf("      You may see convergence warnings during simulation.\n"))
-    }
-  }
-  cat("\n")
-
-  # Add valid combinations to overall list with design label preserved
-  all_valid_rows <- bind_rows(
-    all_valid_rows,
-    validation_result$valid_combinations
-  )
-}
-
-# Update param_grid to only include valid combinations
-original_n <- nrow(param_grid)
-param_grid <- all_valid_rows
-
-if (original_n > nrow(param_grid)) {
-  cat(sprintf("FILTERED: %d -> %d parameter combinations\n", original_n, nrow(param_grid)))
-  cat(sprintf("          %d combinations excluded due to validation failures\n\n", original_n - nrow(param_grid)))
-} else {
-  cat(sprintf("✓ All %d parameter combinations passed validation\n\n", nrow(param_grid)))
-}
-
-cat("=" %+% strrep("=", 79) %+% "\n\n")
 
 # ============================================================================
 # BUILD SIGMA WITH GUARANTEED PD (Time-Based AR(1))
@@ -396,6 +275,76 @@ create_hybrid_design <- function(n_participants, measurement_weeks) {
       expectancy = if_else(week %in% c(4, 8), 1.0, 0.5)
     )
 }
+
+# ============================================================================
+# PRE-SIMULATION SIGMA VALIDATION (3 unique structures)
+# ============================================================================
+
+cat("\n")
+cat("=" %+% strrep("=", 79) %+% "\n")
+cat("PRE-SIMULATION SIGMA MATRIX VALIDATION\n")
+cat("=" %+% strrep("=", 79) %+% "\n\n")
+
+# Get unique biomarker correlations in param_grid
+unique_bm_corr <- unique(param_grid$biomarker_correlation)
+
+# Define sigma structures to validate: (design, measurement_weeks, c.bm)
+sigma_structures <- list(
+  list(design = "hybrid", weeks = measurement_weeks_hybrid, c_bm = 0.3),
+  list(design = "ol_bdc", weeks = measurement_weeks_ol_bdc, c_bm = 0.3),
+  list(design = "ol_bdc", weeks = measurement_weeks_ol_bdc, c_bm = 0)
+)
+
+# Filter to only those that exist in param_grid
+sigma_structures <- Filter(function(x) x$c_bm %in% unique_bm_corr, sigma_structures)
+
+# Test each sigma structure
+all_valid <- TRUE
+
+for (i in seq_along(sigma_structures)) {
+  sigma_def <- sigma_structures[[i]]
+
+  cat(sprintf("Sigma %d: %s design (weeks: %s, c.bm = %.1f)\n",
+              i, sigma_def$design, paste(sigma_def$weeks, collapse = ","), sigma_def$c_bm))
+
+  # Build sigma matrix
+  sigma_result <- tryCatch({
+    build_sigma_guaranteed_pd(
+      weeks = sigma_def$weeks,
+      c.bm = sigma_def$c_bm,
+      params = list()  # params passed but not used in PD check
+    )
+  }, error = function(e) {
+    cat(sprintf("  ✗ FAILED: %s\n", conditionMessage(e)))
+    return(NULL)
+  })
+
+  if (is.null(sigma_result)) {
+    cat("  ✗ Non-positive definite\n\n")
+    all_valid <- FALSE
+  } else {
+    # Check eigenvalues
+    eigs <- eigen(sigma_result$Sigma, only.values = TRUE)$values
+    min_eig <- min(eigs)
+    cond_number <- max(eigs) / max(min_eig, 1e-10)
+
+    cat(sprintf("  ✓ Valid (κ = %.1f)\n", cond_number))
+
+    if (cond_number > 100) {
+      cat(sprintf("    ⚠ WARNING: Ill-conditioned (κ > 100)\n"))
+    }
+    cat("\n")
+  }
+}
+
+if (!all_valid) {
+  stop("\n✗ VALIDATION FAILED: One or more sigma matrices are not positive definite.\n",
+       "   Check parameter grid or measurement schedule.")
+}
+
+cat("=" %+% strrep("=", 79) %+% "\n")
+cat("✓ All sigma matrices valid - proceeding with simulation\n")
+cat("=" %+% strrep("=", 79) %+% "\n\n")
 
 # ============================================================================
 # RUN SIMULATION
