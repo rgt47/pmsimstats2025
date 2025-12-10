@@ -73,6 +73,128 @@ param_grid <- bind_rows(
 )
 
 # ============================================================================
+# PRE-SIMULATION PARAMETER VALIDATION
+# ============================================================================
+
+cat("\n")
+cat("=" %+% strrep("=", 79) %+% "\n")
+cat("PRE-SIMULATION PARAMETER VALIDATION\n")
+cat("=" %+% strrep("=", 79) %+% "\n\n")
+
+# Create response and baseline parameters for validation
+resp_param <- tibble(
+  cat = c("biological_response", "expectancy_response", "time_variant_response"),
+  max = c(1.0, 1.0, 1.0),
+  sd = c(within_subject_sd, within_subject_sd, within_subject_sd)
+)
+
+baseline_param <- tibble(
+  cat = c("biomarker", "baseline"),
+  m = c(biomarker_mean, baseline_mean),
+  sd = c(biomarker_sd, between_subject_sd)
+)
+
+# Create model parameters for validation
+model_params <- list(
+  N = n_participants,
+  c.br = c.br,
+  c.er = c.er,
+  c.tr = c.tr,
+  c.cf1t = c.cf1t,
+  c.cfct = c.cfct,
+  c.bm_baseline = c.bm_baseline,
+  c.baseline_resp = c.baseline_resp
+)
+
+# Validate for each design separately (different measurement schedules)
+designs_to_validate <- list(
+  hybrid = measurement_weeks_hybrid,
+  ol_bdc = measurement_weeks_ol_bdc
+)
+
+all_valid_rows <- tibble()
+
+for (design_name in names(designs_to_validate)) {
+  cat(sprintf("Validating %s design (measurement weeks: %s)...\n",
+              toupper(design_name),
+              paste(designs_to_validate[[design_name]], collapse = ", ")))
+
+  # Create representative trial design for this design
+  measurement_weeks <- designs_to_validate[[design_name]]
+
+  if (design_name == "hybrid") {
+    trial_design <- create_hybrid_design(n_participants, measurement_weeks)
+  } else {
+    trial_design <- create_ol_bdc_design(n_participants, measurement_weeks)
+  }
+
+  # Filter param_grid to this design
+  design_params <- param_grid %>% filter(design == design_name)
+
+  # Validate parameter grid for this design
+  validation_result <- validate_parameter_grid(
+    param_grid = design_params,
+    trial_design = trial_design,
+    model_params = model_params,
+    resp_param = resp_param,
+    baseline_param = baseline_param,
+    verbose = FALSE
+  )
+
+  # Report validation results
+  cat(sprintf("  Valid combinations:   %d / %d (%.1f%%)\n",
+              validation_result$n_valid,
+              nrow(design_params),
+              100 * validation_result$n_valid / nrow(design_params)))
+
+  if (validation_result$n_invalid > 0) {
+    cat(sprintf("  Invalid combinations: %d\n\n", validation_result$n_invalid))
+    cat("  Details of invalid combinations:\n")
+    print(validation_result$invalid_combinations)
+    cat("\n  Reasons for failure:\n")
+    for (reason in validation_result$invalid_reasons) {
+      cat(sprintf("    • %s\n", reason))
+    }
+    cat("\n")
+  }
+
+  # Report condition numbers
+  if (length(validation_result$condition_numbers) > 0) {
+    cond <- validation_result$condition_numbers
+    cat(sprintf("  Condition number (κ) statistics:\n"))
+    cat(sprintf("    Mean:   %.1f\n", mean(cond)))
+    cat(sprintf("    Median: %.1f\n", median(cond)))
+    cat(sprintf("    Min:    %.1f (best conditioned)\n", min(cond)))
+    cat(sprintf("    Max:    %.1f (worst conditioned)\n", max(cond)))
+
+    if (max(cond) > 100) {
+      cat(sprintf("    ⚠ WARNING: Some matrices are ill-conditioned (κ > 100)\n"))
+      cat(sprintf("      You may see convergence warnings during simulation.\n"))
+    }
+  }
+  cat("\n")
+
+  # Add valid combinations to overall list with design label preserved
+  all_valid_rows <- bind_rows(
+    all_valid_rows,
+    validation_result$valid_combinations
+  )
+}
+
+# Update param_grid to only include valid combinations
+original_n <- nrow(param_grid)
+param_grid <- all_valid_rows
+
+if (original_n > nrow(param_grid)) {
+  cat(sprintf("FILTERED: %d -> %d parameter combinations\n", original_n, nrow(param_grid)))
+  cat(sprintf("          %d combinations excluded due to validation failures\n\n", original_n - nrow(param_grid)))
+} else {
+  cat(sprintf("✓ All %d parameter combinations passed validation\n\n", nrow(param_grid)))
+}
+
+cat("=" %+% strrep("=", 79) %+% "\n\n")
+
+# ============================================================================
 # BUILD SIGMA WITH GUARANTEED PD (Time-Based AR(1))
 # ============================================================================
 
@@ -132,43 +254,41 @@ build_sigma_guaranteed_pd <- function(weeks, c.bm, params) {
     }
   }
 
-  # STAGE 3: Build Sigma_12 with automatic scaling
+  # STAGE 3: Build Sigma_12 (no on-the-fly adjustment - parameters are pre-validated)
   effective_c.bm <- c.bm
   effective_c.baseline <- c.baseline_resp
 
-  for (attempt in 1:10) {
-    Sigma_12 <- matrix(0, 3 * n_tp, 2)
-    Sigma_12[br_idx, 1] <- effective_c.bm * within_subject_sd * biomarker_sd
-    Sigma_12[er_idx, 1] <- effective_c.bm * 0.5 * within_subject_sd * biomarker_sd
-    Sigma_12[tr_idx, 1] <- effective_c.bm * 0.5 * within_subject_sd * biomarker_sd
-    Sigma_12[br_idx, 2] <- effective_c.baseline * within_subject_sd * between_subject_sd
-    Sigma_12[er_idx, 2] <- effective_c.baseline * within_subject_sd * between_subject_sd
-    Sigma_12[tr_idx, 2] <- effective_c.baseline * within_subject_sd * between_subject_sd
+  Sigma_12 <- matrix(0, 3 * n_tp, 2)
+  Sigma_12[br_idx, 1] <- effective_c.bm * within_subject_sd * biomarker_sd
+  Sigma_12[er_idx, 1] <- effective_c.bm * 0.5 * within_subject_sd * biomarker_sd
+  Sigma_12[tr_idx, 1] <- effective_c.bm * 0.5 * within_subject_sd * biomarker_sd
+  Sigma_12[br_idx, 2] <- effective_c.baseline * within_subject_sd * between_subject_sd
+  Sigma_12[er_idx, 2] <- effective_c.baseline * within_subject_sd * between_subject_sd
+  Sigma_12[tr_idx, 2] <- effective_c.baseline * within_subject_sd * between_subject_sd
 
-    Sigma_22_inv <- solve(Sigma_22)
-    cross_term <- Sigma_12 %*% Sigma_22_inv %*% t(Sigma_12)
-    Sigma_cond <- Sigma_11 - cross_term
-    min_eig <- min(eigen(Sigma_cond, only.values = TRUE)$values)
+  # Verify positive definiteness (should always pass if parameters were validated correctly)
+  Sigma_22_inv <- solve(Sigma_22)
+  cross_term <- Sigma_12 %*% Sigma_22_inv %*% t(Sigma_12)
+  Sigma_cond <- Sigma_11 - cross_term
+  min_eig <- min(eigen(Sigma_cond, only.values = TRUE)$values)
 
-    if (min_eig > 1e-6) break
-
-    if (effective_c.bm > 0) {
-      new_c.bm <- allowed_correlations[max(1, which(allowed_correlations == effective_c.bm) - 1)]
-      if (new_c.bm != effective_c.bm) {
-        cat(sprintf("  Snapped biomarker correlation %.2f -> %.2f\n", effective_c.bm, new_c.bm))
-        effective_c.bm <- new_c.bm
-        next
-      }
-    }
-
-    if (effective_c.baseline > 0.2) {
-      effective_c.baseline <- 0.2
-      cat("  Also reduced baseline correlation to 0.20\n")
-      next
-    }
-
-    warning("Could not achieve PD after all reductions")
-    break
+  if (min_eig <= 1e-6) {
+    stop(sprintf(
+      paste(
+        "\nUNEXPECTED: Parameter combination failed positive definiteness check!",
+        "This should NOT happen - parameters were pre-validated.",
+        "c.bm = %.2f",
+        "Min eigenvalue = %.2e",
+        "",
+        "This indicates either:",
+        "  1. A bug in the validate_parameter_grid() function, or",
+        "  2. Inconsistent covariance matrix construction between validation and simulation",
+        "",
+        "Please investigate the mismatch between validate_parameter_grid()",
+        "and build_sigma_guaranteed_pd().",
+        sep = "\n"
+      ),
+      effective_c.bm, min_eig))
   }
 
   # Build full sigma
