@@ -1,0 +1,507 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+
+% Geometry
+\geometry{margin=1in, top=1.25in, bottom=1.25in}
+
+% Define theorem styles
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+
+% Custom command for key identity box
+\newcommand{\keyidentity}[1]{
+  \begin{tcolorbox}[colback=blue!10, colframe=blue!50, title=Key Identity]
+    \centering\Large
+    #1
+  \end{tcolorbox}
+}
+
+% Header and Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{Sigma Matrix Derivation}
+\cfoot{N-of-1 Trial Simulation}
+
+\title{Mathematical Derivation of the Two-Step Sigma Matrix Calculation}
+\author{Clinical Trial Simulation Documentation}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides a comprehensive mathematical derivation of the efficient two-step method for computing covariance matrices from correlation matrices in multivariate normal data generation. Specifically, we derive the identity $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$, where $\Sigma$ is the covariance matrix, $\mathbf{R}$ is the correlation matrix, and $\mathbf{D}$ is a diagonal matrix of standard deviations. This decomposition is fundamental to clinical trial simulation, enabling numerical stability and computational efficiency.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+In multivariate normal data generation for clinical trials, we need to construct covariance matrices that are:
+\begin{enumerate}
+  \item \textbf{Positive definite} (PD) - ensuring mvrnorm() and mvn sampling work correctly
+  \item \textbf{Numerically stable} - avoiding ill-conditioning and eigenvalue issues
+  \item \textbf{Interpretable} - separating correlation structure from magnitude (standard deviations)
+\end{enumerate}
+
+The most efficient approach achieves all three by decomposing the covariance matrix into:
+\[
+  \Sigma = \mathbf{D} \mathbf{R} \mathbf{D}
+\]
+
+where the correlation matrix $\mathbf{R}$ is validated for PD independently from scaling by standard deviations in $\mathbf{D}$.
+
+This document derives this identity from first principles and explains its computational advantages.
+
+\section{Foundational Concepts}
+
+\subsection{Covariance and Correlation: Univariate Case}
+
+\begin{definition}[Covariance]
+For two random variables $X$ and $Y$ with means $\mu_X$ and $\mu_Y$:
+\[
+  \text{Cov}(X, Y) = E[(X - \mu_X)(Y - \mu_Y)]
+\]
+\end{definition}
+
+\begin{definition}[Standard Deviation]
+The standard deviation of a random variable $X$ is:
+\[
+  \sigma_X = \sqrt{\text{Var}(X)} = \sqrt{\text{Cov}(X, X)}
+\]
+\end{definition}
+
+\begin{definition}[Correlation Coefficient]
+The Pearson correlation coefficient between $X$ and $Y$ is:
+\[
+  \text{Corr}(X, Y) = \frac{\text{Cov}(X, Y)}{\sigma_X \sigma_Y}
+\]
+\end{definition}
+
+\begin{theorem}[Covariance-Correlation Relationship]
+\label{thm:cov-corr}
+For any two random variables $X$ and $Y$:
+\[
+  \text{Cov}(X, Y) = \text{Corr}(X, Y) \cdot \sigma_X \cdot \sigma_Y
+\]
+\end{theorem}
+
+\begin{proof}
+By definition of correlation (Definition 3):
+\[
+  \text{Corr}(X, Y) = \frac{\text{Cov}(X, Y)}{\sigma_X \sigma_Y}
+\]
+
+Rearranging:
+\[
+  \text{Cov}(X, Y) = \text{Corr}(X, Y) \cdot \sigma_X \cdot \sigma_Y \quad \square
+\]
+\end{proof}
+
+\section{Multivariate Extension}
+
+\subsection{Covariance Matrix}
+
+\begin{definition}[Covariance Matrix]
+Let $\mathbf{Z} = [Z_1, Z_2, \ldots, Z_n]^\top$ be a random vector with mean $\boldsymbol{\mu}$. The covariance matrix is:
+\[
+  \Sigma = \text{Cov}(\mathbf{Z}) = E[(\mathbf{Z} - \boldsymbol{\mu})(\mathbf{Z} - \boldsymbol{\mu})^\top]
+\]
+
+with elements:
+\[
+  \Sigma_{ij} = \text{Cov}(Z_i, Z_j) = E[(Z_i - \mu_i)(Z_j - \mu_j)]
+\]
+
+In particular, $\Sigma_{ii} = \text{Var}(Z_i) = \sigma_i^2$.
+\end{definition}
+
+\subsection{Correlation Matrix}
+
+\begin{definition}[Correlation Matrix]
+The correlation matrix $\mathbf{R}$ has elements:
+\[
+  R_{ij} = \frac{\Sigma_{ij}}{\sigma_i \sigma_j} = \text{Corr}(Z_i, Z_j)
+\]
+
+By definition, $R_{ii} = 1$ (perfect self-correlation) and $|R_{ij}| \leq 1$ for $i \neq j$.
+\end{definition}
+
+\subsection{Positive Definiteness}
+
+\begin{definition}[Positive Definite Matrix]
+A symmetric matrix $\mathbf{A} \in \mathbb{R}^{n \times n}$ is positive definite (PD) if:
+\[
+  \mathbf{x}^\top \mathbf{A} \mathbf{x} > 0 \quad \forall \mathbf{x} \in \mathbb{R}^n, \mathbf{x} \neq \mathbf{0}
+\]
+
+Equivalently, all eigenvalues are strictly positive.
+\end{definition}
+
+\begin{remark}[Valid Correlation Matrices]
+A valid correlation matrix $\mathbf{R}$ must be:
+\begin{enumerate}
+  \item Symmetric: $R_{ij} = R_{ji}$
+  \item Unit diagonal: $R_{ii} = 1$
+  \item Bounded: $|R_{ij}| \leq 1$
+  \item Positive semi-definite (PSD)
+\end{enumerate}
+
+Note: Conditions 1-3 are necessary but NOT sufficient for PSD.
+\end{remark}
+
+\section{The Sigma Matrix Decomposition: Σ = D·R·D}
+
+\subsection{Defining the Diagonal Standard Deviation Matrix}
+
+\begin{definition}[Diagonal Standard Deviation Matrix]
+Define $\mathbf{D}$ as the diagonal matrix of standard deviations:
+\[
+  \mathbf{D} = \begin{pmatrix}
+    \sigma_1 & 0 & \cdots & 0 \\
+    0 & \sigma_2 & \cdots & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0 & \cdots & \sigma_n
+  \end{pmatrix}
+\]
+
+where $\sigma_i = \sqrt{\Sigma_{ii}}$ is the standard deviation of $Z_i$.
+\end{definition}
+
+\subsection{Main Derivation}
+
+\begin{theorem}[Sigma Decomposition]
+\label{thm:sigma-decomposition}
+The covariance matrix $\Sigma$ can be decomposed as:
+\[
+  \Sigma = \mathbf{D} \mathbf{R} \mathbf{D}
+\]
+
+where $\mathbf{D}$ is the diagonal standard deviation matrix and $\mathbf{R}$ is the correlation matrix.
+\end{theorem}
+
+\begin{proof}
+We show this by computing each element of $\mathbf{D} \mathbf{R} \mathbf{D}$.
+
+\textbf{Step 1: Compute $\mathbf{D} \mathbf{R}$}
+
+The $(i,j)$-element of $\mathbf{D} \mathbf{R}$ is:
+\[
+  [\mathbf{D} \mathbf{R}]_{ij} = \sum_{k=1}^n D_{ik} R_{kj} = D_{ii} R_{ij} = \sigma_i R_{ij}
+\]
+
+because $\mathbf{D}$ is diagonal (so $D_{ik} = 0$ for $k \neq i$).
+
+\textbf{Step 2: Compute $(\mathbf{D} \mathbf{R}) \mathbf{D}$}
+
+The $(i,j)$-element of $(\mathbf{D} \mathbf{R}) \mathbf{D}$ is:
+\[
+  [(\mathbf{D} \mathbf{R}) \mathbf{D}]_{ij} = \sum_{k=1}^n [\mathbf{D} \mathbf{R}]_{ik} D_{kj} = (\sigma_i R_{ij}) D_{jj} = \sigma_i R_{ij} \sigma_j
+\]
+
+\textbf{Step 3: Express in terms of covariance}
+
+From Definition 2 and Theorem \ref{thm:cov-corr}:
+\[
+  R_{ij} = \frac{\Sigma_{ij}}{\sigma_i \sigma_j}
+\]
+
+Therefore:
+\[
+  [(\mathbf{D} \mathbf{R}) \mathbf{D}]_{ij} = \sigma_i \cdot \frac{\Sigma_{ij}}{\sigma_i \sigma_j} \cdot \sigma_j = \Sigma_{ij}
+\]
+
+Since this holds for all elements $(i,j)$:
+\[
+  \mathbf{D} \mathbf{R} \mathbf{D} = \Sigma \quad \square
+\]
+\end{proof}
+
+\keyidentity{
+  \[
+    \Sigma = \mathbf{D} \mathbf{R} \mathbf{D}
+  \]
+}
+
+\subsection{Element-Wise Illustration}
+
+For a $2 \times 2$ case, the decomposition is explicit:
+
+\[
+  \begin{pmatrix}
+    \sigma_1 & 0 \\
+    0 & \sigma_2
+  \end{pmatrix}
+  \begin{pmatrix}
+    1 & R_{12} \\
+    R_{12} & 1
+  \end{pmatrix}
+  \begin{pmatrix}
+    \sigma_1 & 0 \\
+    0 & \sigma_2
+  \end{pmatrix}
+  =
+  \begin{pmatrix}
+    \sigma_1^2 & \sigma_1 R_{12} \sigma_2 \\
+    \sigma_1 R_{12} \sigma_2 & \sigma_2^2
+  \end{pmatrix}
+\]
+
+where the diagonal elements $\sigma_i^2$ are the variances and the off-diagonal elements $\sigma_i R_{ij} \sigma_j$ are the covariances.
+
+\section{Key Properties}
+
+\subsection{Preservation of Positive Definiteness}
+
+\begin{lemma}[PD Preservation]
+\label{lem:pd-preservation}
+If $\mathbf{R}$ is positive definite and $\mathbf{D}$ is diagonal with all positive diagonal entries, then $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$ is positive definite.
+\end{lemma}
+
+\begin{proof}
+For any non-zero vector $\mathbf{x}$:
+\[
+  \mathbf{x}^\top \Sigma \mathbf{x} = \mathbf{x}^\top (\mathbf{D} \mathbf{R} \mathbf{D}) \mathbf{x} = (\mathbf{D} \mathbf{x})^\top \mathbf{R} (\mathbf{D} \mathbf{x})
+\]
+
+Let $\mathbf{y} = \mathbf{D} \mathbf{x}$. Since $\mathbf{D}$ has positive diagonal entries and $\mathbf{x} \neq \mathbf{0}$, we have $\mathbf{y} \neq \mathbf{0}$.
+
+Since $\mathbf{R}$ is positive definite:
+\[
+  \mathbf{y}^\top \mathbf{R} \mathbf{y} > 0
+\]
+
+Therefore:
+\[
+  \mathbf{x}^\top \Sigma \mathbf{x} > 0 \quad \square
+\]
+\end{proof}
+
+\begin{corollary}[Validity of Derived Covariance]
+If the correlation matrix $\mathbf{R}$ is positive definite, then the covariance matrix $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$ is automatically positive definite, regardless of the values in $\mathbf{D}$ (provided all $\sigma_i > 0$).
+\end{corollary}
+
+\subsection{Symmetry Preservation}
+
+\begin{lemma}[Symmetry Preservation]
+If $\mathbf{R}$ and $\mathbf{D}$ are symmetric, then $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$ is symmetric.
+\end{lemma}
+
+\begin{proof}
+\[
+  \Sigma^\top = (\mathbf{D} \mathbf{R} \mathbf{D})^\top = \mathbf{D}^\top \mathbf{R}^\top \mathbf{D}^\top = \mathbf{D} \mathbf{R} \mathbf{D} = \Sigma \quad \square
+\]
+\end{proof}
+
+\section{Computational Implementation}
+
+\subsection{R Implementation}
+
+In R, the efficient computation is:
+
+\begin{verbatim}
+sigma <- outer(standard_deviations, standard_deviations) * correlations
+\end{verbatim}
+
+where:
+\begin{itemize}
+  \item \texttt{standard\_deviations} is a vector of $\sigma_1, \ldots, \sigma_n$
+  \item \texttt{correlations} is the matrix $\mathbf{R}$
+  \item \texttt{outer(x, y)} computes the outer product: $\mathbf{x} \mathbf{y}^\top$
+  \item \texttt{*} is element-wise multiplication
+\end{itemize}
+
+\subsection{Explicit Computation}
+
+The \texttt{outer()} function computes:
+\[
+  \text{outer}(\mathbf{\sigma}, \mathbf{\sigma}) = \begin{pmatrix}
+    \sigma_1 \sigma_1 & \sigma_1 \sigma_2 & \cdots & \sigma_1 \sigma_n \\
+    \sigma_2 \sigma_1 & \sigma_2 \sigma_2 & \cdots & \sigma_2 \sigma_n \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \sigma_n \sigma_1 & \sigma_n \sigma_2 & \cdots & \sigma_n \sigma_n
+  \end{pmatrix} = \mathbf{D}^2
+\]
+
+where $\mathbf{D}^2$ denotes the matrix of all pairwise products.
+
+Then, element-wise multiplication by $\mathbf{R}$:
+\[
+  \Sigma_{ij} = (\sigma_i \sigma_j) \times R_{ij} = \sigma_i R_{ij} \sigma_j
+\]
+
+which is exactly the $(i,j)$-element of $\mathbf{D} \mathbf{R} \mathbf{D}$.
+
+\subsection{Computational Advantages}
+
+This two-step approach provides several benefits:
+
+\begin{enumerate}
+  \item \textbf{Numerical Stability}: Correlation matrices have entries bounded in $[-1, 1]$, avoiding overflow/underflow issues when combined with scaling.
+
+  \item \textbf{PD Validation Efficiency}: Only $\mathbf{R}$ needs to be checked for positive definiteness. Once $\mathbf{R}$ is validated (Lemma \ref{lem:pd-preservation}), $\Sigma$ is automatically PD regardless of $\sigma_i$ values.
+
+  \item \textbf{Parameter Separation}: Correlation structure (affecting relationships) and magnitude (affecting variance) are computed independently, simplifying interpretation and parameter selection.
+
+  \item \textbf{Memory Efficiency}: The computation $\texttt{outer}(\sigma, \sigma) \times \mathbf{R}$ avoids explicit construction of the $n \times n$ matrix $\mathbf{D}$.
+
+  \item \textbf{Reusability}: A single correlation matrix $\mathbf{R}$ can be scaled with different $\mathbf{D}$ matrices without recomputation.
+
+  \item \textbf{Dimension Independence}: For fixed $\mathbf{R}$, increasing $n$ (number of variables) only requires updating the outer product computation.
+\end{enumerate}
+
+\section{Application to Clinical Trial Simulation}
+
+\subsection{General Framework}
+
+In the N-of-1 trial simulation, the complete process is:
+
+\begin{enumerate}
+  \item Define correlation parameters following Hendrickson et al.: $c_{tv}, c_{pb}, c_{br}, c_{cf1t}, c_{cfct}, c_{bm}$
+
+  \item Build the correlation matrix $\mathbf{R}$ from these parameters (with dimension $\approx 62$ for 20 timepoints × 3 factors + 2 baseline variables)
+
+  \item Validate $\mathbf{R}$ is positive definite (eigenvalue check)
+
+  \item Define standard deviations $\sigma_1, \ldots, \sigma_n$ from response and baseline parameters
+
+  \item Compute $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$ using the efficient two-step method
+
+  \item Sample from $\mathbf{Z} \sim \mathcal{N}(\boldsymbol{\mu}, \Sigma)$ using mvrnorm()
+\end{enumerate}
+
+\subsection{Why This Matters}
+
+The decomposition $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$ is critical because:
+
+\begin{itemize}
+  \item High-dimensional correlation matrices (62×62) are at risk of numerical failure
+  \item Separating $\mathbf{R}$ and $\mathbf{D}$ isolates the PD problem to $\mathbf{R}$ only
+  \item This allows systematic validation of correlation structures independently of scales
+  \item The final $\Sigma$ inherits PD guarantee from $\mathbf{R}$ via Lemma \ref{lem:pd-preservation}
+\end{itemize}
+
+\section{Example: 3-Variable Case}
+
+For illustration, consider three biomarker components at one timepoint:
+
+\[
+  \mathbf{R} = \begin{pmatrix}
+    1.00 & 0.20 & 0.15 \\
+    0.20 & 1.00 & 0.10 \\
+    0.15 & 0.10 & 1.00
+  \end{pmatrix}
+\]
+
+with standard deviations $\sigma_1 = 2.0, \sigma_2 = 1.5, \sigma_3 = 2.5$.
+
+The covariance matrix is:
+\[
+  \Sigma = \begin{pmatrix}
+    2.0 & 0 & 0 \\
+    0 & 1.5 & 0 \\
+    0 & 0 & 2.5
+  \end{pmatrix}
+  \begin{pmatrix}
+    1.00 & 0.20 & 0.15 \\
+    0.20 & 1.00 & 0.10 \\
+    0.15 & 0.10 & 1.00
+  \end{pmatrix}
+  \begin{pmatrix}
+    2.0 & 0 & 0 \\
+    0 & 1.5 & 0 \\
+    0 & 0 & 2.5
+  \end{pmatrix}
+\]
+
+Computing element (1,2):
+\[
+  \Sigma_{12} = 2.0 \times 0.20 \times 1.5 = 0.60
+\]
+
+and the full covariance matrix:
+\[
+  \Sigma = \begin{pmatrix}
+    4.00 & 0.60 & 0.75 \\
+    0.60 & 2.25 & 0.375 \\
+    0.75 & 0.375 & 6.25
+  \end{pmatrix}
+\]
+
+Note that the diagonal elements are $\sigma_i^2$:
+\begin{align*}
+  \Sigma_{11} &= 2.0^2 = 4.00 \\
+  \Sigma_{22} &= 1.5^2 = 2.25 \\
+  \Sigma_{33} &= 2.5^2 = 6.25
+\end{align*}
+
+\section{Conclusion}
+
+The identity $\Sigma = \mathbf{D} \mathbf{R} \mathbf{D}$ is a fundamental decomposition that:
+
+\begin{enumerate}
+  \item \textbf{Theoretically} cleanly separates correlation structure from variance scaling
+
+  \item \textbf{Computationally} enables efficient two-step calculation and validation
+
+  \item \textbf{Numerically} ensures positive definiteness when $\mathbf{R}$ is PD
+
+  \item \textbf{Practically} allows systematic parameter selection and validation before expensive simulations
+\end{enumerate}
+
+In the context of N-of-1 trial simulation, this decomposition enables robust construction of high-dimensional covariance matrices while maintaining strict control over positive definiteness constraints.
+
+\appendix
+
+\section{Matrix Algebra Reference}
+
+\subsection{Outer Product}
+
+For vectors $\mathbf{u}, \mathbf{v} \in \mathbb{R}^n$:
+\[
+  \text{outer}(\mathbf{u}, \mathbf{v}) = \mathbf{u} \mathbf{v}^\top
+\]
+
+\subsection{Diagonal Matrix Properties}
+
+For diagonal matrix $\mathbf{D}$ with diagonal entries $d_1, \ldots, d_n$ and any matrix $\mathbf{A}$:
+\begin{align*}
+  (\mathbf{D} \mathbf{A})_{ij} &= d_i A_{ij} \\
+  (\mathbf{A} \mathbf{D})_{ij} &= A_{ij} d_j
+\end{align*}
+
+\subsection{Matrix Transpose Properties}
+
+\begin{align*}
+  (\mathbf{A} \mathbf{B})^\top &= \mathbf{B}^\top \mathbf{A}^\top \\
+  (\mathbf{A}^\top)^\top &= \mathbf{A} \\
+  (\mathbf{D}^\top) &= \mathbf{D} \quad \text{(if $\mathbf{D}$ is diagonal)}
+\end{align*}
+
+\subsection{Eigenvalue Properties}
+
+For positive definite matrix $\mathbf{A}$:
+\begin{itemize}
+  \item All eigenvalues are strictly positive: $\lambda_i > 0$
+  \item Condition number: $\kappa(\mathbf{A}) = \frac{\lambda_{\max}}{\lambda_{\min}}$
+  \item Matrix is invertible: $\det(\mathbf{A}) > 0$
+\end{itemize}
+
+\end{document}
