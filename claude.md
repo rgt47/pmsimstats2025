@@ -64,7 +64,7 @@ The simulation consists of a two-layer architecture:
 #### Layer 1: Parameter Definition & Data Generation (`pm_functions.R`)
 
 - **`build_sigma_matrix()`** - Constructs multivariate normal covariance matrices with PD validation
-  - Uses fixed Hendrickson correlation values: `c.tv=0.8, c.pb=0.8, c.br=0.8, c.cf1t=0.2, c.cfct=0.1`
+  - Uses adjusted correlation values optimized for PD: `c.br=0.75, c.er=0.75, c.tr=0.75, c.cf1t=0.12, c.cfct=0.05`
   - Clamps biomarker correlations to `[-0.99, 0.99]` to maintain positive definiteness
   - Returns `NULL` for invalid parameter combinations (rejects rather than auto-fixes)
 
@@ -80,22 +80,40 @@ The simulation consists of a two-layer architecture:
   - Checks eigenvalue range and condition number
   - Warns if condition number > 100 (ill-conditioned matrices)
 
+- **`validate_parameter_grid()`** - Comprehensive pre-simulation validation function (NEW)
+  - Tests all parameter combinations for positive definiteness
+  - Computes condition numbers (κ) for numerical stability assessment
+  - Returns structured list: `valid_combinations`, `invalid_combinations`, `n_valid`, `n_invalid`, `condition_numbers`, `invalid_reasons`
+  - Enables filtering of problematic combinations before expensive Monte Carlo runs
+
+- **`report_parameter_validation()`** - Generates human-readable validation summary (NEW)
+  - Prints diagnostic output with PD status and condition number statistics
+  - Reports problematic combinations and failure reasons
+  - Provides recommendations for parameter adjustment
+
 #### Layer 2: Monte Carlo Simulation (`simulation_clustered.R`, `simulation_evenly_spaced.R`, `simulationplus.R`)
 
 Three separate simulation programs, each with identical structure:
 
-1. **Sigma Matrix Cache Building** - Pre-validates all parameter combinations
-   - Tests each design × biomarker_correlation × carryover level combination
-   - Prints diagnostic output with eigenvalue ranges
-   - Only proceeds if all combinations produce valid (PD) matrices
+1. **Pre-Simulation Sigma Validation** - Validates covariance matrices before simulation (NEW)
+   - Tests 3 unique sigma structures corresponding to each design
+   - Checks positive definiteness (eigenvalue criterion)
+   - Computes condition numbers for numerical stability
+   - Stops with diagnostic error if any sigma fails validation
+   - Example output shows condition numbers (κ = 56-61) for well-conditioned matrices
 
-2. **Monte Carlo Loop** - Runs multiple iterations per condition
-   - Generates new data each iteration
+2. **Sigma Matrix Cache Building** - Builds lookup table for data generation
+   - Pre-computes sigma matrices for each parameter combination
+   - Stores in-memory for fast repeated access during Monte Carlo iterations
+   - Only proceeds if pre-simulation validation passed
+
+3. **Monte Carlo Loop** - Runs multiple iterations per condition
+   - Generates new data each iteration using pre-computed sigma matrices
    - Fits mixed-effects models with and without carryover
    - Tests `treatment × biomarker` interaction (α = 0.05)
    - Tracks convergence failures and effect sizes
 
-3. **Power Summarization** - Aggregates results
+4. **Power Summarization** - Aggregates results
    - Power = proportion of iterations with p < 0.05
    - Averages effect sizes and standard errors
    - Saves both individual results and summary tables
@@ -138,31 +156,53 @@ Each contains:
 
 ## Critical Implementation Details
 
-### 1. Positive Definiteness Handling
+### 1. Positive Definiteness Handling (Two-Level Validation)
 
-**Problem**: With certain parameter combinations (especially high biomarker correlations or many measurement points), covariance matrices become non-positive definite.
+**Problem**: Covariance matrices become non-positive definite with certain parameter combinations, especially high biomarker correlations or many measurement points.
 
-**Current Approach**: Rejects invalid combinations rather than auto-fixing
-- `build_sigma_matrix()` returns `NULL` for non-PD matrices
-- Simulation skips combinations that fail validation
+**Current Approach**: Multi-level validation ensures PD before expensive Monte Carlo runs
+
+**Level 1: Pre-Simulation Validation** (NEW)
+- Tests 3 unique sigma structures before simulation starts
+- `validate_parameter_grid()` checks all parameter combinations
+- Stops with diagnostic error if any sigma fails PD test
+- Avoids wasting computational resources on invalid combinations
+
+**Level 2: Build-Time Validation**
+- `build_sigma_matrix()` returns `NULL` for non-PD matrices during simulation
+- Simulation logic rejects invalid combinations
 - Diagnostic eigenvalue output helps identify problematic parameters
 
-**Key Fix**: Biomarker correlation clamping to `[-0.99, 0.99]`
+**Level 3: Numerical Stability**
+- Condition number (κ) computed for all valid matrices
+- Warnings issued if κ > 100 (ill-conditioned)
+- Allows users to assess numerical stability before analysis
+
+**Parameter Tuning**: Balanced reduction of Hendrickson correlation values
+- Biomarker correlation clamping to `[-0.99, 0.99]`
 ```r
 # In pm_functions.R, around line 426
 scaled_correlation <- pmax(-0.99, pmin(0.99, scaled_correlation))
 ```
+- Ensures all parameter combinations produce well-conditioned matrices (κ < 100)
 
 ### 2. Correlation Structure (Fixed Values)
 
-Following Hendrickson et al. (2020), correlations are **fixed and do not depend on carryover parameters**:
+Correlations are **fixed and do not depend on carryover parameters**. Values have been optimized to maintain positive definiteness across all parameter combinations:
+
 - `c.tv = 0.8` - Time-variant autocorrelation (AR(1))
 - `c.pb = 0.8` - Pharmacologic biomarker autocorrelation
-- `c.br = 0.8` - Biological response autocorrelation
-- `c.cf1t = 0.2` - Cross-correlation at same time point
-- `c.cfct = 0.1` - Cross-correlation at different time points
+- `c.br = 0.75` - Biological response autocorrelation (reduced from 0.8)
+- `c.tr = 0.75` - Treatment response autocorrelation (reduced from 0.8)
+- `c.er = 0.75` - Error/residual autocorrelation (reduced from 0.8)
+- `c.cf1t = 0.12` - Cross-correlation at same time point (reduced from 0.2)
+- `c.cfct = 0.05` - Cross-correlation at different time points (reduced from 0.1)
+- `c.bm_baseline = 0.25` - Biomarker-baseline correlation (reduced from 0.3)
+- `c.baseline_resp = 0.3` - Baseline-response correlation (reduced from 0.4)
 
 **Principle**: Carryover affects MEANS only, not CORRELATIONS.
+
+**Adjustment Rationale**: Original Hendrickson values created non-positive definite (non-PD) covariance matrices when combined with clustered measurement schedules (8 timepoints) and varying biomarker correlations. Balanced reduction across autocorrelation and cross-correlation parameters maintains correlation hierarchy (c.cfct < c.cf1t < c.autocorr) while ensuring PD for all parameter combinations. Condition numbers remain in well-conditioned range (κ < 100).
 
 ### 3. Carryover Modeling (Novel Extension)
 
@@ -228,12 +268,16 @@ n_iterations = 20  # Change to 100 for more stable estimates (slower)
 
 ### Fixed Correlation Parameters
 
-In `pm_functions.R` (lines ~60-66):
+In `pm_functions.R` (lines ~38-46):
 ```r
-c.tv = 0.8, c.pb = 0.8, c.br = 0.8, c.cf1t = 0.2, c.cfct = 0.1
+c.tv = 0.8, c.pb = 0.8, c.br = 0.75, c.tr = 0.75, c.er = 0.75,
+c.cf1t = 0.12, c.cfct = 0.05,
+c.bm_baseline = 0.25, c.baseline_resp = 0.3
 ```
 
-**Warning**: Changing these may affect PD. Always check sigma cache output after changes.
+**Note**: These values have been optimized from Hendrickson originals to maintain positive definiteness across all parameter combinations while preserving correlation hierarchy. Original values: `c.br=0.8, c.cf1t=0.2, c.cfct=0.1, c.bm_baseline=0.3, c.baseline_resp=0.4`.
+
+**Warning**: Changing these may affect PD. Always run pre-simulation validation via `validate_parameter_grid()` after changes.
 
 ---
 
@@ -243,6 +287,16 @@ c.tv = 0.8, c.pb = 0.8, c.br = 0.8, c.cf1t = 0.2, c.cfct = 0.1
 - **`analysis/scripts/README.md`** - Comprehensive workflow guide with parameter details
 - **`docs/simulation_white_paper.md`** - Methodology alignment with Hendrickson, pseudocode algorithms
 - **`docs/chat.Rmd`** - White paper comparing crossover vs. N-of-1 trial designs (renders to PDF)
+
+### Mathematical Foundations (NEW - December 2025)
+- **`docs/sigma_matrix_derivation.tex`** - Comprehensive mathematical derivation of Σ = D·R·D identity with block partitioning strategy, eigenvalue properties, and two-stage sampling algorithm
+- **`docs/positive_definiteness_constraints.tex`** - Mathematical derivation of PD constraints using Sylvester's criterion, eigenvalue analysis, Gershgorin circles, and empirical guidelines for correlation parameters
+- **`docs/biomarker_interaction_mechanism.tex`** - Detailed explanation of two-level biomarker-treatment interaction through covariance structure (c.bm) and mean-level modulation (biomarker_moderation)
+
+### Parameter Validation (NEW - December 2025)
+- **`analysis/scripts/PARAMETER_VALIDATION_GUIDE.md`** - Comprehensive user guide for parameter validation including function signatures, workflow examples, condition number interpretation, and best practices
+- **`analysis/scripts/VALIDATION_OUTPUT_EXAMPLES.md`** - Detailed examples showing validation function outputs for three scenarios: all valid, some invalid, and ill-conditioned matrices
+- **`analysis/scripts/example_parameter_validation.R`** - Runnable example demonstrating parameter validation workflow from parameter definition through simulation-ready grid
 
 ### Technical
 - **`docs/technical_differences_scaling_and_pd.pdf`** - Matrix scaling and PD handling rationale
@@ -304,11 +358,14 @@ Matrix size: 32×32
 |---------|--------|-----------------|
 | 4-path randomization | ✅ Aligned | Hybrid design in `simulation_clustered.R` |
 | BR-only carryover | ✅ Aligned | `scale_factor = 1.0` in carryover computation |
-| Fixed correlations | ✅ Aligned | `c.tv=0.8, c.pb=0.8, c.br=0.8, c.cf1t=0.2, c.cfct=0.1` |
+| Fixed correlations | ⚠️ Adapted | Hendrickson structure maintained; values optimized for PD: `c.br=0.75, c.cf1t=0.12, c.cfct=0.05` (see rationale below) |
 | Time effect in model | ✅ Aligned | `week` term in all lmer formulas |
 | Random intercept | ✅ Aligned | `(1 \| participant_id)` |
 | **Carryover in model** | ✅ **Enhancement** | Novel: explicit `carryover_effect` term |
 | **Biomarker moderation** | ✅ **Enhancement** | Novel: systematic variation of `biomarker_correlation` |
+| **Parameter validation** | ✅ **Enhancement** | Novel: pre-simulation sigma validation via `validate_parameter_grid()` |
+
+**Correlation Value Adjustment Rationale**: Original Hendrickson values were specified for different measurement schedules and did not account for the interaction between clustered measurement schedules (8 timepoints), block-partitioned covariance structure (26×26 decomposed), and varying biomarker correlations. Balanced reduction of autocorrelation and cross-correlation parameters maintains the theoretical structure while ensuring all parameter combinations produce positive definite matrices with good numerical conditioning (κ < 100).
 
 ---
 
@@ -383,4 +440,34 @@ This checks that all packages used in code match `DESCRIPTION` and `renv.lock`, 
 
 ---
 
-*Last reviewed: 2025-12-02*
+---
+
+## Recent Changes (December 2025)
+
+### Pre-Simulation Sigma Validation Integration
+- Added `validate_parameter_grid()` function to test all parameter combinations before simulation
+- Integrated validation into both `simulation_clustered.R` and `simulation_evenly_spaced.R`
+- Simulations now stop with diagnostic error if any sigma matrix fails PD validation
+- Prevents wasting computational resources on invalid parameter combinations
+
+### Mathematical Documentation
+- Created `docs/sigma_matrix_derivation.tex` - Complete derivation of Σ = D·R·D with block partitioning strategy
+- Created `docs/positive_definiteness_constraints.tex` - Mathematical analysis of PD constraints and correlation hierarchy
+- Created `docs/biomarker_interaction_mechanism.tex` - Explanation of two-level biomarker-treatment interaction
+
+### Parameter Validation Documentation
+- Created `analysis/scripts/PARAMETER_VALIDATION_GUIDE.md` - User guide for validation workflow
+- Created `analysis/scripts/VALIDATION_OUTPUT_EXAMPLES.md` - Detailed output examples and interpretation
+- Created `analysis/scripts/example_parameter_validation.R` - Runnable validation example
+
+### Correlation Parameter Optimization
+- Adjusted correlation values from Hendrickson originals to optimize positive definiteness
+- All parameter combinations now pass validation with well-conditioned matrices (κ < 100)
+- Maintains correlation hierarchy and theoretical structure
+
+### Code Quality Improvements
+- Fixed string operator issues in `pm_functions.R` (string multiplication to `strrep()`)
+- Simplified validation approach: tests 3 unique sigma structures before simulation
+- Robust error handling: stops simulation immediately on validation failure
+
+*Last reviewed: 2025-12-10*
