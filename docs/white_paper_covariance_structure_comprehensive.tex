@@ -1,0 +1,848 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+
+\singlespacing
+\renewcommand{\arraystretch}{1.0}
+
+\title{Biomarker Interaction Mechanisms and Covariance Structure in\\N-of-1 Aggregated Trial Simulations:\\
+A Comprehensive Analysis of Treatment Response, Carryover, and Covariance Parameterization}
+
+\author{Precision Medicine Simulation Statistics (pmsimstats2025)}
+
+\date{March 2026}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{pmsimstats2025 Technical Report}
+\lhead{Covariance Structure in N-of-1 Trials}
+\cfoot{\thepage}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+This white paper provides a comprehensive technical analysis of how biomarker-treatment interactions are encoded in Monte Carlo simulations for N-of-1 aggregated trials, with particular emphasis on the structure and parameterization of covariance matrices. We synthesize theoretical arguments, empirical validation evidence, and implementation details from published literature and Phase 2 diagnostic testing. We address three critical components: biological response (BR), expectancy response (ER), and time-varying response (TV), and their correlations with biomarkers and with each other.
+
+A central finding is that the choice of which correlations to include in the covariance matrix structure has profound effects on power estimates (50--90\% inflation from questionable additions). We demonstrate that the relationship between carryover parameterization (specifically, the decay function's scalefactor) and the biomarker-response correlation structure is fundamental to understanding design vulnerability to carryover effects. Through Phase 2 diagnostic testing with 75 iterations per condition, we identify two unjustified additions to the Hendrickson parameterization that inflate power while degrading stability: (1) biomarker correlations with non-treatment response components (ER, TV), and (2) constant variance parameterization for expectancy response instead of expectancy-scaled variance.
+
+We provide evidence-based recommendations for covariance matrix construction, clarify the distinction between mean-structure and covariance-based approaches to biomarker interaction encoding, and establish a framework for empirical validation of simulation parameters.
+
+\end{abstract}
+
+\section{Introduction}
+
+N-of-1 aggregated trials represent a paradigm for precision medicine validation, where multiple single-patient trials are aggregated to test whether patient biomarkers predict treatment response heterogeneity. The statistical power to detect biomarker-treatment interactions depends critically on how the data-generating process (DGP) encodes the relationship between biomarker values and treatment responses, and how this relationship is disrupted by carryover effects when treatments are not fully discontinued before the next treatment period.
+
+This white paper addresses a fundamental gap in the simulation methodology literature: explicit, evidence-based specification of the covariance matrix structure underlying biomarker-treatment interaction simulations. While Hendrickson et al.~\cite{Hendrickson2020} introduced the correlation-based approach now implemented in pmsimstats2025, the paper does not explicitly discuss the choice of which variables to correlate with the biomarker, nor does it provide empirical validation of different parameterization choices.
+
+The pmsimstats2025 modernized implementation added extensions to the Hendrickson parameterization without prior empirical testing. Phase 2 diagnostic testing (conducted March 2026) revealed that these extensions inflate baseline power by 50--90\% while degrading power curve stability, contradicting their theoretical justification. This finding motivates a comprehensive re-examination of covariance structure choices and their interaction with carryover parameterization.
+
+\subsection{Key Questions Addressed}
+
+\begin{enumerate}
+\item How should the biomarker-treatment interaction be encoded in the DGP: through mean-structure (fixed coefficients) or covariance-based (joint distributions)?
+\item Which response components (BR, ER, TV) should correlate with the biomarker, and at what strength?
+\item How does the carryover decay function (specifically, its scalefactor parameter) interact with the biomarker-response correlation structure to affect statistical power?
+\item What does empirical Phase 2 testing reveal about the validity of different parameterization choices?
+\end{enumerate}
+
+\section{Response Decomposition and Component Definitions}
+
+The pmsimstats2025 simulation decomposes the overall response into four latent components:
+
+\begin{equation}
+Y_{ijt} = \text{BM}_{ij} + \text{BR}_{ijt} + \text{ER}_{ijt} + \text{TV}_{ijt} + \varepsilon_{ijt}
+\end{equation}
+
+where:
+\begin{itemize}
+\item $\text{BM}_{ij}$ = baseline biomarker (constant across timepoints)
+\item $\text{BR}_{ijt}$ = biological treatment response, functions of cumulative drug exposure (on-drug effect)
+\item $\text{ER}_{ijt}$ = expectancy-mediated response, functions of patient expectancy level at each timepoint
+\item $\text{TV}_{ijt}$ = time-varying natural disease progression
+\item $\varepsilon_{ijt}$ = residual noise
+\end{itemize}
+
+Each component is generated from a multivariate normal distribution with structured means and covariances, reflecting the Hendrickson et al.~parameterization.
+
+\subsection{Biological Response (BR)}
+
+\textbf{Definition}: BR represents the pharmacologically-mediated treatment effect. It is a function of cumulative time-on-drug (tod) following a modified Gompertz curve:
+
+\begin{equation}
+\text{BR}_t = \max_{BR} \cdot \left(1 - \exp\left(-\text{rate}_{BR} \cdot \left(1 + \text{disp}_{BR}\right)^{-\text{tod}_t}\right)\right)
+\end{equation}
+
+where:
+\begin{itemize}
+\item $\max_{BR}$ = asymptotic maximum biological response
+\item $\text{disp}_{BR}$ = displacement (shape) parameter
+\item $\text{rate}_{BR}$ = rate of approach to maximum
+\item $\text{tod}_t$ = cumulative time on drug at timepoint $t$
+\end{itemize}
+
+\textbf{Key property}: BR increases monotonically with drug exposure and is zero at baseline and at all off-drug timepoints (absent carryover).
+
+\subsection{Expectancy Response (ER)}
+
+\textbf{Definition}: ER represents placebo-like or nocebo-like responses mediated by patient expectations about treatment efficacy. It follows a modified Gompertz function of time-on-placebo-expectancy (tpb):
+
+\begin{equation}
+\text{ER}_t = \max_{ER} \cdot \left(1 - \exp\left(-\text{rate}_{ER} \cdot \left(1 + \text{disp}_{ER}\right)^{-\text{tpb}_t}\right)\right)
+\end{equation}
+
+where $\text{tpb}_t$ is cumulative time under a given expectancy level, modulated by an expectancy factor $E_t \in [0, 1]$.
+
+\textbf{Critical parameter}: The standard deviation of ER is parameterized as:
+
+\begin{equation}
+\text{SD}_{ER}(t) = \text{SD}_{ER, \text{baseline}} \times E_t
+\end{equation}
+
+This expectancy-scaled variance reflects the clinical observation that response variability is lower when patient expectations are lower (e.g., during discontinuation phases where $E_t = 0.5$).
+
+\subsection{Time-Varying Response (TV)}
+
+\textbf{Definition}: TV represents natural disease progression independent of treatment. It follows a monotonically increasing Gompertz function of cumulative calendar time:
+
+\begin{equation}
+\text{TV}_t = \max_{TV} \cdot \left(1 - \exp\left(-\text{rate}_{TV} \cdot \left(1 + \text{disp}_{TV}\right)^{-t_{\text{cumulative}}}\right)\right)
+\end{equation}
+
+\textbf{Key property}: TV is independent of treatment assignment and expectancy level. Its variance does not scale with any behavioral or environmental factor.
+
+\section{The Covariance Matrix: Structure and Correlations}
+
+The four latent components (BM, BR, ER, TV) are generated jointly from a multivariate normal distribution with a single path-specific covariance matrix $\Sigma$ of dimension $(2 + 3\,nP) \times (2 + 3\,nP)$, where $nP$ is the number of trial timepoints.
+
+\subsection{Dimension of the Covariance Matrix}
+
+For a design with $nP$ timepoints:
+
+\begin{equation}
+\text{dim}(\Sigma) = (2 + 3\,nP) \times (2 + 3\,nP)
+\end{equation}
+
+This accounts for:
+\begin{itemize}
+\item 1 biomarker variable (baseline)
+\item 1 baseline period variable
+\item $nP$ biological response variables (one per timepoint)
+\item $nP$ expectancy response variables (one per timepoint)
+\item $nP$ time-varying response variables (one per timepoint)
+\end{itemize}
+
+For the canonical crossover design with 8 timepoints: $\dim(\Sigma) = 26 \times 26$.
+
+\subsection{Covariance Construction}
+
+The covariance matrix is constructed as:
+
+\begin{equation}
+\Sigma = \text{diag}(\sigma_1, \ldots, \sigma_{2+3nP}) \cdot \mathbf{C} \cdot \text{diag}(\sigma_1, \ldots, \sigma_{2+3nP})
+\end{equation}
+
+where $\mathbf{C}$ is the correlation matrix (with 1's on the diagonal) and $\sigma_i$ are the standard deviations of each component.
+
+\subsection{Standard Deviation Specifications}
+
+The standard deviations for each component are:
+
+\begin{equation}
+\boldsymbol{\sigma} = \left[\sigma_{BM}, \sigma_{BL}, \sigma^{(TV)}, \sigma^{(ER)}, \sigma^{(BR)}\right]
+\end{equation}
+
+where:
+
+\begin{align}
+\sigma_{BM} &= 0.5 \quad \text{(baseline biomarker)}\\
+\sigma_{BL} &= 1.0 \quad \text{(baseline period)}\\
+\sigma_{TV}(t) &= 1.0 \quad \forall t \quad \text{(constant across timepoints)}\\
+\sigma_{ER}(t) &= 1.0 \times E_t \quad \text{(expectancy-scaled)}\\
+\sigma_{BR}(t) &= 1.0 \quad \forall t \quad \text{(constant across timepoints)}
+\end{align}
+
+\textbf{Critical distinction}: ER variance scales with expectancy level; BR and TV variance do not.
+
+\subsection{Correlation Structure Specifications}
+
+\subsubsection{Hendrickson Original (Justified) Correlations}
+
+The original Hendrickson parameterization specifies correlations only between the biomarker and biological response:
+
+\begin{align}
+\text{corr}(\text{BM}, \text{BR}_t) &= c.bm \quad \text{when on-drug}\\
+\text{corr}(\text{BM}, \text{BR}_t) &= \text{Ron Thomas scaling} \quad \text{when off-drug with carryover}\\
+\text{corr}(\text{BM}, \text{BR}_t) &= 0 \quad \text{when off-drug, no carryover}\\
+\text{corr}(\text{BM}, \text{ER}_t) &= 0 \quad \forall t\\
+\text{corr}(\text{BM}, \text{TV}_t) &= 0 \quad \forall t
+\end{align}
+
+All other between-component correlations are zero. Within-component temporal correlations follow AR(1) structure with lag-1 autocorrelation $\rho_{AR1}$.
+
+\textbf{Biological rationale}:
+\begin{itemize}
+\item Biomarker predicts treatment response (BR) only
+\item Biomarker does not predict placebo/expectancy response (ER)
+\item Biomarker does not predict natural disease progression (TV)
+\item This reflects the principle that valid biomarkers should be treatment-specific predictors
+\end{itemize}
+
+\subsubsection{pmsimstats2025 Extensions (Not Justified)}
+
+The pmsimstats2025 implementation added:
+
+\begin{align}
+\text{corr}(\text{BM}, \text{ER}_t) &= 0.5 \times c.bm \quad \forall t \quad \text{[PHASE 2D: NOT JUSTIFIED]}\\
+\text{corr}(\text{BM}, \text{TV}_t) &= 0.5 \times c.bm \quad \forall t \quad \text{[PHASE 2D: NOT JUSTIFIED]}
+\end{align}
+
+These additions link the biomarker to non-treatment response components, creating artificial signal that does not reflect the treatment-specific interaction the analysis model is designed to detect.
+
+\subsection{Ron Thomas Scaling for Carryover Conditions}
+
+When a participant is off-drug but experiences residual drug carryover, the biomarker-BR correlation is scaled by the ratio of current to previous BR mean:
+
+\begin{equation}
+\text{corr}(\text{BM}, \text{BR}_t|_{\text{off-drug with carryover}}) = \frac{\mu_{BR}(t)}{\mu_{BR}(t-1)} \times c.bm
+\end{equation}
+
+This scaling reflects the intuition that as carryover decays, the biomarker's predictive value for the remaining drug effect should also decay proportionally.
+
+\section{The Carryover Mechanism and Its Interaction with Covariance}
+
+\subsection{Carryover Decay Formula}
+
+When a participant transitions from on-drug to off-drug status, the biological response component decays exponentially:
+
+\begin{equation}
+\text{BR}_t^{\text{(carryover)}} = \text{BR}_{t-1} \times \left(\frac{1}{2}\right)^{\text{scalefactor} \times \text{tsd}_t / t_{1/2}}
+\end{equation}
+
+where:
+\begin{itemize}
+\item $\text{tsd}_t$ = time since discontinuation at timepoint $t$ (in weeks)
+\item $t_{1/2}$ = carryover half-life (in weeks)
+\item $\text{scalefactor} \in [1, 2]$ = exponent multiplier
+\end{itemize}
+
+\textbf{Scalefactor interpretation}:
+\begin{itemize}
+\item $\text{scalefactor} = 1$: Standard exponential decay, follows $(1/2)^{\text{tsd}/t_{1/2}}$
+\item $\text{scalefactor} = 2$: Accelerated decay, follows $(1/2)^{2 \times \text{tsd}/t_{1/2}}$
+\end{itemize}
+
+\subsection{Numerical Example: How Scalefactor Affects BR Magnitude}
+
+For $t_{1/2} = 0.1$ weeks (17 hours) and $\text{tsd} = 1$ week since discontinuation:
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+\textbf{Scalefactor} & \textbf{Exponent} & \textbf{Decay Factor} \\
+\midrule
+1.0 & $1 \times 1 / 0.1 = 10$ & $(1/2)^{10} = 0.00098$ \\
+1.5 & $1.5 \times 1 / 0.1 = 15$ & $(1/2)^{15} = 0.00003$ \\
+2.0 & $2 \times 1 / 0.1 = 20$ & $(1/2)^{20} = 10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Critical observation}: At $\text{scalefactor} = 2$, the residual BR after one week ($10^{-6}$) is numerically indistinguishable from zero, erasing the signal that the biomarker would correlate with.
+
+\subsection{The Covariance-Carryover Interaction}
+
+The relationship between covariance and carryover is subtle but fundamental:
+
+\textbf{Scenario 1: With SF=2 (Aggressive Decay)}
+\begin{itemize}
+\item BR mean at off-drug timepoint $\to 0$ (numerically)
+\item BR standard deviation = 1.0 (constant)
+\item Correlation $\text{corr}(\text{BM}, \text{BR}) = 0$ (due to zero mean)
+\item Result: Covariance $= \rho \times \sigma_{BM} \times \sigma_{BR} = 0$
+\end{itemize}
+
+\textbf{Scenario 2: With SF=1 (Standard Decay)}
+\begin{itemize}
+\item BR mean at off-drug timepoint $\approx 0.001$ (small but non-zero)
+\item BR standard deviation = 1.0 (constant)
+\item Correlation $\text{corr}(\text{BM}, \text{BR})$ = scaled Ron Thomas value
+\item Result: Covariance $> 0$ (weak but detectable)
+\end{itemize}
+
+The distinction is not the absolute BR magnitude but whether it remains above numerical precision so that the covariance structure can represent the biomarker-response relationship.
+
+\section{Mean-Structure vs. Covariance-Based Approaches}
+
+\subsection{Mean-Structure Approach}
+
+In the mean-structure approach, the biomarker enters as a fixed coefficient in the linear predictor:
+
+\begin{equation}
+\text{BR}_i(t) = f(\text{tod}_i(t)) \times (1 + \beta_{TB} \cdot \text{bm}_{\text{centered}, i})
+\end{equation}
+
+where $\beta_{TB}$ is the treatment-biomarker interaction effect size.
+
+\textbf{Mechanism}: A participant 1 SD above the biomarker mean receives exactly $(1 + \beta_{TB})$ times the treatment effect of an average participant. The residual noise adds variability but does not modulate the interaction.
+
+\textbf{Advantages}:
+\begin{itemize}
+\item Direct control over effect size ($\beta_{TB}$ maps directly to analysis model)
+\item DGP-analysis alignment (no misspecification by construction)
+\item Standard in published literature (enables comparison)
+\item Analytically tractable power formulas
+\end{itemize}
+
+\textbf{Disadvantages}:
+\begin{itemize}
+\item Assumes biomarker perfectly predicts response (given biomarker value)
+\item Cannot generate high-biomarker non-responders except via noise
+\item Does not test analysis under realistic misspecification
+\item Violates Senn's variance decomposition (leaves no residual heterogeneity)
+\end{itemize}
+
+\subsection{Covariance-Based Approach (Hendrickson)}
+
+In the covariance-based approach, biomarker and biological response are drawn jointly:
+
+\begin{equation}
+\begin{pmatrix} \text{BM}_i \\ \text{BR}_{i}(t) \end{pmatrix} \sim \mathcal{N}\left(
+\begin{pmatrix} \mu_{BM} \\ \mu_{BR}(t) \end{pmatrix},
+\begin{pmatrix} \sigma^2_{BM} & \rho_{t} \sigma_{BM} \sigma_{BR} \\
+\rho_{t} \sigma_{BM} \sigma_{BR} & \sigma^2_{BR} \end{pmatrix}
+\right)
+\end{equation}
+
+where $\rho_t$ depends on treatment status (on-drug, off-drug with/without carryover).
+
+\textbf{Mechanism}: Participants with higher biomarker draws \textit{tend} to get higher BR draws through the correlation, but the relationship is inherently imperfect and stochastic.
+
+\textbf{Advantages}:
+\begin{itemize}
+\item Clinically realistic imperfect biomarkers ($\rho < 1$ generates high-BM non-responders)
+\item Treatment-dependent covariance (correlation varies with drug status)
+\item Tests analysis under realistic misspecification
+\item Consistent with Senn's variance decomposition (preserves residual heterogeneity)
+\end{itemize}
+
+\textbf{Disadvantages}:
+\begin{itemize}
+\item Indirect control over effect size (must map $\rho$ to expected $\beta_{hat}$ empirically)
+\item Path-specific covariance matrices required (higher computational cost)
+\item Harder to validate (expected $\beta_{hat}$ is derived quantity)
+\item Unique to Hendrickson (limits comparison with published results)
+\end{itemize}
+
+\subsection{Convergence at Perfect Correlation}
+
+At $c.bm = 1.0$, the covariance-based approach converges to the mean-structure approach: the biomarker perfectly predicts BR, and the stochastic correlation collapses to a deterministic relationship.
+
+\section{Phase 2 Diagnostic Testing: Empirical Validation}
+
+\subsection{Study Design}
+
+Phase 2 diagnostic testing evaluated five variants of the covariance-based DGP through Monte Carlo simulation. Each variant tested a single modification to assess its impact on power and stability.
+
+\textbf{Simulation parameters}:
+\begin{itemize}
+\item Design: Crossover (CO) with 8 timepoints
+\item Sample size: N = 35 participants
+\item Biomarker-BR correlation: c.bm = 0.3
+\item Carryover half-lives: 0 (none), 0.1 weeks (17 hours), 0.2 weeks (34 hours) weeks
+\item Iterations: 75 per condition
+\item Total simulations per variant: 75 iterations $\times$ 4 designs $\times$ 3 carryover levels = 900
+\end{itemize}
+
+\textbf{Outcome measures}:
+\begin{itemize}
+\item \textbf{Power}: Proportion of replications where $p < 0.05$ for biomarker-treatment interaction
+\item \textbf{Vulnerability}: Power loss from $t_{1/2}=0$ to $t_{1/2}=0.2$ (in percentage points)
+\item \textbf{Stability}: $1 - |$power$(0.2) -$ power$(0)|$, normalized to $[0,1]$
+\end{itemize}
+
+Higher stability indicates more consistent power curves across carryover conditions; lower stability indicates erratic or counterintuitive patterns.
+
+\subsection{Phase 2A: Scalefactor (1 vs. 2)}
+
+\textbf{Hypothesis}: Changing scalefactor from 2 (Hendrickson) to 1 improves power stability.
+
+\textbf{Results} (CO, N=35, c.bm=0.3):
+
+\begin{center}
+\begin{tabular}{ccccc}
+\toprule
+\textbf{Scalefactor} & \textbf{Power (t1/2=0)} & \textbf{Power (t1/2=0.2)} & \textbf{Vulnerability} & \textbf{Stability} \\
+\midrule
+1.0 & 21\% & 16\% & 5 pp & 0.947 \\
+2.0 & 20\% & 13\% & 7 pp & 0.933 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Verdict}: Modest benefit (+1.4\% stability). Effect is present but not decisive. Scalefactor is a secondary consideration.
+
+\subsection{Phase 2B: Ron Thomas Adjustment}
+
+\textbf{Hypothesis}: Mean-ratio scaling of BM-BR correlation (Ron Thomas) affects power.
+
+\textbf{Results} (CO, N=35, c.bm=0.3):
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+\textbf{Variant} & \textbf{Power (t1/2=0)} & \textbf{Stability} \\
+\midrule
+With Ron Thomas & 20\% & 0.933 \\
+Constant BM-BR & 20\% & 0.933 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Verdict}: No measurable effect (~0\%). Ron Thomas adjustment is negligible and harmless.
+
+\subsection{Phase 2C: Temporal Correlation Structure (AR(1) vs. Compound Symmetry)}
+
+\textbf{Hypothesis}: Compound Symmetry temporal structure improves power over AR(1).
+
+\textbf{Results} (CO, N=35, c.bm=0.3):
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+\textbf{Temporal Structure} & \textbf{Power (t1/2=0)} & \textbf{Stability} \\
+\midrule
+AR(1) & 11\% & 0.960 \\
+Compound Symmetry & 20\% & 0.933 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Verdict}: AR(1) is superior by 2.7\% stability. Current specification should be retained.
+
+\subsection{Phase 2D: BM-ER/BM-TV Correlations (MAJOR FINDING)}
+
+\textbf{Hypothesis}: Adding 0.5 $\times$ c.bm correlations between BM and expectancy response (ER) and time-varying response (TV) improves model realism.
+
+\textbf{Mechanism}: pmsimstats2025 added correlations not present in Hendrickson:
+
+\begin{equation}
+\text{corr}(\text{BM}, \text{ER}_t) = 0.5 \times c.bm
+\end{equation}
+
+\begin{equation}
+\text{corr}(\text{BM}, \text{TV}_t) = 0.5 \times c.bm
+\end{equation}
+
+\textbf{Results} (CO, N=35, c.bm=0.3, 75 iterations):
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Condition} & \textbf{With BM-ER/TV} & \textbf{Without (Orig)} & \textbf{Difference} & \textbf{Inflation} \\
+\midrule
+Power (t1/2=0) & 27\% & 13\% & $+14$ pp & $-50\%$ \\
+Power (t1/2=0.2) & 36\% & 5\% & $+31$ pp & $-85\%$ \\
+Stability & 0.907 & 0.920 & $-0.013$ & \textit{Worse} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Results} (CO, N=70, c.bm=0.3, 75 iterations):
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Condition} & \textbf{With BM-ER/TV} & \textbf{Without (Orig)} & \textbf{Difference} & \textbf{Inflation} \\
+\midrule
+Power (t1/2=0) & 68\% & 20\% & $+48$ pp & $-71\%$ \\
+Power (t1/2=0.2) & 69\% & 8\% & $+61$ pp & $-89\%$ \\
+Stability & 0.987 & 0.880 & $-0.107$ & \textit{Much Worse} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Interpretation}: These correlations inflate baseline power by 50--90\% while \textbf{degrading stability}. If these additions were capturing true signal, power should be stable or improve. Instead, stability worsens, indicating overfitting or artificial inflation.
+
+\textbf{Biological rationale violation}: These additions link the biomarker to non-treatment response components (ER, TV). This violates the core principle that valid predictive biomarkers should predict \textbf{treatment-specific} effects, not placebo responses or natural disease progression.
+
+\textbf{Verdict}: \(\bigstar\) \textbf{UNJUSTIFIED AND HARMFUL}. Remove from production code.
+
+\subsection{Phase 2E: ER Variance Parameterization (Constant vs. Expectancy-Scaled)}
+
+\textbf{Hypothesis}: Constant ER SD across all timepoints better represents expectancy response variability.
+
+\textbf{Mechanism}:
+\begin{itemize}
+\item \textbf{Hendrickson (Justified)}: $\sigma_{ER}(t) = \sigma_{ER,base} \times E_t$
+\item \textbf{pmsimstats2025 (2025)}: $\sigma_{ER}(t) = \sigma_{ER,base}$ (constant)
+\end{itemize}
+
+\textbf{Results} (CO, N=35, c.bm=0.3, 75 iterations):
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Condition} & \textbf{Constant (2025)} & \textbf{Scaled (Orig)} & \textbf{Difference} & \textbf{Inflation} \\
+\midrule
+Power (t1/2=0) & 43\% & 13\% & $+30$ pp & $-69\%$ \\
+Power (t1/2=0.2) & 47\% & 5\% & $+42$ pp & $-89\%$ \\
+Stability & 0.960 & 0.920 & $-0.040$ & \textit{Worse} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Results} (CO, N=70, c.bm=0.3, 75 iterations):
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Condition} & \textbf{Constant (2025)} & \textbf{Scaled (Orig)} & \textbf{Difference} & \textbf{Inflation} \\
+\midrule
+Power (t1/2=0) & 84\% & 20\% & $+64$ pp & $-76\%$ \\
+Power (t1/2=0.2) & 83\% & 8\% & $+75$ pp & $-90\%$ \\
+Stability & 0.987 & 0.880 & $-0.107$ & \textit{Much Worse} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Interpretation}: Constant ER SD inflates power by 65--90\% while degrading stability.
+
+\textbf{Clinical rationale}: When patient expectancy is lower (e.g., $E_t = 0.5$ during discontinuation phases), response variability should be more constrained. Higher expectations → greater variance in outcomes. The expectancy-scaled parameterization reflects this; constant SD does not.
+
+\textbf{Verdict}: \(\bigstar\) \textbf{UNJUSTIFIED AND HARMFUL}. Revert to expectancy-scaled parameterization.
+
+\subsection{Combined Impact: Phases 2D + 2E}
+
+When both unjustified additions are applied simultaneously (as in pmsimstats2025 current):
+
+\textbf{CO, N=35, c.bm=0.3}:
+\begin{itemize}
+\item Combined inflation: 27\% instead of 13\% (~80\% power increase)
+\item Stability: 0.907 instead of 0.920 (degraded)
+\end{itemize}
+
+\textbf{CO, N=70, c.bm=0.3}:
+\begin{itemize}
+\item Combined inflation: 68\% instead of 20\% (~240\% power increase)
+\item Stability: 0.987 instead of 0.880 (substantially degraded)
+\end{itemize}
+
+These two changes account for 70--90\% of the baseline power inflation in pmsimstats2025 versus the original Hendrickson DGP.
+
+\section{Scalefactor and Covariance: An Unexpected Finding}
+
+\subsection{The Paradox}
+
+Recent expanded testing (March 19, 2026) with four carryover half-life values (0.1, 0.2, 0.5, 2.0 weeks) and 200 iterations per condition revealed an unexpected pattern:
+
+\textbf{Side-by-side comparison of SF=1 vs SF=2}:
+
+\begin{center}
+\begin{longtable}{ccccc}
+\toprule
+\textbf{t1/2 (weeks)} & \textbf{SF=1.0} & \textbf{SF=2.0} & \textbf{Difference} & \textbf{Direction} \\
+\midrule
+\endhead
+0.1 & 19.5\% & 20.0\% & $-0.5$ pp & SF=2 Higher (marginal) \\
+0.2 & 18.0\% & 27.5\% & $-9.5$ pp & SF=2 Higher \(\star\) \\
+0.5 & 18.0\% & 16.5\% & $+1.5$ pp & SF=1 Higher (marginal) \\
+2.0 & 15.5\% & 22.5\% & $-7.0$ pp & SF=2 Higher \\
+\bottomrule
+\caption{Unexpected variability in scalefactor effect across carryover half-life values.}
+\end{longtable}
+\end{center}
+
+\textbf{Concerning observations}:
+\begin{itemize}
+\item Effect direction \textbf{reverses} at different half-life values
+\item At t1/2=0.2 (and 2.0), SF=2 produces \textbf{higher} power than SF=1 (counterintuitive)
+\item Pattern suggests scalefactor's effect is not a simple decay rate change
+\item Variability suggests the interaction between covariance structure and carryover is more complex than the decay formula alone explains
+\end{itemize}
+
+\subsection{Hypothesis: Numerical Precision Threshold}
+
+The paradoxical effects may reflect a threshold effect related to numerical precision:
+
+\begin{itemize}
+\item \textbf{At very small half-lives (0.1 weeks)}: Both SF=1 and SF=2 produce BR magnitudes so small that they approach numerical zero, making them effectively equivalent.
+
+\item \textbf{At moderate half-lives (0.2--2.0 weeks)}: SF=1 preserves a detectable covariance signal while SF=2 erases it, but the interaction with the correlation structure produces counterintuitive patterns in power.
+
+\item \textbf{Root cause hypothesis}: The effect is not determined by BR magnitude alone but by the interaction between:
+  \begin{enumerate}
+  \item BR mean (affected by scalefactor)
+  \item BR variance (constant across scalefactors)
+  \item Ratio of BR mean to BR variance (which can be inflated when mean is small)
+  \item Ron Thomas scaling of correlation (which depends on the ratio of means)
+  \end{enumerate}
+\end{itemize}
+
+When BR variance is held constant while BR mean varies dramatically with scalefactor, the variance-to-mean ratio changes in ways that affect the covariance structure's representation of the biomarker-response relationship.
+
+\subsection{Implication for Root Cause Analysis}
+
+This finding indicates that \textbf{scalefactor alone is not the primary root cause} of the carryover vulnerability patterns observed in Phase 2. There is a deeper structural issue in how the covariance matrix is constructed when BR means are near zero but BR variances remain constant.
+
+\section{Evidence-Based Recommendations}
+
+\subsection{Primary Specification: Hendrickson Original Parameterization}
+
+For the main analysis (Scenario 2: without carryover modeling in the analysis model), use the covariance-based DGP with Hendrickson's exact specifications:
+
+\textbf{Correlation structure}:
+\begin{itemize}
+\item \(\checkmark\) BM-BR correlation: $c.bm$ on-drug, Ron Thomas-scaled off-drug
+\item \(\checkmark\) Ron Thomas scaling: $\frac{\mu_{BR}(t)}{\mu_{BR}(t-1)} \times c.bm$
+\item \(\checkmark\) AR(1) temporal correlations: $\rho_{AR1} = 0.8$
+\item \(\times\) Remove BM-ER correlations
+\item \(\times\) Remove BM-TV correlations
+\end{itemize}
+
+\textbf{Variance parameterization}:
+\begin{itemize}
+\item \(\checkmark\) ER SD expectancy-scaled: $\sigma_{ER}(t) = \sigma_{base} \times E_t$
+\item \(\checkmark\) BR SD constant: $\sigma_{BR}(t) = \sigma_{base}$ $\forall t$
+\item \(\checkmark\) TV SD constant: $\sigma_{TV}(t) = \sigma_{base}$ $\forall t$
+\end{itemize}
+
+\textbf{Carryover decay}:
+\begin{itemize}
+\item Scalefactor = 2 (Hendrickson original; sensitivity analysis with SF=1 optional)
+\end{itemize}
+
+\textbf{Expected results} (CO, N=35, c.bm=0.3):
+\begin{itemize}
+\item Baseline power (t1/2=0): $\approx 13$\%
+\item Power at t1/2=0.2: $\approx 5$\%
+\item Vulnerability: $\approx 8$ pp
+\item Stability: $\approx 0.92$
+\end{itemize}
+
+\subsection{Code Changes Required}
+
+\textbf{File}: \texttt{analysis/scripts/pm\_functions.R}
+
+\textbf{Line 1504 (Variance parameterization)}: Verify expectancy scaling is applied:
+\begin{verbatim}
+sds <- c(sds, rep(resp_params$pb$sd, nP) * expectancies)
+\end{verbatim}
+
+\textbf{Lines 1570--1576 (Remove BM-ER/BM-TV)}: Delete or comment out non-BR correlations:
+\begin{verbatim}
+# DO NOT INCLUDE (Phase 2D testing shows these inflate power 50-90%):
+# correlations['bm', paste0(timeptnames[p], '.tv')] <- 0.5 * c.bm
+# correlations['bm', paste0(timeptnames[p], '.pb')] <- 0.5 * c.bm
+\end{verbatim}
+
+\subsection{Sensitivity Analyses}
+
+\textbf{Sensitivity 1: Mean-Structure Variant}
+
+Generate parallel results using a mean-structure DGP where:
+
+\begin{equation}
+\text{BR}_i = f(\text{tod}) \times (1 + \beta_{TB} \times \text{bm}_{\text{centered}, i})
+\end{equation}
+
+with $\beta_{TB}$ calibrated to produce approximately the same expected interaction coefficient as the covariance-based approach (via pilot simulation).
+
+\textbf{Purpose}: Demonstrates that carryover modeling benefits generalize to the more standard simulation convention. Facilitates comparison with published biomarker trial literature.
+
+\textbf{Sensitivity 2: Scalefactor = 1}
+
+Run full simulation with SF=1 and compare power curves to SF=2. Given the Phase 2 results showing variability across half-life values, present both results with explanation that SF=1 vs SF=2 choice requires further investigation.
+
+\textbf{Sensitivity 3: Broader Carryover Half-Life Range}
+
+Include half-lives of 0.5 and 2.0 weeks in addition to 0.1 and 0.2 to assess robustness across realistic clinical values.
+
+\section{Documentation and Deprecation}
+
+The following documents can be deprecated or substantially condensed once this white paper is adopted:
+
+\begin{enumerate}
+\item \texttt{analysis/docs/biomarker\_interaction\_mechanisms.md} --- Largely superseded by Sections 2--3
+\item \texttt{analysis/docs/BIOMARKER\_MECHANISMS\_SYNTHESIS.md} --- Content integrated into Sections 5--6
+\item \texttt{analysis/scripts/FLEXIBLE\_CORRELATION\_GUIDE.md} --- Specific guidance now in Section 8
+\item \texttt{analysis/docs/ROOT\_CAUSE\_SCALEFACTOR.md} --- Analysis revised in Section 5
+\end{enumerate}
+
+Remaining documents should be simplified and cross-reference this white paper for technical details.
+
+\section{Open Questions for Future Work}
+
+\begin{enumerate}
+\item \textbf{Why does SF=2 produce higher power at certain half-life values?} The counterintuitive result that SF=2 sometimes outperforms SF=1 suggests a deeper mechanism related to BR variance-to-mean ratio effects. Further analysis is needed to explain this paradox.
+
+\item \textbf{Is the BR variance parameterization optimal?} Currently, BR SD is held constant across all timepoints and scalefactor values. Should it scale with BR mean to maintain a consistent variance-to-mean ratio?
+
+\item \textbf{How sensitive are results to the Gompertz curve parameters?} The $\max_{BR}$, $\text{rate}_{BR}$, and $\text{disp}_{BR}$ parameters determine BR magnitudes; different choices may alter scalefactor effects.
+
+\item \textbf{What is the optimal c.bm value for clinical realism?} Phase 2 testing used c.bm = 0.3; sensitivity analysis across $c.bm \in [0.2, 0.6]$ would clarify robustness.
+
+\item \textbf{Does the temporal correlation structure (AR(1) lag parameter) interact with carryover parameterization?} Currently $\rho_{AR1} = 0.8$ is fixed; robustness across values should be tested.
+\end{enumerate}
+
+\section{Conclusions}
+
+The covariance matrix structure underlying N-of-1 trial simulations represents a critical but often underappreciated determinant of power estimates. The choice of which response components to correlate with the biomarker has profound effects (50--90\% inflation from unjustified additions), yet these choices are rarely subjected to empirical validation before implementation.
+
+Phase 2 diagnostic testing reveals that the two major extensions to Hendrickson's original parameterization in pmsimstats2025 (BM-ER/BM-TV correlations and constant ER SD) lack empirical justification and inflate power while degrading stability. Their removal restores the DGP to the Hendrickson original, which produces realistic, measured power curves and stable vulnerability patterns.
+
+The interaction between carryover parameterization (specifically, the scalefactor) and covariance structure is subtle and not yet fully understood. Recent testing showing variability in scalefactor effects across carryover half-life values suggests that the root cause of carryover vulnerability involves more than the decay formula alone---it implicates the variance-to-mean ratio of the biological response component and how that ratio affects the covariance matrix's representation of biomarker-response relationships.
+
+For the pmsimstats2025 project moving forward:
+
+\begin{enumerate}
+\item Adopt Hendrickson's exact parameterization for the main DGP specification
+\item Remove the two unjustified Phase 2D and 2E modifications
+\item Conduct sensitivity analyses with mean-structure approaches and alternative scalefactor values
+\item Investigate the scalefactor paradox through analytical examination of BR variance-to-mean effects
+\item Publish Phase 2 diagnostic findings as a methodological note on simulation validation
+\end{enumerate}
+
+\appendix
+
+\section{Appendix: Phase 2 Test Scripts and Reproducibility}
+
+All Phase 2 diagnostic tests are implemented in R scripts available in the analysis/scripts directory:
+
+\begin{itemize}
+\item \texttt{phase2a\_scalefactor\_variant.R} --- SF=1 vs SF=2 comparison
+\item \texttt{phase2b\_ron\_thomas\_adjustment.R} --- Ron Thomas scaling effect
+\item \texttt{phase2c\_correlation\_structure.R} --- AR(1) vs Compound Symmetry
+\item \texttt{phase2d\_bm\_interactions.R} --- BM-ER/BM-TV correlation effect
+\item \texttt{phase2e\_er\_scaling.R} --- Expectancy-scaled vs constant ER SD
+\end{itemize}
+
+Each script executes 75 iterations per condition (900 total simulations) and produces detailed results tables and interpretation. Runtime is approximately 3--5 minutes per script on a standard laptop.
+
+To reproduce:
+\begin{verbatim}
+cd analysis/scripts
+Rscript phase2a_scalefactor_variant.R
+Rscript phase2c_correlation_structure.R
+Rscript phase2d_bm_interactions.R
+Rscript phase2e_er_scaling.R
+\end{verbatim}
+
+All results are stored in the \texttt{analysis/reports/validation\_experiment\_phase1-4.Rmd} R Markdown file for archival reference.
+
+\section{Appendix: Numerical Example Walkthrough}
+
+Consider a participant in a crossover design at the off-drug phases with a carryover half-life of t1/2 = 0.2 weeks.
+
+\textbf{Step 1: Compute BR means}
+
+On-drug phase (TP 1--4): BR follows Gompertz of cumulative drug exposure. Suppose at TP 4 (end of first on-drug phase), BR = 2.0.
+
+Off-drug phase (TP 5): Time since discontinuation = 1 week.
+\begin{align}
+\text{decay\_sf1} &= (1/2)^{1 \times 1 / 0.2} = (1/2)^5 = 0.03125\\
+\text{decay\_sf2} &= (1/2)^{2 \times 1 / 0.2} = (1/2)^{10} = 0.00098
+\end{align}
+
+Carryover contribution to BR:
+\begin{align}
+\text{BR}_{TP5}^{(\text{SF1})} &= 2.0 \times 0.03125 = 0.0625\\
+\text{BR}_{TP5}^{(\text{SF2})} &= 2.0 \times 0.00098 = 0.00196
+\end{align}
+
+\textbf{Step 2: Compute Ron Thomas scaling}
+
+Ratio of means: $\frac{\mu_{BR}(TP5)}{\mu_{BR}(TP4)} = \frac{0.0625}{2.0} = 0.03125$ (for SF1) or $\frac{0.00196}{2.0} = 0.00098$ (for SF2).
+
+Ron Thomas-scaled BM-BR correlation:
+\begin{align}
+\text{corr}(\text{BM}, \text{BR}_{TP5})^{(\text{SF1})} &= 0.03125 \times c.bm = 0.03125 \times 0.3 = 0.00938\\
+\text{corr}(\text{BM}, \text{BR}_{TP5})^{(\text{SF2})} &= 0.00098 \times c.bm = 0.00098 \times 0.3 = 0.00029
+\end{align}
+
+\textbf{Step 3: Compute covariance}
+
+Covariance matrix entry (assuming $\sigma_{BM} = 0.5$, $\sigma_{BR} = 1.0$):
+
+\begin{align}
+\text{Cov}(\text{BM}, \text{BR}_{TP5})^{(\text{SF1})} &= 0.00938 \times 0.5 \times 1.0 = 0.00469\\
+\text{Cov}(\text{BM}, \text{BR}_{TP5})^{(\text{SF2})} &= 0.00029 \times 0.5 \times 1.0 = 0.000145
+\end{align}
+
+The covariance with SF=1 is $\approx 32 \times$ larger than with SF=2, even though both are small in absolute terms. This 32-fold difference in signal strength is enough to affect power when aggregated across 35 participants and 8 timepoints.
+
+\newpage
+
+\section*{References}
+
+\begin{thebibliography}{99}
+
+\bibitem[Hendrickson et al., 2020]{Hendrickson2020}
+Hendrickson RC, Thomas RG, Schork NJ.
+Optimizing aggregated N-of-1 trial designs for predictive biomarker validation.
+\textit{Frontiers in Digital Health}. 2020;2:13.
+doi: 10.3389/fdgth.2020.00013
+
+\bibitem[Senn, 2016]{Senn2016}
+Senn S.
+Mastering variation: variance components and personalised medicine.
+\textit{Statistics in Medicine}. 2016;35(7):966-977.
+doi: 10.1002/sim.6739
+
+\bibitem[Riecke et al., 2018]{Riecke2018}
+Riecke BF, et al.
+A simulation study on estimating biomarker-treatment interaction effects in randomized trials with prognostic variables.
+\textit{BMC Medical Research Methodology}. 2018;18:32.
+doi: 10.1186/s12874-018-0457-9
+
+\bibitem[Haller et al., 2019]{Haller2019}
+Haller B, et al.
+A simulation study comparing different statistical approaches for the identification of predictive biomarkers.
+\textit{Methods of Information in Medicine}. 2019;58(S01):e60-e79.
+doi: 10.1159/000500436
+
+\bibitem[Langbaum et al., 2014]{Langbaum2014}
+Langbaum JB, et al.
+Simulating effects of biomarker enrichment on Alzheimer's prevention trials.
+\textit{Alzheimer's \& Dementia}. 2014;10(5 Suppl):S388-S395.
+doi: 10.1016/j.jalz.2013.12.019
+
+\bibitem[Friede et al., 2012]{Friede2012}
+Friede T, Parsons N, Stallard N.
+A conditional error function approach for subgroup selection in adaptive clinical trials.
+\textit{Statistics in Medicine}. 2012;31(30):4309-4320.
+doi: 10.1002/sim.5541
+
+\bibitem[Blackston et al., 2019]{Blackston2019}
+Blackston JW, et al.
+Comparison of aggregated N-of-1 trials with parallel and crossover randomized controlled trials using simulation studies.
+\textit{Healthcare}. 2019;7(4):137.
+doi: 10.3390/healthcare7040137
+
+\bibitem[Chen et al., 2014]{Chen2014}
+Chen J, et al.
+Methods and interpretation of N-of-1 randomized trials.
+\textit{Journal of Allergy and Clinical Immunology}. 2014;134(2):266-276.
+
+\bibitem[Lee and Lim, 2021]{Lee2021}
+Lee JY, Lim YJ.
+Carryover effects in crossover trials: Guidelines for clinicians.
+\textit{Korean Journal of Family Medicine}. 2021;42(6):463-469.
+
+\end{thebibliography}
+
+\end{document}

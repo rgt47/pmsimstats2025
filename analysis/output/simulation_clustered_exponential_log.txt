@@ -1,0 +1,85 @@
+Running CLUSTERED designs simulation...
+Carryover Model: EXPONENTIAL DECAY (Alternative 1)
+Designs: Hybrid, OL+BDC (8 measurement points with clusters)
+Treatment effect = 0.5 
+Participants = 70 
+Iterations per condition = 20 
+Half-life values (weeks): 0, 1, 2, 3 
+
+Condition 1: design=ol_bdc, bm_mod=0.25, t1half=0.0
+Condition 2: design=ol_bdc, bm_mod=0.25, t1half=1.0
+Condition 3: design=ol_bdc, bm_mod=0.25, t1half=2.0
+Condition 4: design=ol_bdc, bm_mod=0.25, t1half=3.0
+Condition 5: design=ol_bdc, bm_mod=0.35, t1half=0.0
+Condition 6: design=ol_bdc, bm_mod=0.35, t1half=1.0
+Condition 7: design=ol_bdc, bm_mod=0.35, t1half=2.0
+Condition 8: design=ol_bdc, bm_mod=0.35, t1half=3.0
+Condition 9: design=ol_bdc, bm_mod=0.45, t1half=0.0
+  Error in iteration 12 : system is computationally singular: reciprocal condition number = 1.56001e-17 
+Condition 10: design=ol_bdc, bm_mod=0.45, t1half=1.0
+Condition 11: design=ol_bdc, bm_mod=0.45, t1half=2.0
+Condition 12: design=ol_bdc, bm_mod=0.45, t1half=3.0
+Condition 13: design=ol_bdc, bm_mod=0.55, t1half=0.0
+Condition 14: design=ol_bdc, bm_mod=0.55, t1half=1.0
+Condition 15: design=ol_bdc, bm_mod=0.55, t1half=2.0
+Condition 16: design=ol_bdc, bm_mod=0.55, t1half=3.0
+  Error in iteration 7 : system is computationally singular: reciprocal condition number = 1.56605e-17 
+Condition 17: design=ol_bdc, bm_mod=0.65, t1half=0.0
+Condition 18: design=ol_bdc, bm_mod=0.65, t1half=1.0
+Condition 19: design=ol_bdc, bm_mod=0.65, t1half=2.0
+Condition 20: design=ol_bdc, bm_mod=0.65, t1half=3.0
+Condition 21: design=ol_bdc, bm_mod=0.00, t1half=0.0
+Condition 22: design=ol_bdc, bm_mod=0.00, t1half=1.0
+Condition 23: design=ol_bdc, bm_mod=0.00, t1half=2.0
+Condition 24: design=ol_bdc, bm_mod=0.00, t1half=3.0
+Condition 25: design=hybrid, bm_mod=0.00, t1half=0.0
+Condition 26: design=hybrid, bm_mod=0.00, t1half=1.0
+  Error in iteration 1 : system is computationally singular: reciprocal condition number = 2.31316e-17 
+Condition 27: design=hybrid, bm_mod=0.00, t1half=2.0
+Condition 28: design=hybrid, bm_mod=0.00, t1half=3.0
+Condition 29: design=hybrid, bm_mod=0.25, t1half=0.0
+Condition 30: design=hybrid, bm_mod=0.25, t1half=1.0
+Condition 31: design=hybrid, bm_mod=0.25, t1half=2.0
+Condition 32: design=hybrid, bm_mod=0.25, t1half=3.0
+Condition 33: design=hybrid, bm_mod=0.35, t1half=0.0
+Condition 34: design=hybrid, bm_mod=0.35, t1half=1.0
+Condition 35: design=hybrid, bm_mod=0.35, t1half=2.0
+Condition 36: design=hybrid, bm_mod=0.35, t1half=3.0
+  Error in iteration 12 : system is computationally singular: reciprocal condition number = 2.31311e-17 
+Condition 37: design=hybrid, bm_mod=0.45, t1half=0.0
+Condition 38: design=hybrid, bm_mod=0.45, t1half=1.0
+Condition 39: design=hybrid, bm_mod=0.45, t1half=2.0
+Condition 40: design=hybrid, bm_mod=0.45, t1half=3.0
+Condition 41: design=hybrid, bm_mod=0.55, t1half=0.0
+Condition 42: design=hybrid, bm_mod=0.55, t1half=1.0
+Condition 43: design=hybrid, bm_mod=0.55, t1half=2.0
+Condition 44: design=hybrid, bm_mod=0.55, t1half=3.0
+Condition 45: design=hybrid, bm_mod=0.65, t1half=0.0
+  Error in iteration 11 : system is computationally singular: reciprocal condition number = 2.31463e-17 
+Condition 46: design=hybrid, bm_mod=0.65, t1half=1.0
+Condition 47: design=hybrid, bm_mod=0.65, t1half=2.0
+Condition 48: design=hybrid, bm_mod=0.65, t1half=3.0
+
+ ================================================== 
+RESULTS - CLUSTERED DESIGNS (EXPONENTIAL DECAY)
+================================================== 
+
+# A tibble: 48 × 8
+   design biomarker_moderation biomarker_correlation t1half  power mean_effect
+   <chr>                 <dbl>                 <dbl>  <dbl>  <dbl>       <dbl>
+ 1 hybrid                 0                      0.3      0 0         -0.00789
+ 2 hybrid                 0                      0.3      1 0.0526    -0.00308
+ 3 hybrid                 0                      0.3      2 0.05       0.0228 
+ 4 hybrid                 0                      0.3      3 0          0.0135 
+ 5 hybrid                 0.25                   0.3      0 0.3        0.207  
+ 6 hybrid                 0.25                   0.3      1 0.05       0.0249 
+ 7 hybrid                 0.25                   0.3      2 0          0.0411 
+ 8 hybrid                 0.25                   0.3      3 0.05       0.00908
+ 9 hybrid                 0.35                   0.3      0 0.8        0.340  
+10 hybrid                 0.35                   0.3      1 0.05       0.0713 
+# ℹ 38 more rows
+# ℹ 2 more variables: sd_effect <dbl>, n <int>
+
+Done! Results saved to ../output 
+- power_heatmap_clustered_exponential_20251217_110648.pdf
+- simulation_clustered_exponential_results.RData

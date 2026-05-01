@@ -1,0 +1,423 @@
+Running CLUSTERED designs simulation...
+Designs: Open-Label, OL+BDC, Hybrid, Crossover (8 measurement points each)
+Carryover mode: halflife 
+Treatment effect = 0.5 
+Participants = 35, 70 (from param_grid)
+Iterations per condition = 100 
+Total conditions = 144 
+Model engine: lme 
+Parallel processing: YES (9 cores) 
+
+Parallel backend initialized with 9 workers
+
+Condition 1/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 5.4 sec (ETA: 774.1 sec remaining)
+Condition 2/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 7.6 sec (ETA: 536.9 sec remaining)
+Condition 3/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 9.6 sec (ETA: 450.7 sec remaining)
+Condition 4/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 11.7 sec (ETA: 411.2 sec remaining)
+Condition 5/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 14.1 sec (ETA: 393.1 sec remaining)
+Condition 6/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 16.1 sec (ETA: 369.6 sec remaining)
+Condition 7/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 18.3 sec (ETA: 357.2 sec remaining)
+Condition 8/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 20.1 sec (ETA: 341.7 sec remaining)
+Condition 9/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 21.7 sec (ETA: 325.6 sec remaining)
+Condition 10/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 24.2 sec (ETA: 323.7 sec remaining)
+Condition 11/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 26.4 sec (ETA: 318.8 sec remaining)
+Condition 12/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 28.1 sec (ETA: 309.4 sec remaining)
+Condition 13/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 30.1 sec (ETA: 303.0 sec remaining)
+Condition 14/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 32.2 sec (ETA: 299.4 sec remaining)
+Condition 15/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 34.0 sec (ETA: 292.0 sec remaining)
+Condition 16/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 37.7 sec (ETA: 301.3 sec remaining)
+Condition 17/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 41.2 sec (ETA: 307.7 sec remaining)
+Condition 18/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 44.2 sec (ETA: 309.6 sec remaining)
+Condition 19/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 48.0 sec (ETA: 315.5 sec remaining)
+Condition 20/144: design=ol_bdc, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 51.4 sec (ETA: 318.5 sec remaining)
+Condition 21/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 55.0 sec (ETA: 321.9 sec remaining)
+Condition 22/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 58.7 sec (ETA: 325.4 sec remaining)
+Condition 23/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 62.0 sec (ETA: 326.3 sec remaining)
+Condition 24/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 65.6 sec (ETA: 327.8 sec remaining)
+Condition 25/144: design=ol_bdc, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 69.0 sec (ETA: 328.5 sec remaining)
+Condition 26/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 72.8 sec (ETA: 330.2 sec remaining)
+Condition 27/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 76.0 sec (ETA: 329.4 sec remaining)
+Condition 28/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 79.8 sec (ETA: 330.8 sec remaining)
+Condition 29/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 83.2 sec (ETA: 329.8 sec remaining)
+Condition 30/144: design=ol_bdc, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 86.8 sec (ETA: 329.8 sec remaining)
+Condition 31/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 88.7 sec (ETA: 323.4 sec remaining)
+Condition 32/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 91.1 sec (ETA: 318.8 sec remaining)
+Condition 33/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 93.0 sec (ETA: 312.9 sec remaining)
+Condition 34/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 94.8 sec (ETA: 306.8 sec remaining)
+Condition 35/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 97.1 sec (ETA: 302.2 sec remaining)
+Condition 36/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 100.5 sec (ETA: 301.4 sec remaining)
+Condition 37/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 104.5 sec (ETA: 302.2 sec remaining)
+Condition 38/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 108.0 sec (ETA: 301.2 sec remaining)
+Condition 39/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 111.7 sec (ETA: 300.7 sec remaining)
+Condition 40/144: design=ol_bdc, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 115.3 sec (ETA: 299.7 sec remaining)
+Condition 41/144: design=hybrid, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 117.4 sec (ETA: 294.8 sec remaining)
+Condition 42/144: design=hybrid, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 119.3 sec (ETA: 289.8 sec remaining)
+Condition 43/144: design=hybrid, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 121.2 sec (ETA: 284.7 sec remaining)
+Condition 44/144: design=hybrid, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 123.7 sec (ETA: 281.2 sec remaining)
+Condition 45/144: design=hybrid, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 125.5 sec (ETA: 276.0 sec remaining)
+Condition 46/144: design=hybrid, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 127.2 sec (ETA: 270.9 sec remaining)
+Condition 47/144: design=hybrid, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 129.1 sec (ETA: 266.5 sec remaining)
+Condition 48/144: design=hybrid, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 131.3 sec (ETA: 262.5 sec remaining)
+Condition 49/144: design=hybrid, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 133.0 sec (ETA: 257.8 sec remaining)
+Condition 50/144: design=hybrid, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 135.2 sec (ETA: 254.2 sec remaining)
+Condition 51/144: design=hybrid, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 137.4 sec (ETA: 250.6 sec remaining)
+Condition 52/144: design=hybrid, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 139.1 sec (ETA: 246.0 sec remaining)
+Condition 53/144: design=hybrid, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 141.3 sec (ETA: 242.6 sec remaining)
+Condition 54/144: design=hybrid, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 143.4 sec (ETA: 239.0 sec remaining)
+Condition 55/144: design=hybrid, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 145.4 sec (ETA: 235.2 sec remaining)
+Condition 56/144: design=hybrid, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 149.2 sec (ETA: 234.5 sec remaining)
+Condition 57/144: design=hybrid, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 152.6 sec (ETA: 232.9 sec remaining)
+Condition 58/144: design=hybrid, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 156.3 sec (ETA: 231.8 sec remaining)
+Condition 59/144: design=hybrid, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 159.6 sec (ETA: 230.0 sec remaining)
+Condition 60/144: design=hybrid, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 163.3 sec (ETA: 228.7 sec remaining)
+Condition 61/144: design=hybrid, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 166.4 sec (ETA: 226.5 sec remaining)
+Condition 62/144: design=hybrid, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 170.2 sec (ETA: 225.1 sec remaining)
+Condition 63/144: design=hybrid, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 173.3 sec (ETA: 222.9 sec remaining)
+Condition 64/144: design=hybrid, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 177.0 sec (ETA: 221.2 sec remaining)
+Condition 65/144: design=hybrid, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 180.2 sec (ETA: 219.0 sec remaining)
+Condition 66/144: design=hybrid, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 183.8 sec (ETA: 217.3 sec remaining)
+Condition 67/144: design=hybrid, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 187.3 sec (ETA: 215.3 sec remaining)
+Condition 68/144: design=hybrid, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 190.7 sec (ETA: 213.2 sec remaining)
+Condition 69/144: design=hybrid, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 194.1 sec (ETA: 211.0 sec remaining)
+Condition 70/144: design=hybrid, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 197.6 sec (ETA: 208.9 sec remaining)
+Condition 71/144: design=hybrid, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 199.7 sec (ETA: 205.3 sec remaining)
+Condition 72/144: design=hybrid, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 201.9 sec (ETA: 201.9 sec remaining)
+Condition 73/144: design=hybrid, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 203.8 sec (ETA: 198.2 sec remaining)
+Condition 74/144: design=hybrid, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 206.1 sec (ETA: 194.9 sec remaining)
+Condition 75/144: design=hybrid, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 208.1 sec (ETA: 191.5 sec remaining)
+Condition 76/144: design=hybrid, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 211.7 sec (ETA: 189.4 sec remaining)
+Condition 77/144: design=hybrid, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 215.5 sec (ETA: 187.5 sec remaining)
+Condition 78/144: design=hybrid, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 218.7 sec (ETA: 185.1 sec remaining)
+Condition 79/144: design=hybrid, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 222.0 sec (ETA: 182.7 sec remaining)
+Condition 80/144: design=hybrid, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 225.2 sec (ETA: 180.2 sec remaining)
+Condition 81/144: design=crossover, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 227.2 sec (ETA: 176.7 sec remaining)
+Condition 82/144: design=crossover, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 229.0 sec (ETA: 173.1 sec remaining)
+Condition 83/144: design=crossover, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 230.1 sec (ETA: 169.1 sec remaining)
+Condition 84/144: design=crossover, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 231.2 sec (ETA: 165.2 sec remaining)
+Condition 85/144: design=crossover, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 232.3 sec (ETA: 161.2 sec remaining)
+Condition 86/144: design=crossover, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 233.4 sec (ETA: 157.4 sec remaining)
+Condition 87/144: design=crossover, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 234.3 sec (ETA: 153.5 sec remaining)
+Condition 88/144: design=crossover, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 235.4 sec (ETA: 149.8 sec remaining)
+Condition 89/144: design=crossover, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 236.5 sec (ETA: 146.1 sec remaining)
+Condition 90/144: design=crossover, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 237.5 sec (ETA: 142.5 sec remaining)
+Condition 91/144: design=crossover, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 238.5 sec (ETA: 138.9 sec remaining)
+Condition 92/144: design=crossover, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 239.5 sec (ETA: 135.4 sec remaining)
+Condition 93/144: design=crossover, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 240.5 sec (ETA: 131.9 sec remaining)
+Condition 94/144: design=crossover, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 241.6 sec (ETA: 128.5 sec remaining)
+Condition 95/144: design=crossover, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 242.6 sec (ETA: 125.1 sec remaining)
+Condition 96/144: design=crossover, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 244.4 sec (ETA: 122.2 sec remaining)
+Condition 97/144: design=crossover, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 246.2 sec (ETA: 119.3 sec remaining)
+Condition 98/144: design=crossover, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 247.9 sec (ETA: 116.3 sec remaining)
+Condition 99/144: design=crossover, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 249.6 sec (ETA: 113.5 sec remaining)
+Condition 100/144: design=crossover, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 251.4 sec (ETA: 110.6 sec remaining)
+Condition 101/144: design=crossover, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 253.2 sec (ETA: 107.8 sec remaining)
+Condition 102/144: design=crossover, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 254.9 sec (ETA: 105.0 sec remaining)
+Condition 103/144: design=crossover, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 256.7 sec (ETA: 102.2 sec remaining)
+Condition 104/144: design=crossover, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 258.5 sec (ETA: 99.4 sec remaining)
+Condition 105/144: design=crossover, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 260.4 sec (ETA: 96.7 sec remaining)
+Condition 106/144: design=crossover, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 262.2 sec (ETA: 94.0 sec remaining)
+Condition 107/144: design=crossover, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 264.0 sec (ETA: 91.3 sec remaining)
+Condition 108/144: design=crossover, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 265.9 sec (ETA: 88.6 sec remaining)
+Condition 109/144: design=crossover, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 267.8 sec (ETA: 86.0 sec remaining)
+Condition 110/144: design=crossover, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 269.6 sec (ETA: 83.3 sec remaining)
+Condition 111/144: design=crossover, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 270.6 sec (ETA: 80.5 sec remaining)
+Condition 112/144: design=crossover, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 271.7 sec (ETA: 77.6 sec remaining)
+Condition 113/144: design=crossover, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 272.7 sec (ETA: 74.8 sec remaining)
+Condition 114/144: design=crossover, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 273.8 sec (ETA: 72.0 sec remaining)
+Condition 115/144: design=crossover, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 274.9 sec (ETA: 69.3 sec remaining)
+Condition 116/144: design=crossover, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 276.7 sec (ETA: 66.8 sec remaining)
+Condition 117/144: design=crossover, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 279.4 sec (ETA: 64.5 sec remaining)
+Condition 118/144: design=crossover, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=FALSE
+  Completed in 281.3 sec (ETA: 62.0 sec remaining)
+Condition 119/144: design=crossover, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 283.3 sec (ETA: 59.5 sec remaining)
+Condition 120/144: design=crossover, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=FALSE
+  Completed in 285.0 sec (ETA: 57.0 sec remaining)
+Condition 121/144: design=ol, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 286.6 sec (ETA: 54.5 sec remaining)
+Condition 122/144: design=ol, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 287.8 sec (ETA: 51.9 sec remaining)
+Condition 123/144: design=ol, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 288.9 sec (ETA: 49.3 sec remaining)
+Condition 124/144: design=ol, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 289.9 sec (ETA: 46.8 sec remaining)
+Condition 125/144: design=ol, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 290.9 sec (ETA: 44.2 sec remaining)
+Condition 126/144: design=ol, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 291.9 sec (ETA: 41.7 sec remaining)
+Condition 127/144: design=ol, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 293.0 sec (ETA: 39.2 sec remaining)
+Condition 128/144: design=ol, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 294.1 sec (ETA: 36.8 sec remaining)
+Condition 129/144: design=ol, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 295.1 sec (ETA: 34.3 sec remaining)
+Condition 130/144: design=ol, bm_mod=0.20, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 296.8 sec (ETA: 32.0 sec remaining)
+Condition 131/144: design=ol, bm_mod=0.20, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 298.6 sec (ETA: 29.6 sec remaining)
+Condition 132/144: design=ol, bm_mod=0.20, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 300.3 sec (ETA: 27.3 sec remaining)
+Condition 133/144: design=ol, bm_mod=0.40, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 302.3 sec (ETA: 25.0 sec remaining)
+Condition 134/144: design=ol, bm_mod=0.40, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 304.5 sec (ETA: 22.7 sec remaining)
+Condition 135/144: design=ol, bm_mod=0.40, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 306.4 sec (ETA: 20.4 sec remaining)
+Condition 136/144: design=ol, bm_mod=0.60, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 308.2 sec (ETA: 18.1 sec remaining)
+Condition 137/144: design=ol, bm_mod=0.60, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 310.1 sec (ETA: 15.8 sec remaining)
+Condition 138/144: design=ol, bm_mod=0.60, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 312.2 sec (ETA: 13.6 sec remaining)
+Condition 139/144: design=ol, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 313.4 sec (ETA: 11.3 sec remaining)
+Condition 140/144: design=ol, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 314.6 sec (ETA: 9.0 sec remaining)
+Condition 141/144: design=ol, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 315.6 sec (ETA: 6.7 sec remaining)
+Condition 142/144: design=ol, bm_mod=0.00, carryover_t½=0.0 wks, model_carryover=TRUE
+  Completed in 317.4 sec (ETA: 4.5 sec remaining)
+Condition 143/144: design=ol, bm_mod=0.00, carryover_t½=0.1 wks, model_carryover=TRUE
+  Completed in 319.3 sec (ETA: 2.2 sec remaining)
+Condition 144/144: design=ol, bm_mod=0.00, carryover_t½=0.2 wks, model_carryover=TRUE
+  Completed in 321.3 sec (ETA: 0.0 sec remaining)
+
+ ====================================================================== 
+RESULTS - CLUSTERED DESIGNS (Two-Scenario Comparison)
+====================================================================== 
+
+# A tibble: 144 × 14
+   design    n_participants biomarker_moderation biomarker_correlation
+   <chr>              <dbl>                <dbl>                 <dbl>
+ 1 crossover             35                  0                     0  
+ 2 crossover             35                  0                     0  
+ 3 crossover             35                  0                     0  
+ 4 crossover             35                  0                     0  
+ 5 crossover             35                  0                     0  
+ 6 crossover             35                  0.2                   0.3
+ 7 crossover             35                  0.2                   0.3
+ 8 crossover             35                  0.2                   0.3
+ 9 crossover             35                  0.2                   0.3
+10 crossover             35                  0.2                   0.3
+11 crossover             35                  0.4                   0.3
+12 crossover             35                  0.4                   0.3
+13 crossover             35                  0.4                   0.3
+14 crossover             35                  0.4                   0.3
+15 crossover             35                  0.4                   0.3
+16 crossover             35                  0.6                   0.3
+17 crossover             35                  0.6                   0.3
+18 crossover             35                  0.6                   0.3
+19 crossover             35                  0.6                   0.3
+20 crossover             35                  0.6                   0.3
+21 crossover             70                  0                     0  
+22 crossover             70                  0                     0  
+23 crossover             70                  0                     0  
+24 crossover             70                  0                     0  
+25 crossover             70                  0                     0  
+26 crossover             70                  0.2                   0.3
+27 crossover             70                  0.2                   0.3
+28 crossover             70                  0.2                   0.3
+29 crossover             70                  0.2                   0.3
+30 crossover             70                  0.2                   0.3
+31 crossover             70                  0.4                   0.3
+32 crossover             70                  0.4                   0.3
+33 crossover             70                  0.4                   0.3
+34 crossover             70                  0.4                   0.3
+35 crossover             70                  0.4                   0.3
+36 crossover             70                  0.6                   0.3
+37 crossover             70                  0.6                   0.3
+38 crossover             70                  0.6                   0.3
+39 crossover             70                  0.6                   0.3
+40 crossover             70                  0.6                   0.3
+41 hybrid                35                  0                     0  
+42 hybrid                35                  0                     0  
+43 hybrid                35                  0                     0  
+44 hybrid                35                  0                     0  
+45 hybrid                35                  0                     0  
+46 hybrid                35                  0.2                   0.3
+47 hybrid                35                  0.2                   0.3
+48 hybrid                35                  0.2                   0.3
+49 hybrid                35                  0.2                   0.3
+50 hybrid                35                  0.2                   0.3
+# ℹ 94 more rows
+# ℹ 10 more variables: carryover_halflife <dbl>, model_carryover <lgl>,
+#   power <dbl>, mean_effect <dbl>, sd_effect <dbl>, n <int>, n_errors <int>,
+#   n_success <dbl>, ci_lower <dbl>, ci_upper <dbl>
+
+ ====================================================================== 
+TWO-SCENARIO COMPARISON: Impact of Carryover Modeling
+====================================================================== 
+
+# A tibble: 36 × 8
+   design    n_participants biomarker_moderation carryover_halflife
+   <chr>              <dbl>                <dbl>              <dbl>
+ 1 crossover             35                  0.2                0.1
+ 2 crossover             35                  0.4                0.1
+ 3 crossover             35                  0.6                0.1
+ 4 crossover             35                  0.2                0.2
+ 5 crossover             35                  0.4                0.2
+ 6 crossover             35                  0.6                0.2
+ 7 crossover             70                  0.2                0.1
+ 8 crossover             70                  0.4                0.1
+ 9 crossover             70                  0.6                0.1
+10 crossover             70                  0.2                0.2
+11 crossover             70                  0.4                0.2
+12 crossover             70                  0.6                0.2
+13 hybrid                35                  0.2                0.1
+14 hybrid                35                  0.4                0.1
+15 hybrid                35                  0.6                0.1
+16 hybrid                35                  0.2                0.2
+17 hybrid                35                  0.4                0.2
+18 hybrid                35                  0.6                0.2
+19 hybrid                70                  0.2                0.1
+20 hybrid                70                  0.4                0.1
+21 hybrid                70                  0.6                0.1
+22 hybrid                70                  0.2                0.2
+23 hybrid                70                  0.4                0.2
+24 hybrid                70                  0.6                0.2
+25 ol_bdc                35                  0.2                0.1
+26 ol_bdc                35                  0.4                0.1
+27 ol_bdc                35                  0.6                0.1
+28 ol_bdc                35                  0.2                0.2
+29 ol_bdc                35                  0.4                0.2
+30 ol_bdc                35                  0.6                0.2
+31 ol_bdc                70                  0.2                0.1
+32 ol_bdc                70                  0.4                0.1
+33 ol_bdc                70                  0.6                0.1
+34 ol_bdc                70                  0.2                0.2
+35 ol_bdc                70                  0.4                0.2
+36 ol_bdc                70                  0.6                0.2
+# ℹ 4 more variables: model_carryover_FALSE <dbl>, model_carryover_TRUE <dbl>,
+#   power_difference <dbl>, pct_change <dbl>
+
+ ====================================================================== 
+SIMULATION COMPLETE
+====================================================================== 
+Results saved to: ../output 
+
+Output files:
+  - power_main_20260218_112205.pdf/png (3 designs: Crossover, Hybrid, OL+BDC)
+  - power_openlabel_20260218_112205.pdf/png (Open-Label only)
+  - simulation_clustered_results.RData
+
+Key objects in RData:
+  - results: raw iteration-level results
+  - summary_results: aggregated power by condition
+  - scenario_comparison: WITH vs WITHOUT carryover comparison

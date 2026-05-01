@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Ronald G. Thomas" />
+
+<meta name="date" content="2026-02-11" />
+
+<title>Vignette 1: Generate Simulation Data</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Vignette 1: Generate Simulation Data</h1>
+<h4 class="author">Ronald G. Thomas</h4>
+<h4 class="date">2026-02-11</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#overview" id="toc-overview">Overview</a></li>
+<li><a href="#setup" id="toc-setup">Setup</a></li>
+<li><a href="#part-1-define-trial-designs" id="toc-part-1-define-trial-designs">Part 1: Define Trial Designs</a>
+<ul>
+<li><a href="#three-factor-response-model" id="toc-three-factor-response-model">Three-Factor Response
+Model</a></li>
+<li><a href="#correlation-structure-hendrickson-parameters" id="toc-correlation-structure-hendrickson-parameters">Correlation
+Structure (Hendrickson Parameters)</a></li>
+<li><a href="#measurement-schedules" id="toc-measurement-schedules">Measurement Schedules</a></li>
+<li><a href="#trial-design-functions" id="toc-trial-design-functions">Trial Design Functions</a></li>
+</ul></li>
+<li><a href="#part-2-define-parameter-space" id="toc-part-2-define-parameter-space">Part 2: Define Parameter
+Space</a>
+<ul>
+<li><a href="#parameter-grid-for-power-analysis" id="toc-parameter-grid-for-power-analysis">Parameter Grid for Power
+Analysis</a></li>
+</ul></li>
+<li><a href="#part-3-build-and-validate-covariance-matrices" id="toc-part-3-build-and-validate-covariance-matrices">Part 3: Build and
+Validate Covariance Matrices</a>
+<ul>
+<li><a href="#two-stage-sigma-construction" id="toc-two-stage-sigma-construction">Two-Stage Sigma
+Construction</a></li>
+<li><a href="#pre-simulation-validation" id="toc-pre-simulation-validation">Pre-Simulation Validation</a></li>
+</ul></li>
+<li><a href="#part-4-execute-simulation" id="toc-part-4-execute-simulation">Part 4: Execute Simulation</a>
+<ul>
+<li><a href="#two-stage-data-generation" id="toc-two-stage-data-generation">Two-Stage Data Generation</a></li>
+<li><a href="#main-simulation-loop" id="toc-main-simulation-loop">Main
+Simulation Loop</a></li>
+</ul></li>
+<li><a href="#part-5-summarize-and-save-results" id="toc-part-5-summarize-and-save-results">Part 5: Summarize and Save
+Results</a></li>
+<li><a href="#session-info" id="toc-session-info">Session Info</a></li>
+<li><a href="#references" id="toc-references">References</a></li>
+</ul>
+</div>
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>This vignette demonstrates how to generate simulated clinical trial
+data using the pmsimstats2025 framework. The simulation methodology
+extends Hendrickson et al. (2020) with explicit biomarker moderation and
+flexible carryover modeling.</p>
+<p>The workflow covers:</p>
+<ol style="list-style-type: decimal">
+<li>Defining trial designs (measurement schedules and treatment
+assignments)</li>
+<li>Specifying parameter spaces (effect sizes, correlations,
+carryover)</li>
+<li>Validating parameter combinations for positive definiteness</li>
+<li>Executing Monte Carlo simulations</li>
+<li>Saving results for downstream analysis</li>
+</ol>
+</div>
+<div id="setup" class="section level2">
+<h2>Setup</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>({</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(nlme)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="fu">library</span>(MASS)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  <span class="fu">library</span>(conflicted)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>})</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">conflicts_prefer</span>(dplyr<span class="sc">::</span>select)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="fu">conflicts_prefer</span>(dplyr<span class="sc">::</span>filter)</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="fu">conflicts_prefer</span>(dplyr<span class="sc">::</span>lag)</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="fu">conflicts_prefer</span>(nlme<span class="sc">::</span>lme)</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;../analysis/scripts/pm_functions.R&quot;</span>)</span></code></pre></div>
+</div>
+<div id="part-1-define-trial-designs" class="section level2">
+<h2>Part 1: Define Trial Designs</h2>
+<div id="three-factor-response-model" class="section level3">
+<h3>Three-Factor Response Model</h3>
+<p>Symptom change is modeled as the linear sum of three factors, each
+following a modified Gompertz trajectory:</p>
+<ul>
+<li><strong>BR (Biologic Response)</strong>: Direct pharmacologic effect
+of the drug</li>
+<li><strong>ER (Expectancy Response)</strong>: Placebo-like effect from
+treatment expectation</li>
+<li><strong>TR (Time-variant Response)</strong>: Natural improvement,
+regression to mean</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># PARAMETERS</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>n_participants <span class="ot">&lt;-</span> <span class="dv">30</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>n_iterations <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co"># Three-factor response model - RATE-BASED (points per week)</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>BR_rate <span class="ot">&lt;-</span> <span class="fl">0.5</span>  <span class="co"># Biological Response: drug improvement rate</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>ER_rate <span class="ot">&lt;-</span> <span class="fl">0.2</span>  <span class="co"># Expectancy Response: placebo improvement rate</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>TR_rate <span class="ot">&lt;-</span> <span class="fl">0.1</span>  <span class="co"># Time-variant Response: natural improvement rate</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>treatment_effect <span class="ot">&lt;-</span> BR_rate  <span class="co"># Alias for display purposes</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>baseline_mean <span class="ot">&lt;-</span> <span class="fl">10.0</span>       <span class="co"># Mean baseline response</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>between_subject_sd <span class="ot">&lt;-</span> <span class="fl">2.0</span>   <span class="co"># SD of participant random effects</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>within_subject_sd <span class="ot">&lt;-</span> <span class="fl">1.8</span>    <span class="co"># SD of measurement noise</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>biomarker_mean <span class="ot">&lt;-</span> <span class="fl">5.0</span>       <span class="co"># Mean biomarker value</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>biomarker_sd <span class="ot">&lt;-</span> <span class="fl">2.0</span>         <span class="co"># SD of biomarker</span></span></code></pre></div>
+</div>
+<div id="correlation-structure-hendrickson-parameters" class="section level3">
+<h3>Correlation Structure (Hendrickson Parameters)</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Correlation parameters (adapted from Hendrickson)</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co"># Reduced to improve matrix conditioning and positive definiteness</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>c.br <span class="ot">&lt;-</span> <span class="fl">0.75</span>  <span class="co"># BR autocorrelation (reduced from 0.8)</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>c.er <span class="ot">&lt;-</span> <span class="fl">0.75</span>  <span class="co"># ER autocorrelation (reduced from 0.8)</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>c.tr <span class="ot">&lt;-</span> <span class="fl">0.75</span>  <span class="co"># TR autocorrelation (reduced from 0.8)</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>c.cf1t <span class="ot">&lt;-</span> <span class="fl">0.12</span>  <span class="co"># Same-time cross-correlation (reduced from 0.2)</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>c.cfct <span class="ot">&lt;-</span> <span class="fl">0.05</span>  <span class="co"># Different-time cross-correlation (reduced from 0.1)</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>c.bm_baseline <span class="ot">&lt;-</span> <span class="fl">0.25</span>  <span class="co"># Biomarker-baseline correlation (reduced from 0.3)</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>c.baseline_resp <span class="ot">&lt;-</span> <span class="fl">0.3</span> <span class="co"># Baseline-response correlation (reduced from 0.4)</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co"># Allowed correlation values (finite grid for consistent results)</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>allowed_correlations <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>)</span></code></pre></div>
+</div>
+<div id="measurement-schedules" class="section level3">
+<h3>Measurement Schedules</h3>
+<p>Two types of measurement schedules are supported:</p>
+<p><strong>Clustered schedules</strong> (8 points): Dense measurements
+at treatment transitions</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># 8 points with clusters for Hybrid and OL+BDC</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>measurement_weeks_hybrid <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">9</span>, <span class="dv">10</span>, <span class="dv">11</span>, <span class="dv">12</span>, <span class="dv">16</span>, <span class="dv">20</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>measurement_weeks_ol_bdc <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">12</span>, <span class="dv">16</span>, <span class="dv">17</span>, <span class="dv">18</span>, <span class="dv">19</span>, <span class="dv">20</span>)</span></code></pre></div>
+<p><strong>Evenly-spaced schedules</strong> (4 points): Uniform 6-week
+gaps</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># 4 points evenly spaced for OL, Crossover, Parallel</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>measurement_weeks_evenly <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">8</span>, <span class="dv">14</span>, <span class="dv">20</span>)</span></code></pre></div>
+</div>
+<div id="trial-design-functions" class="section level3">
+<h3>Trial Design Functions</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co"># DESIGN STRUCTURES - CLUSTERED SCHEDULES</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>create_ol_bdc_design <span class="ot">&lt;-</span> <span class="cf">function</span>(n_participants, measurement_weeks) {</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  path_assignment <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">length.out =</span> n_participants))</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="fu">expand_grid</span>(</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    <span class="at">participant_id =</span> <span class="dv">1</span><span class="sc">:</span>n_participants,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>    <span class="at">week =</span> measurement_weeks</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>      <span class="at">path =</span> path_assignment[participant_id],</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>      <span class="at">treatment =</span> <span class="fu">case_when</span>(</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>        week <span class="sc">&lt;=</span> <span class="dv">16</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">17</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">18</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">18</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>        week <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">20</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>      ),</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>      <span class="at">expectancy =</span> <span class="fu">if_else</span>(week <span class="sc">&lt;=</span> <span class="dv">16</span>, <span class="fl">1.0</span>, <span class="fl">0.5</span>)</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>    )</span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>}</span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>create_hybrid_design <span class="ot">&lt;-</span> <span class="cf">function</span>(n_participants, measurement_weeks) {</span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>  path_assignment <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">length.out =</span> n_participants))</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>  <span class="fu">expand_grid</span>(</span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>    <span class="at">participant_id =</span> <span class="dv">1</span><span class="sc">:</span>n_participants,</span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>    <span class="at">week =</span> measurement_weeks</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>      <span class="at">path =</span> path_assignment[participant_id],</span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>      <span class="at">treatment =</span> <span class="fu">case_when</span>(</span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a>        week <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">8</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">9</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">10</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">10</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a>        week <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">11</span>, <span class="dv">12</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">16</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">16</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">20</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a>        week <span class="sc">==</span> <span class="dv">20</span> <span class="sc">&amp;</span> path <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a>      ),</span>
+<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a>      <span class="at">expectancy =</span> <span class="fu">if_else</span>(week <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">8</span>), <span class="fl">1.0</span>, <span class="fl">0.5</span>)</span>
+<span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a>    )</span>
+<span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a>}</span>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a></span>
+<span id="cb6-51"><a href="#cb6-51" tabindex="-1"></a>create_crossover_design <span class="ot">&lt;-</span> <span class="cf">function</span>(n_participants, measurement_weeks) {</span>
+<span id="cb6-52"><a href="#cb6-52" tabindex="-1"></a>  sequence_assignment <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">length.out =</span> n_participants))</span>
+<span id="cb6-53"><a href="#cb6-53" tabindex="-1"></a>  midpoint <span class="ot">&lt;-</span> <span class="fu">median</span>(measurement_weeks)</span>
+<span id="cb6-54"><a href="#cb6-54" tabindex="-1"></a></span>
+<span id="cb6-55"><a href="#cb6-55" tabindex="-1"></a>  <span class="fu">expand_grid</span>(</span>
+<span id="cb6-56"><a href="#cb6-56" tabindex="-1"></a>    <span class="at">participant_id =</span> <span class="dv">1</span><span class="sc">:</span>n_participants,</span>
+<span id="cb6-57"><a href="#cb6-57" tabindex="-1"></a>    <span class="at">week =</span> measurement_weeks</span>
+<span id="cb6-58"><a href="#cb6-58" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-59"><a href="#cb6-59" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb6-60"><a href="#cb6-60" tabindex="-1"></a>      <span class="at">path =</span> sequence_assignment[participant_id],</span>
+<span id="cb6-61"><a href="#cb6-61" tabindex="-1"></a>      <span class="at">treatment =</span> <span class="fu">case_when</span>(</span>
+<span id="cb6-62"><a href="#cb6-62" tabindex="-1"></a>        week <span class="sc">&lt;=</span> midpoint <span class="sc">&amp;</span> path <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-63"><a href="#cb6-63" tabindex="-1"></a>        week <span class="sc">&lt;=</span> midpoint <span class="sc">&amp;</span> path <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-64"><a href="#cb6-64" tabindex="-1"></a>        week <span class="sc">&gt;</span> midpoint <span class="sc">&amp;</span> path <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb6-65"><a href="#cb6-65" tabindex="-1"></a>        week <span class="sc">&gt;</span> midpoint <span class="sc">&amp;</span> path <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb6-66"><a href="#cb6-66" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span></span>
+<span id="cb6-67"><a href="#cb6-67" tabindex="-1"></a>      ),</span>
+<span id="cb6-68"><a href="#cb6-68" tabindex="-1"></a>      <span class="at">expectancy =</span> <span class="fl">0.5</span></span>
+<span id="cb6-69"><a href="#cb6-69" tabindex="-1"></a>    )</span>
+<span id="cb6-70"><a href="#cb6-70" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+</div>
+<div id="part-2-define-parameter-space" class="section level2">
+<h2>Part 2: Define Parameter Space</h2>
+<div id="parameter-grid-for-power-analysis" class="section level3">
+<h3>Parameter Grid for Power Analysis</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Parameter grid - reduced for vignette demo</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co"># For full analysis, expand biomarker_moderation and add more designs</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>param_grid <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="co"># Hybrid design (power conditions)</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="fu">expand_grid</span>(</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>    <span class="at">design =</span> <span class="st">&quot;hybrid&quot;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>    <span class="at">biomarker_moderation =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>),</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>    <span class="at">biomarker_correlation =</span> <span class="fu">c</span>(<span class="fl">0.3</span>),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="at">carryover =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>, <span class="dv">1</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  ),</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  <span class="co"># OL+BDC design (power conditions)</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  <span class="fu">expand_grid</span>(</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>    <span class="at">design =</span> <span class="st">&quot;ol_bdc&quot;</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>    <span class="at">biomarker_moderation =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>),</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>    <span class="at">biomarker_correlation =</span> <span class="fu">c</span>(<span class="fl">0.3</span>),</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>    <span class="at">carryover =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>, <span class="dv">1</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  )</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>)</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Parameter grid dimensions:&quot;</span>, <span class="fu">nrow</span>(param_grid), <span class="st">&quot;conditions</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt; Parameter grid dimensions: 18 conditions</span></span></code></pre></div>
+</div>
+</div>
+<div id="part-3-build-and-validate-covariance-matrices" class="section level2">
+<h2>Part 3: Build and Validate Covariance Matrices</h2>
+<div id="two-stage-sigma-construction" class="section level3">
+<h3>Two-Stage Sigma Construction</h3>
+<p>The covariance matrix is built using a two-stage conditional approach
+for numerical stability:</p>
+<ul>
+<li><strong>Stage 1</strong>: Generate (biomarker, baseline) from
+Sigma_22</li>
+<li><strong>Stage 2</strong>: Generate responses conditional on Stage
+1</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co"># BUILD SIGMA WITH GUARANTEED PD (Time-Based AR(1))</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>build_sigma_guaranteed_pd <span class="ot">&lt;-</span> <span class="cf">function</span>(weeks, c.bm, params) {</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  n_tp <span class="ot">&lt;-</span> <span class="fu">length</span>(weeks)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  br_idx <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>n_tp</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  er_idx <span class="ot">&lt;-</span> (n_tp <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="dv">2</span> <span class="sc">*</span> n_tp)</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  tr_idx <span class="ot">&lt;-</span> (<span class="dv">2</span> <span class="sc">*</span> n_tp <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="dv">3</span> <span class="sc">*</span> n_tp)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  bm_idx <span class="ot">&lt;-</span> <span class="dv">3</span> <span class="sc">*</span> n_tp <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  bl_idx <span class="ot">&lt;-</span> <span class="dv">3</span> <span class="sc">*</span> n_tp <span class="sc">+</span> <span class="dv">2</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  <span class="co"># STAGE 1: Build Sigma_22 (2x2) - Biomarker &amp; Baseline</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>  Sigma_22 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>    biomarker_sd<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>    c.bm_baseline <span class="sc">*</span> biomarker_sd <span class="sc">*</span> between_subject_sd,</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>    c.bm_baseline <span class="sc">*</span> biomarker_sd <span class="sc">*</span> between_subject_sd,</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>    between_subject_sd<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>  ), <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>  <span class="co"># STAGE 2: Build Sigma_11 (3*n_tp x 3*n_tp) - Response components</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>  build_ar1_time <span class="ot">&lt;-</span> <span class="cf">function</span>(weeks, rho, sigma) {</span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">length</span>(weeks)</span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a>    Cov <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, n, n)</span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a>      <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a>        time_lag <span class="ot">&lt;-</span> <span class="fu">abs</span>(weeks[i] <span class="sc">-</span> weeks[j])</span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a>        Cov[i, j] <span class="ot">&lt;-</span> sigma<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> rho<span class="sc">^</span>time_lag</span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a>      }</span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a>    }</span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>    <span class="fu">return</span>(Cov)</span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a>  }</span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a></span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a>  Sigma_BR <span class="ot">&lt;-</span> <span class="fu">build_ar1_time</span>(weeks, c.br, within_subject_sd)</span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a>  Sigma_ER <span class="ot">&lt;-</span> <span class="fu">build_ar1_time</span>(weeks, c.er, within_subject_sd)</span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a>  Sigma_TR <span class="ot">&lt;-</span> <span class="fu">build_ar1_time</span>(weeks, c.tr, within_subject_sd)</span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a></span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a>  Sigma_11 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="dv">3</span> <span class="sc">*</span> n_tp, <span class="dv">3</span> <span class="sc">*</span> n_tp)</span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a>  Sigma_11[br_idx, br_idx] <span class="ot">&lt;-</span> Sigma_BR</span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a>  Sigma_11[er_idx, er_idx] <span class="ot">&lt;-</span> Sigma_ER</span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a>  Sigma_11[tr_idx, tr_idx] <span class="ot">&lt;-</span> Sigma_TR</span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a></span>
+<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_tp) {</span>
+<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_tp) {</span>
+<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a>      time_lag <span class="ot">&lt;-</span> <span class="fu">abs</span>(weeks[i] <span class="sc">-</span> weeks[j])</span>
+<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a>      cross_cov <span class="ot">&lt;-</span> <span class="cf">if</span> (i <span class="sc">==</span> j) {</span>
+<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a>        c.cf1t <span class="sc">*</span> within_subject_sd<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a>      } <span class="cf">else</span> {</span>
+<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a>        c.cfct <span class="sc">*</span> within_subject_sd<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> (<span class="fl">0.9</span><span class="sc">^</span>time_lag)</span>
+<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a>      }</span>
+<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a>      Sigma_11[br_idx[i], er_idx[j]] <span class="ot">&lt;-</span> cross_cov</span>
+<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a>      Sigma_11[er_idx[j], br_idx[i]] <span class="ot">&lt;-</span> cross_cov</span>
+<span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a>      Sigma_11[br_idx[i], tr_idx[j]] <span class="ot">&lt;-</span> cross_cov</span>
+<span id="cb8-55"><a href="#cb8-55" tabindex="-1"></a>      Sigma_11[tr_idx[j], br_idx[i]] <span class="ot">&lt;-</span> cross_cov</span>
+<span id="cb8-56"><a href="#cb8-56" tabindex="-1"></a>      Sigma_11[er_idx[i], tr_idx[j]] <span class="ot">&lt;-</span> cross_cov</span>
+<span id="cb8-57"><a href="#cb8-57" tabindex="-1"></a>      Sigma_11[tr_idx[j], er_idx[i]] <span class="ot">&lt;-</span> cross_cov</span>
+<span id="cb8-58"><a href="#cb8-58" tabindex="-1"></a>    }</span>
+<span id="cb8-59"><a href="#cb8-59" tabindex="-1"></a>  }</span>
+<span id="cb8-60"><a href="#cb8-60" tabindex="-1"></a></span>
+<span id="cb8-61"><a href="#cb8-61" tabindex="-1"></a>  <span class="co"># STAGE 3: Build Sigma_12 (cross-covariance)</span></span>
+<span id="cb8-62"><a href="#cb8-62" tabindex="-1"></a>  effective_c.bm <span class="ot">&lt;-</span> c.bm</span>
+<span id="cb8-63"><a href="#cb8-63" tabindex="-1"></a>  effective_c.baseline <span class="ot">&lt;-</span> c.baseline_resp</span>
+<span id="cb8-64"><a href="#cb8-64" tabindex="-1"></a></span>
+<span id="cb8-65"><a href="#cb8-65" tabindex="-1"></a>  Sigma_12 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="dv">3</span> <span class="sc">*</span> n_tp, <span class="dv">2</span>)</span>
+<span id="cb8-66"><a href="#cb8-66" tabindex="-1"></a>  Sigma_12[br_idx, <span class="dv">1</span>] <span class="ot">&lt;-</span> effective_c.bm <span class="sc">*</span> within_subject_sd <span class="sc">*</span> biomarker_sd</span>
+<span id="cb8-67"><a href="#cb8-67" tabindex="-1"></a>  Sigma_12[er_idx, <span class="dv">1</span>] <span class="ot">&lt;-</span> effective_c.bm <span class="sc">*</span> <span class="fl">0.5</span> <span class="sc">*</span> within_subject_sd <span class="sc">*</span> biomarker_sd</span>
+<span id="cb8-68"><a href="#cb8-68" tabindex="-1"></a>  Sigma_12[tr_idx, <span class="dv">1</span>] <span class="ot">&lt;-</span> effective_c.bm <span class="sc">*</span> <span class="fl">0.5</span> <span class="sc">*</span> within_subject_sd <span class="sc">*</span> biomarker_sd</span>
+<span id="cb8-69"><a href="#cb8-69" tabindex="-1"></a>  Sigma_12[br_idx, <span class="dv">2</span>] <span class="ot">&lt;-</span> effective_c.baseline <span class="sc">*</span> within_subject_sd <span class="sc">*</span></span>
+<span id="cb8-70"><a href="#cb8-70" tabindex="-1"></a>    between_subject_sd</span>
+<span id="cb8-71"><a href="#cb8-71" tabindex="-1"></a>  Sigma_12[er_idx, <span class="dv">2</span>] <span class="ot">&lt;-</span> effective_c.baseline <span class="sc">*</span> within_subject_sd <span class="sc">*</span></span>
+<span id="cb8-72"><a href="#cb8-72" tabindex="-1"></a>    between_subject_sd</span>
+<span id="cb8-73"><a href="#cb8-73" tabindex="-1"></a>  Sigma_12[tr_idx, <span class="dv">2</span>] <span class="ot">&lt;-</span> effective_c.baseline <span class="sc">*</span> within_subject_sd <span class="sc">*</span></span>
+<span id="cb8-74"><a href="#cb8-74" tabindex="-1"></a>    between_subject_sd</span>
+<span id="cb8-75"><a href="#cb8-75" tabindex="-1"></a></span>
+<span id="cb8-76"><a href="#cb8-76" tabindex="-1"></a>  <span class="co"># Verify positive definiteness</span></span>
+<span id="cb8-77"><a href="#cb8-77" tabindex="-1"></a>  Sigma_22_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(Sigma_22)</span>
+<span id="cb8-78"><a href="#cb8-78" tabindex="-1"></a>  cross_term <span class="ot">&lt;-</span> Sigma_12 <span class="sc">%*%</span> Sigma_22_inv <span class="sc">%*%</span> <span class="fu">t</span>(Sigma_12)</span>
+<span id="cb8-79"><a href="#cb8-79" tabindex="-1"></a>  Sigma_cond <span class="ot">&lt;-</span> Sigma_11 <span class="sc">-</span> cross_term</span>
+<span id="cb8-80"><a href="#cb8-80" tabindex="-1"></a>  min_eig <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">eigen</span>(Sigma_cond, <span class="at">only.values =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>values)</span>
+<span id="cb8-81"><a href="#cb8-81" tabindex="-1"></a></span>
+<span id="cb8-82"><a href="#cb8-82" tabindex="-1"></a>  <span class="cf">if</span> (min_eig <span class="sc">&lt;=</span> <span class="fl">1e-6</span>) {</span>
+<span id="cb8-83"><a href="#cb8-83" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="fu">sprintf</span>(</span>
+<span id="cb8-84"><a href="#cb8-84" tabindex="-1"></a>      <span class="st">&quot;Non-positive definite matrix: c.bm = %.2f, min eigenvalue = %.2e&quot;</span>,</span>
+<span id="cb8-85"><a href="#cb8-85" tabindex="-1"></a>      effective_c.bm, min_eig))</span>
+<span id="cb8-86"><a href="#cb8-86" tabindex="-1"></a>  }</span>
+<span id="cb8-87"><a href="#cb8-87" tabindex="-1"></a></span>
+<span id="cb8-88"><a href="#cb8-88" tabindex="-1"></a>  <span class="co"># Build full sigma</span></span>
+<span id="cb8-89"><a href="#cb8-89" tabindex="-1"></a>  total_dim <span class="ot">&lt;-</span> <span class="dv">3</span> <span class="sc">*</span> n_tp <span class="sc">+</span> <span class="dv">2</span></span>
+<span id="cb8-90"><a href="#cb8-90" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, total_dim, total_dim)</span>
+<span id="cb8-91"><a href="#cb8-91" tabindex="-1"></a>  Sigma[<span class="dv">1</span><span class="sc">:</span>(<span class="dv">3</span><span class="sc">*</span>n_tp), <span class="dv">1</span><span class="sc">:</span>(<span class="dv">3</span><span class="sc">*</span>n_tp)] <span class="ot">&lt;-</span> Sigma_11</span>
+<span id="cb8-92"><a href="#cb8-92" tabindex="-1"></a>  Sigma[(<span class="dv">3</span><span class="sc">*</span>n_tp<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>total_dim, (<span class="dv">3</span><span class="sc">*</span>n_tp<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>total_dim] <span class="ot">&lt;-</span> Sigma_22</span>
+<span id="cb8-93"><a href="#cb8-93" tabindex="-1"></a>  Sigma[<span class="dv">1</span><span class="sc">:</span>(<span class="dv">3</span><span class="sc">*</span>n_tp), (<span class="dv">3</span><span class="sc">*</span>n_tp<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>total_dim] <span class="ot">&lt;-</span> Sigma_12</span>
+<span id="cb8-94"><a href="#cb8-94" tabindex="-1"></a>  Sigma[(<span class="dv">3</span><span class="sc">*</span>n_tp<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>total_dim, <span class="dv">1</span><span class="sc">:</span>(<span class="dv">3</span><span class="sc">*</span>n_tp)] <span class="ot">&lt;-</span> <span class="fu">t</span>(Sigma_12)</span>
+<span id="cb8-95"><a href="#cb8-95" tabindex="-1"></a></span>
+<span id="cb8-96"><a href="#cb8-96" tabindex="-1"></a>  indices <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-97"><a href="#cb8-97" tabindex="-1"></a>    <span class="at">br =</span> br_idx, <span class="at">er =</span> er_idx, <span class="at">tr =</span> tr_idx,</span>
+<span id="cb8-98"><a href="#cb8-98" tabindex="-1"></a>    <span class="at">bm =</span> bm_idx, <span class="at">bl =</span> bl_idx, <span class="at">n_tp =</span> n_tp</span>
+<span id="cb8-99"><a href="#cb8-99" tabindex="-1"></a>  )</span>
+<span id="cb8-100"><a href="#cb8-100" tabindex="-1"></a></span>
+<span id="cb8-101"><a href="#cb8-101" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
+<span id="cb8-102"><a href="#cb8-102" tabindex="-1"></a>    <span class="at">Sigma =</span> Sigma,</span>
+<span id="cb8-103"><a href="#cb8-103" tabindex="-1"></a>    <span class="at">Sigma_22 =</span> Sigma_22,</span>
+<span id="cb8-104"><a href="#cb8-104" tabindex="-1"></a>    <span class="at">Sigma_cond =</span> Sigma_cond,</span>
+<span id="cb8-105"><a href="#cb8-105" tabindex="-1"></a>    <span class="at">Sigma_12 =</span> Sigma_12,</span>
+<span id="cb8-106"><a href="#cb8-106" tabindex="-1"></a>    <span class="at">indices =</span> indices,</span>
+<span id="cb8-107"><a href="#cb8-107" tabindex="-1"></a>    <span class="at">effective_c.bm =</span> effective_c.bm</span>
+<span id="cb8-108"><a href="#cb8-108" tabindex="-1"></a>  ))</span>
+<span id="cb8-109"><a href="#cb8-109" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="pre-simulation-validation" class="section level3">
+<h3>Pre-Simulation Validation</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co"># PRE-SIMULATION SIGMA MATRIX VALIDATION</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;=&quot;</span> <span class="sc">%+%</span> <span class="fu">strrep</span>(<span class="st">&quot;=&quot;</span>, <span class="dv">59</span>) <span class="sc">%+%</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; Warning: &lt;ggplot&gt; %+% x was deprecated in ggplot2 4.0.0.</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; ℹ Please use &lt;ggplot&gt; + x instead.</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt; This warning is displayed once per session.</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; generated.</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;PRE-SIMULATION SIGMA MATRIX VALIDATION</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; PRE-SIMULATION SIGMA MATRIX VALIDATION</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;=&quot;</span> <span class="sc">%+%</span> <span class="fu">strrep</span>(<span class="st">&quot;=&quot;</span>, <span class="dv">59</span>) <span class="sc">%+%</span> <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co"># Get unique biomarker correlations in param_grid</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>unique_bm_corr <span class="ot">&lt;-</span> <span class="fu">unique</span>(param_grid<span class="sc">$</span>biomarker_correlation)</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co"># Define sigma structures to validate</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>sigma_structures <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">design =</span> <span class="st">&quot;hybrid&quot;</span>, <span class="at">weeks =</span> measurement_weeks_hybrid, <span class="at">c_bm =</span> <span class="fl">0.3</span>),</span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">design =</span> <span class="st">&quot;ol_bdc&quot;</span>, <span class="at">weeks =</span> measurement_weeks_ol_bdc, <span class="at">c_bm =</span> <span class="fl">0.3</span>),</span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">design =</span> <span class="st">&quot;ol_bdc&quot;</span>, <span class="at">weeks =</span> measurement_weeks_ol_bdc, <span class="at">c_bm =</span> <span class="dv">0</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>)</span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co"># Filter to only those that exist in param_grid</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>sigma_structures <span class="ot">&lt;-</span> <span class="fu">Filter</span>(</span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>  <span class="cf">function</span>(x) x<span class="sc">$</span>c_bm <span class="sc">%in%</span> unique_bm_corr,</span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>  sigma_structures</span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>)</span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a></span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co"># Test each sigma structure</span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a>all_valid <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(sigma_structures)) {</span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a>  sigma_def <span class="ot">&lt;-</span> sigma_structures[[i]]</span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">&quot;Sigma %d: %s design (weeks: %s, c.bm = %.1f)</span><span class="sc">\n</span><span class="st">&quot;</span>,</span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>              i, sigma_def<span class="sc">$</span>design,</span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>              <span class="fu">paste</span>(sigma_def<span class="sc">$</span>weeks, <span class="at">collapse =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>              sigma_def<span class="sc">$</span>c_bm))</span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  sigma_result <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>    <span class="fu">build_sigma_guaranteed_pd</span>(</span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a>      <span class="at">weeks =</span> sigma_def<span class="sc">$</span>weeks,</span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a>      <span class="at">c.bm =</span> sigma_def<span class="sc">$</span>c_bm,</span>
+<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a>      <span class="at">params =</span> <span class="fu">list</span>()</span>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a>    )</span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">&quot;  FAILED: %s</span><span class="sc">\n</span><span class="st">&quot;</span>, <span class="fu">conditionMessage</span>(e)))</span>
+<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
+<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a>  })</span>
+<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a></span>
+<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(sigma_result)) {</span>
+<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;  Non-positive definite</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a>    all_valid <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb9-57"><a href="#cb9-57" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb9-58"><a href="#cb9-58" tabindex="-1"></a>    eigs <span class="ot">&lt;-</span> <span class="fu">eigen</span>(sigma_result<span class="sc">$</span>Sigma, <span class="at">only.values =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>values</span>
+<span id="cb9-59"><a href="#cb9-59" tabindex="-1"></a>    min_eig <span class="ot">&lt;-</span> <span class="fu">min</span>(eigs)</span>
+<span id="cb9-60"><a href="#cb9-60" tabindex="-1"></a>    cond_number <span class="ot">&lt;-</span> <span class="fu">max</span>(eigs) <span class="sc">/</span> <span class="fu">max</span>(min_eig, <span class="fl">1e-10</span>)</span>
+<span id="cb9-61"><a href="#cb9-61" tabindex="-1"></a></span>
+<span id="cb9-62"><a href="#cb9-62" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">&quot;  Valid (condition number = %.1f)</span><span class="sc">\n</span><span class="st">&quot;</span>, cond_number))</span>
+<span id="cb9-63"><a href="#cb9-63" tabindex="-1"></a></span>
+<span id="cb9-64"><a href="#cb9-64" tabindex="-1"></a>    <span class="cf">if</span> (cond_number <span class="sc">&gt;</span> <span class="dv">100</span>) {</span>
+<span id="cb9-65"><a href="#cb9-65" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">&quot;    WARNING: Ill-conditioned (kappa &gt; 100)</span><span class="sc">\n</span><span class="st">&quot;</span>))</span>
+<span id="cb9-66"><a href="#cb9-66" tabindex="-1"></a>    }</span>
+<span id="cb9-67"><a href="#cb9-67" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" tabindex="-1"></a>  }</span>
+<span id="cb9-69"><a href="#cb9-69" tabindex="-1"></a>}</span>
+<span id="cb9-70"><a href="#cb9-70" tabindex="-1"></a><span class="co">#&gt; Sigma 1: hybrid design (weeks: 4,8,9,10,11,12,16,20, c.bm = 0.3)</span></span>
+<span id="cb9-71"><a href="#cb9-71" tabindex="-1"></a><span class="co">#&gt;   Valid (condition number = 61.4)</span></span>
+<span id="cb9-72"><a href="#cb9-72" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-73"><a href="#cb9-73" tabindex="-1"></a><span class="co">#&gt; Sigma 2: ol_bdc design (weeks: 4,8,12,16,17,18,19,20, c.bm = 0.3)</span></span>
+<span id="cb9-74"><a href="#cb9-74" tabindex="-1"></a><span class="co">#&gt;   Valid (condition number = 60.1)</span></span>
+<span id="cb9-75"><a href="#cb9-75" tabindex="-1"></a></span>
+<span id="cb9-76"><a href="#cb9-76" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span>all_valid) {</span>
+<span id="cb9-77"><a href="#cb9-77" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">&quot;VALIDATION FAILED: One or more sigma matrices are not positive &quot;</span>,</span>
+<span id="cb9-78"><a href="#cb9-78" tabindex="-1"></a>       <span class="st">&quot;definite. Check parameter grid or measurement schedule.&quot;</span>)</span>
+<span id="cb9-79"><a href="#cb9-79" tabindex="-1"></a>}</span>
+<span id="cb9-80"><a href="#cb9-80" tabindex="-1"></a></span>
+<span id="cb9-81"><a href="#cb9-81" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;=&quot;</span> <span class="sc">%+%</span> <span class="fu">strrep</span>(<span class="st">&quot;=&quot;</span>, <span class="dv">59</span>) <span class="sc">%+%</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-82"><a href="#cb9-82" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;All sigma matrices valid - proceeding with simulation</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-83"><a href="#cb9-83" tabindex="-1"></a><span class="co">#&gt; All sigma matrices valid - proceeding with simulation</span></span>
+<span id="cb9-84"><a href="#cb9-84" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;=&quot;</span> <span class="sc">%+%</span> <span class="fu">strrep</span>(<span class="st">&quot;=&quot;</span>, <span class="dv">59</span>) <span class="sc">%+%</span> <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="part-4-execute-simulation" class="section level2">
+<h2>Part 4: Execute Simulation</h2>
+<div id="two-stage-data-generation" class="section level3">
+<h3>Two-Stage Data Generation</h3>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co"># TWO-STAGE GENERATION</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>generate_participant_twostage <span class="ot">&lt;-</span> <span class="cf">function</span>(sigma_parts, idx) {</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  Sigma_22 <span class="ot">&lt;-</span> sigma_parts<span class="sc">$</span>Sigma_22</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  Sigma_cond <span class="ot">&lt;-</span> sigma_parts<span class="sc">$</span>Sigma_cond</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  Sigma_12 <span class="ot">&lt;-</span> sigma_parts<span class="sc">$</span>Sigma_12</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>  n_tp <span class="ot">&lt;-</span> idx<span class="sc">$</span>n_tp</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="co"># Stage 1: Generate (biomarker, baseline)</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  stage1 <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">c</span>(biomarker_mean, baseline_mean), <span class="at">Sigma =</span> Sigma_22)</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  biomarker <span class="ot">&lt;-</span> stage1[<span class="dv">1</span>]</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>  baseline <span class="ot">&lt;-</span> stage1[<span class="dv">2</span>]</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>  <span class="co"># Stage 2: Generate responses conditional on stage 1</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>  z <span class="ot">&lt;-</span> <span class="fu">c</span>(biomarker <span class="sc">-</span> biomarker_mean, baseline <span class="sc">-</span> baseline_mean)</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  cond_mean <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(Sigma_12 <span class="sc">%*%</span> <span class="fu">solve</span>(Sigma_22) <span class="sc">%*%</span> z)</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  responses <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> cond_mean, <span class="at">Sigma =</span> Sigma_cond)</span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>    <span class="at">biomarker =</span> biomarker,</span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>    <span class="at">baseline =</span> baseline,</span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>    <span class="at">br_random =</span> responses[idx<span class="sc">$</span>br],</span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a>    <span class="at">er_random =</span> responses[idx<span class="sc">$</span>er],</span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a>    <span class="at">tr_random =</span> responses[idx<span class="sc">$</span>tr]</span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a>  )</span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="main-simulation-loop" class="section level3">
+<h3>Main Simulation Loop</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co"># RUN SIMULATION</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co"># Create output directory</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(<span class="st">&quot;../analysis/output&quot;</span>)) {</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="st">&quot;../analysis/output&quot;</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>}</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Running simulation...</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; Running simulation...</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Designs: Hybrid, OL+BDC (8 measurement points with clusters)</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt; Designs: Hybrid, OL+BDC (8 measurement points with clusters)</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Treatment effect =&quot;</span>, treatment_effect, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; Treatment effect = 0.5</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Participants =&quot;</span>, n_participants, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#&gt; Participants = 30</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Iterations per condition =&quot;</span>, n_iterations, <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt; Iterations per condition = 10</span></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">tibble</span>()</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(param_grid)) {</span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>  params <span class="ot">&lt;-</span> <span class="fu">as.list</span>(param_grid[i, ])</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>    <span class="st">&quot;Condition %d: design=%s, bm_mod=%.2f, carryover=%.2f</span><span class="sc">\n</span><span class="st">&quot;</span>,</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a>    i, params<span class="sc">$</span>design, params<span class="sc">$</span>biomarker_moderation, params<span class="sc">$</span>carryover</span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a>  ))</span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a>  <span class="cf">for</span> (iter <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_iterations) {</span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a>    <span class="fu">set.seed</span>(iter <span class="sc">*</span> <span class="dv">1000</span> <span class="sc">+</span> i)</span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a></span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a>    <span class="cf">if</span> (params<span class="sc">$</span>design <span class="sc">==</span> <span class="st">&quot;hybrid&quot;</span>) {</span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a>      measurement_weeks <span class="ot">&lt;-</span> measurement_weeks_hybrid</span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a>      trial_design <span class="ot">&lt;-</span> <span class="fu">create_hybrid_design</span>(n_participants, measurement_weeks)</span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a>      measurement_weeks <span class="ot">&lt;-</span> measurement_weeks_ol_bdc</span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a>      trial_design <span class="ot">&lt;-</span> <span class="fu">create_ol_bdc_design</span>(n_participants, measurement_weeks)</span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a>    }</span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a></span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a>    n_timepoints <span class="ot">&lt;-</span> <span class="fu">length</span>(measurement_weeks)</span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a></span>
+<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a>    sigma_parts <span class="ot">&lt;-</span> <span class="fu">build_sigma_guaranteed_pd</span>(</span>
+<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a>      measurement_weeks,</span>
+<span id="cb11-45"><a href="#cb11-45" tabindex="-1"></a>      params<span class="sc">$</span>biomarker_correlation,</span>
+<span id="cb11-46"><a href="#cb11-46" tabindex="-1"></a>      params</span>
+<span id="cb11-47"><a href="#cb11-47" tabindex="-1"></a>    )</span>
+<span id="cb11-48"><a href="#cb11-48" tabindex="-1"></a>    idx <span class="ot">&lt;-</span> sigma_parts<span class="sc">$</span>indices</span>
+<span id="cb11-49"><a href="#cb11-49" tabindex="-1"></a>    effective_bm_corr <span class="ot">&lt;-</span> sigma_parts<span class="sc">$</span>effective_c.bm</span>
+<span id="cb11-50"><a href="#cb11-50" tabindex="-1"></a></span>
+<span id="cb11-51"><a href="#cb11-51" tabindex="-1"></a>    all_participant_data <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb11-52"><a href="#cb11-52" tabindex="-1"></a>    <span class="cf">for</span> (pid <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_participants) {</span>
+<span id="cb11-53"><a href="#cb11-53" tabindex="-1"></a>      result <span class="ot">&lt;-</span> <span class="fu">generate_participant_twostage</span>(sigma_parts, idx)</span>
+<span id="cb11-54"><a href="#cb11-54" tabindex="-1"></a>      all_participant_data[[pid]] <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb11-55"><a href="#cb11-55" tabindex="-1"></a>        <span class="at">participant_id =</span> pid,</span>
+<span id="cb11-56"><a href="#cb11-56" tabindex="-1"></a>        <span class="at">biomarker =</span> result<span class="sc">$</span>biomarker,</span>
+<span id="cb11-57"><a href="#cb11-57" tabindex="-1"></a>        <span class="at">baseline =</span> result<span class="sc">$</span>baseline,</span>
+<span id="cb11-58"><a href="#cb11-58" tabindex="-1"></a>        <span class="at">br_random =</span> result<span class="sc">$</span>br_random,</span>
+<span id="cb11-59"><a href="#cb11-59" tabindex="-1"></a>        <span class="at">er_random =</span> result<span class="sc">$</span>er_random,</span>
+<span id="cb11-60"><a href="#cb11-60" tabindex="-1"></a>        <span class="at">tr_random =</span> result<span class="sc">$</span>tr_random</span>
+<span id="cb11-61"><a href="#cb11-61" tabindex="-1"></a>      )</span>
+<span id="cb11-62"><a href="#cb11-62" tabindex="-1"></a>    }</span>
+<span id="cb11-63"><a href="#cb11-63" tabindex="-1"></a></span>
+<span id="cb11-64"><a href="#cb11-64" tabindex="-1"></a>    participant_data <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(all_participant_data) <span class="sc">%&gt;%</span></span>
+<span id="cb11-65"><a href="#cb11-65" tabindex="-1"></a>      <span class="fu">group_by</span>(participant_id) <span class="sc">%&gt;%</span></span>
+<span id="cb11-66"><a href="#cb11-66" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">timepoint_idx =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb11-67"><a href="#cb11-67" tabindex="-1"></a>      <span class="fu">ungroup</span>()</span>
+<span id="cb11-68"><a href="#cb11-68" tabindex="-1"></a></span>
+<span id="cb11-69"><a href="#cb11-69" tabindex="-1"></a>    bm_mod <span class="ot">&lt;-</span> params<span class="sc">$</span>biomarker_moderation</span>
+<span id="cb11-70"><a href="#cb11-70" tabindex="-1"></a></span>
+<span id="cb11-71"><a href="#cb11-71" tabindex="-1"></a>    trial_data <span class="ot">&lt;-</span> trial_design <span class="sc">%&gt;%</span></span>
+<span id="cb11-72"><a href="#cb11-72" tabindex="-1"></a>      <span class="fu">group_by</span>(participant_id) <span class="sc">%&gt;%</span></span>
+<span id="cb11-73"><a href="#cb11-73" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">timepoint_idx =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb11-74"><a href="#cb11-74" tabindex="-1"></a>      <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb11-75"><a href="#cb11-75" tabindex="-1"></a>      <span class="fu">left_join</span>(participant_data, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;participant_id&quot;</span>, <span class="st">&quot;timepoint_idx&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb11-76"><a href="#cb11-76" tabindex="-1"></a>      <span class="fu">group_by</span>(participant_id) <span class="sc">%&gt;%</span></span>
+<span id="cb11-77"><a href="#cb11-77" tabindex="-1"></a>      <span class="fu">arrange</span>(week) <span class="sc">%&gt;%</span></span>
+<span id="cb11-78"><a href="#cb11-78" tabindex="-1"></a>      <span class="fu">mutate</span>(</span>
+<span id="cb11-79"><a href="#cb11-79" tabindex="-1"></a>        <span class="at">weeks_on_drug =</span> <span class="fu">cumsum</span>(treatment),</span>
+<span id="cb11-80"><a href="#cb11-80" tabindex="-1"></a>        <span class="at">weeks_with_expectancy =</span> <span class="fu">cumsum</span>(expectancy),</span>
+<span id="cb11-81"><a href="#cb11-81" tabindex="-1"></a>        <span class="at">weeks_in_trial =</span> week <span class="sc">-</span> <span class="fu">min</span>(week),</span>
+<span id="cb11-82"><a href="#cb11-82" tabindex="-1"></a>        <span class="at">time_off =</span> <span class="fu">cumsum</span>(treatment <span class="sc">==</span> <span class="dv">0</span>),</span>
+<span id="cb11-83"><a href="#cb11-83" tabindex="-1"></a>        <span class="at">carryover_effect =</span> <span class="fu">as.numeric</span>(</span>
+<span id="cb11-84"><a href="#cb11-84" tabindex="-1"></a>          treatment <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="fu">lag</span>(treatment, <span class="at">default =</span> <span class="dv">1</span>) <span class="sc">==</span> <span class="dv">1</span></span>
+<span id="cb11-85"><a href="#cb11-85" tabindex="-1"></a>        ),</span>
+<span id="cb11-86"><a href="#cb11-86" tabindex="-1"></a>        <span class="at">bm_centered =</span> (biomarker <span class="sc">-</span> biomarker_mean) <span class="sc">/</span> biomarker_sd,</span>
+<span id="cb11-87"><a href="#cb11-87" tabindex="-1"></a>        <span class="at">BR_mean =</span> {</span>
+<span id="cb11-88"><a href="#cb11-88" tabindex="-1"></a>          effective_BR_rate <span class="ot">&lt;-</span> BR_rate <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">+</span> bm_mod <span class="sc">*</span> bm_centered)</span>
+<span id="cb11-89"><a href="#cb11-89" tabindex="-1"></a>          br_accumulated <span class="ot">&lt;-</span> <span class="fu">lag</span>(weeks_on_drug, <span class="at">default =</span> <span class="dv">0</span>) <span class="sc">*</span> effective_BR_rate</span>
+<span id="cb11-90"><a href="#cb11-90" tabindex="-1"></a>          first_off <span class="ot">&lt;-</span> treatment <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="fu">lag</span>(treatment, <span class="at">default =</span> <span class="dv">1</span>) <span class="sc">==</span> <span class="dv">1</span></span>
+<span id="cb11-91"><a href="#cb11-91" tabindex="-1"></a>          <span class="fu">ifelse</span>(treatment <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb11-92"><a href="#cb11-92" tabindex="-1"></a>            weeks_on_drug <span class="sc">*</span> effective_BR_rate,</span>
+<span id="cb11-93"><a href="#cb11-93" tabindex="-1"></a>            <span class="fu">ifelse</span>(first_off, br_accumulated <span class="sc">*</span> params<span class="sc">$</span>carryover, <span class="dv">0</span>)</span>
+<span id="cb11-94"><a href="#cb11-94" tabindex="-1"></a>          )</span>
+<span id="cb11-95"><a href="#cb11-95" tabindex="-1"></a>        },</span>
+<span id="cb11-96"><a href="#cb11-96" tabindex="-1"></a>        <span class="at">BR =</span> BR_mean <span class="sc">+</span> br_random,</span>
+<span id="cb11-97"><a href="#cb11-97" tabindex="-1"></a>        <span class="at">ER_mean =</span> weeks_with_expectancy <span class="sc">*</span> ER_rate,</span>
+<span id="cb11-98"><a href="#cb11-98" tabindex="-1"></a>        <span class="at">ER =</span> ER_mean <span class="sc">+</span> er_random,</span>
+<span id="cb11-99"><a href="#cb11-99" tabindex="-1"></a>        <span class="at">TR_mean =</span> weeks_in_trial <span class="sc">*</span> TR_rate,</span>
+<span id="cb11-100"><a href="#cb11-100" tabindex="-1"></a>        <span class="at">TR =</span> TR_mean <span class="sc">+</span> tr_random,</span>
+<span id="cb11-101"><a href="#cb11-101" tabindex="-1"></a>        <span class="at">response =</span> baseline <span class="sc">+</span> BR <span class="sc">+</span> ER <span class="sc">+</span> TR</span>
+<span id="cb11-102"><a href="#cb11-102" tabindex="-1"></a>      ) <span class="sc">%&gt;%</span></span>
+<span id="cb11-103"><a href="#cb11-103" tabindex="-1"></a>      <span class="fu">ungroup</span>()</span>
+<span id="cb11-104"><a href="#cb11-104" tabindex="-1"></a></span>
+<span id="cb11-105"><a href="#cb11-105" tabindex="-1"></a>    model_result <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
+<span id="cb11-106"><a href="#cb11-106" tabindex="-1"></a>      trial_data <span class="ot">&lt;-</span> trial_data <span class="sc">%&gt;%</span></span>
+<span id="cb11-107"><a href="#cb11-107" tabindex="-1"></a>        <span class="fu">mutate</span>(<span class="at">bm_centered =</span> biomarker <span class="sc">-</span> <span class="fu">mean</span>(biomarker))</span>
+<span id="cb11-108"><a href="#cb11-108" tabindex="-1"></a></span>
+<span id="cb11-109"><a href="#cb11-109" tabindex="-1"></a>      <span class="cf">if</span> (params<span class="sc">$</span>carryover <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb11-110"><a href="#cb11-110" tabindex="-1"></a>        model <span class="ot">&lt;-</span> <span class="fu">lme</span>(</span>
+<span id="cb11-111"><a href="#cb11-111" tabindex="-1"></a>          response <span class="sc">~</span> treatment <span class="sc">*</span> bm_centered <span class="sc">+</span> week <span class="sc">+</span> carryover_effect,</span>
+<span id="cb11-112"><a href="#cb11-112" tabindex="-1"></a>          <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> participant_id,</span>
+<span id="cb11-113"><a href="#cb11-113" tabindex="-1"></a>          <span class="at">correlation =</span> <span class="fu">corCAR1</span>(<span class="at">form =</span> <span class="sc">~</span> week <span class="sc">|</span> participant_id),</span>
+<span id="cb11-114"><a href="#cb11-114" tabindex="-1"></a>          <span class="at">data =</span> trial_data,</span>
+<span id="cb11-115"><a href="#cb11-115" tabindex="-1"></a>          <span class="at">control =</span> <span class="fu">lmeControl</span>(<span class="at">opt =</span> <span class="st">&quot;optim&quot;</span>)</span>
+<span id="cb11-116"><a href="#cb11-116" tabindex="-1"></a>        )</span>
+<span id="cb11-117"><a href="#cb11-117" tabindex="-1"></a>      } <span class="cf">else</span> {</span>
+<span id="cb11-118"><a href="#cb11-118" tabindex="-1"></a>        model <span class="ot">&lt;-</span> <span class="fu">lme</span>(</span>
+<span id="cb11-119"><a href="#cb11-119" tabindex="-1"></a>          response <span class="sc">~</span> treatment <span class="sc">*</span> bm_centered <span class="sc">+</span> week,</span>
+<span id="cb11-120"><a href="#cb11-120" tabindex="-1"></a>          <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> participant_id,</span>
+<span id="cb11-121"><a href="#cb11-121" tabindex="-1"></a>          <span class="at">correlation =</span> <span class="fu">corCAR1</span>(<span class="at">form =</span> <span class="sc">~</span> week <span class="sc">|</span> participant_id),</span>
+<span id="cb11-122"><a href="#cb11-122" tabindex="-1"></a>          <span class="at">data =</span> trial_data,</span>
+<span id="cb11-123"><a href="#cb11-123" tabindex="-1"></a>          <span class="at">control =</span> <span class="fu">lmeControl</span>(<span class="at">opt =</span> <span class="st">&quot;optim&quot;</span>)</span>
+<span id="cb11-124"><a href="#cb11-124" tabindex="-1"></a>        )</span>
+<span id="cb11-125"><a href="#cb11-125" tabindex="-1"></a>      }</span>
+<span id="cb11-126"><a href="#cb11-126" tabindex="-1"></a></span>
+<span id="cb11-127"><a href="#cb11-127" tabindex="-1"></a>      coefs <span class="ot">&lt;-</span> <span class="fu">summary</span>(model)<span class="sc">$</span>tTable</span>
+<span id="cb11-128"><a href="#cb11-128" tabindex="-1"></a>      interaction_term <span class="ot">&lt;-</span> <span class="st">&quot;treatment:bm_centered&quot;</span></span>
+<span id="cb11-129"><a href="#cb11-129" tabindex="-1"></a>      idx_coef <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">rownames</span>(coefs) <span class="sc">==</span> interaction_term)</span>
+<span id="cb11-130"><a href="#cb11-130" tabindex="-1"></a></span>
+<span id="cb11-131"><a href="#cb11-131" tabindex="-1"></a>      <span class="fu">tibble</span>(</span>
+<span id="cb11-132"><a href="#cb11-132" tabindex="-1"></a>        <span class="at">iteration =</span> iter,</span>
+<span id="cb11-133"><a href="#cb11-133" tabindex="-1"></a>        <span class="at">design =</span> params<span class="sc">$</span>design,</span>
+<span id="cb11-134"><a href="#cb11-134" tabindex="-1"></a>        <span class="at">biomarker_moderation =</span> params<span class="sc">$</span>biomarker_moderation,</span>
+<span id="cb11-135"><a href="#cb11-135" tabindex="-1"></a>        <span class="at">biomarker_correlation =</span> effective_bm_corr,</span>
+<span id="cb11-136"><a href="#cb11-136" tabindex="-1"></a>        <span class="at">carryover =</span> params<span class="sc">$</span>carryover,</span>
+<span id="cb11-137"><a href="#cb11-137" tabindex="-1"></a>        <span class="at">effect_size =</span> coefs[idx_coef, <span class="st">&quot;Value&quot;</span>],</span>
+<span id="cb11-138"><a href="#cb11-138" tabindex="-1"></a>        <span class="at">se =</span> coefs[idx_coef, <span class="st">&quot;Std.Error&quot;</span>],</span>
+<span id="cb11-139"><a href="#cb11-139" tabindex="-1"></a>        <span class="at">t_value =</span> coefs[idx_coef, <span class="st">&quot;t-value&quot;</span>],</span>
+<span id="cb11-140"><a href="#cb11-140" tabindex="-1"></a>        <span class="at">p_value =</span> coefs[idx_coef, <span class="st">&quot;p-value&quot;</span>],</span>
+<span id="cb11-141"><a href="#cb11-141" tabindex="-1"></a>        <span class="at">significant =</span> coefs[idx_coef, <span class="st">&quot;p-value&quot;</span>] <span class="sc">&lt;</span> <span class="fl">0.05</span></span>
+<span id="cb11-142"><a href="#cb11-142" tabindex="-1"></a>      )</span>
+<span id="cb11-143"><a href="#cb11-143" tabindex="-1"></a>    }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb11-144"><a href="#cb11-144" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="st">&quot;  Error in iteration&quot;</span>, iter, <span class="st">&quot;:&quot;</span>, <span class="fu">conditionMessage</span>(e), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-145"><a href="#cb11-145" tabindex="-1"></a>      <span class="fu">tibble</span>(</span>
+<span id="cb11-146"><a href="#cb11-146" tabindex="-1"></a>        <span class="at">iteration =</span> iter,</span>
+<span id="cb11-147"><a href="#cb11-147" tabindex="-1"></a>        <span class="at">design =</span> params<span class="sc">$</span>design,</span>
+<span id="cb11-148"><a href="#cb11-148" tabindex="-1"></a>        <span class="at">biomarker_moderation =</span> params<span class="sc">$</span>biomarker_moderation,</span>
+<span id="cb11-149"><a href="#cb11-149" tabindex="-1"></a>        <span class="at">biomarker_correlation =</span> effective_bm_corr,</span>
+<span id="cb11-150"><a href="#cb11-150" tabindex="-1"></a>        <span class="at">carryover =</span> params<span class="sc">$</span>carryover,</span>
+<span id="cb11-151"><a href="#cb11-151" tabindex="-1"></a>        <span class="at">effect_size =</span> <span class="cn">NA</span>, <span class="at">se =</span> <span class="cn">NA</span>, <span class="at">t_value =</span> <span class="cn">NA</span>, <span class="at">p_value =</span> <span class="cn">NA</span>, <span class="at">significant =</span> <span class="cn">NA</span></span>
+<span id="cb11-152"><a href="#cb11-152" tabindex="-1"></a>      )</span>
+<span id="cb11-153"><a href="#cb11-153" tabindex="-1"></a>    })</span>
+<span id="cb11-154"><a href="#cb11-154" tabindex="-1"></a></span>
+<span id="cb11-155"><a href="#cb11-155" tabindex="-1"></a>    results <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(results, model_result)</span>
+<span id="cb11-156"><a href="#cb11-156" tabindex="-1"></a>  }</span>
+<span id="cb11-157"><a href="#cb11-157" tabindex="-1"></a>}</span>
+<span id="cb11-158"><a href="#cb11-158" tabindex="-1"></a><span class="co">#&gt; Condition 1: design=hybrid, bm_mod=0.00, carryover=0.00</span></span>
+<span id="cb11-159"><a href="#cb11-159" tabindex="-1"></a><span class="co">#&gt; Condition 2: design=hybrid, bm_mod=0.00, carryover=0.50</span></span>
+<span id="cb11-160"><a href="#cb11-160" tabindex="-1"></a><span class="co">#&gt; Condition 3: design=hybrid, bm_mod=0.00, carryover=1.00</span></span>
+<span id="cb11-161"><a href="#cb11-161" tabindex="-1"></a><span class="co">#&gt; Condition 4: design=hybrid, bm_mod=0.35, carryover=0.00</span></span>
+<span id="cb11-162"><a href="#cb11-162" tabindex="-1"></a><span class="co">#&gt; Condition 5: design=hybrid, bm_mod=0.35, carryover=0.50</span></span>
+<span id="cb11-163"><a href="#cb11-163" tabindex="-1"></a><span class="co">#&gt; Condition 6: design=hybrid, bm_mod=0.35, carryover=1.00</span></span>
+<span id="cb11-164"><a href="#cb11-164" tabindex="-1"></a><span class="co">#&gt; Condition 7: design=hybrid, bm_mod=0.65, carryover=0.00</span></span>
+<span id="cb11-165"><a href="#cb11-165" tabindex="-1"></a><span class="co">#&gt; Condition 8: design=hybrid, bm_mod=0.65, carryover=0.50</span></span>
+<span id="cb11-166"><a href="#cb11-166" tabindex="-1"></a><span class="co">#&gt; Condition 9: design=hybrid, bm_mod=0.65, carryover=1.00</span></span>
+<span id="cb11-167"><a href="#cb11-167" tabindex="-1"></a><span class="co">#&gt; Condition 10: design=ol_bdc, bm_mod=0.00, carryover=0.00</span></span>
+<span id="cb11-168"><a href="#cb11-168" tabindex="-1"></a><span class="co">#&gt; Condition 11: design=ol_bdc, bm_mod=0.00, carryover=0.50</span></span>
+<span id="cb11-169"><a href="#cb11-169" tabindex="-1"></a><span class="co">#&gt; Condition 12: design=ol_bdc, bm_mod=0.00, carryover=1.00</span></span>
+<span id="cb11-170"><a href="#cb11-170" tabindex="-1"></a><span class="co">#&gt; Condition 13: design=ol_bdc, bm_mod=0.35, carryover=0.00</span></span>
+<span id="cb11-171"><a href="#cb11-171" tabindex="-1"></a><span class="co">#&gt; Condition 14: design=ol_bdc, bm_mod=0.35, carryover=0.50</span></span>
+<span id="cb11-172"><a href="#cb11-172" tabindex="-1"></a><span class="co">#&gt; Condition 15: design=ol_bdc, bm_mod=0.35, carryover=1.00</span></span>
+<span id="cb11-173"><a href="#cb11-173" tabindex="-1"></a><span class="co">#&gt; Condition 16: design=ol_bdc, bm_mod=0.65, carryover=0.00</span></span>
+<span id="cb11-174"><a href="#cb11-174" tabindex="-1"></a><span class="co">#&gt; Condition 17: design=ol_bdc, bm_mod=0.65, carryover=0.50</span></span>
+<span id="cb11-175"><a href="#cb11-175" tabindex="-1"></a><span class="co">#&gt; Condition 18: design=ol_bdc, bm_mod=0.65, carryover=1.00</span></span></code></pre></div>
+</div>
+</div>
+<div id="part-5-summarize-and-save-results" class="section level2">
+<h2>Part 5: Summarize and Save Results</h2>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co"># SUMMARIZE AND SAVE</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># ============================================================================</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>, <span class="fu">strrep</span>(<span class="st">&quot;=&quot;</span>, <span class="dv">50</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt;  ==================================================</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;RESULTS SUMMARY</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co">#&gt; RESULTS SUMMARY</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">strrep</span>(<span class="st">&quot;=&quot;</span>, <span class="dv">50</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="co">#&gt; ==================================================</span></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>summary_results <span class="ot">&lt;-</span> results <span class="sc">%&gt;%</span></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>  <span class="fu">group_by</span>(design, biomarker_moderation, biomarker_correlation, carryover) <span class="sc">%&gt;%</span></span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>    <span class="at">power =</span> <span class="fu">mean</span>(significant, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>    <span class="at">mean_effect =</span> <span class="fu">mean</span>(effect_size, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>    <span class="at">sd_effect =</span> <span class="fu">sd</span>(effect_size, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span></span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a>  )</span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a></span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a><span class="fu">print</span>(summary_results)</span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a><span class="co">#&gt; # A tibble: 18 × 8</span></span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a><span class="co">#&gt;    design biomarker_moderation biomarker_correlation carryover power mean_effect</span></span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;                 &lt;dbl&gt;                 &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;       &lt;dbl&gt;</span></span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a><span class="co">#&gt;  1 hybrid                 0                      0.3       0     0.1     -0.0204</span></span>
+<span id="cb12-28"><a href="#cb12-28" tabindex="-1"></a><span class="co">#&gt;  2 hybrid                 0                      0.3       0.5   0        0.0228</span></span>
+<span id="cb12-29"><a href="#cb12-29" tabindex="-1"></a><span class="co">#&gt;  3 hybrid                 0                      0.3       1     0       -0.0208</span></span>
+<span id="cb12-30"><a href="#cb12-30" tabindex="-1"></a><span class="co">#&gt;  4 hybrid                 0.35                   0.3       0     0.2      0.304 </span></span>
+<span id="cb12-31"><a href="#cb12-31" tabindex="-1"></a><span class="co">#&gt;  5 hybrid                 0.35                   0.3       0.5   0        0.152 </span></span>
+<span id="cb12-32"><a href="#cb12-32" tabindex="-1"></a><span class="co">#&gt;  6 hybrid                 0.35                   0.3       1     0        0.0630</span></span>
+<span id="cb12-33"><a href="#cb12-33" tabindex="-1"></a><span class="co">#&gt;  7 hybrid                 0.65                   0.3       0     0.6      0.488 </span></span>
+<span id="cb12-34"><a href="#cb12-34" tabindex="-1"></a><span class="co">#&gt;  8 hybrid                 0.65                   0.3       0.5   0.4      0.334 </span></span>
+<span id="cb12-35"><a href="#cb12-35" tabindex="-1"></a><span class="co">#&gt;  9 hybrid                 0.65                   0.3       1     0        0.103 </span></span>
+<span id="cb12-36"><a href="#cb12-36" tabindex="-1"></a><span class="co">#&gt; 10 ol_bdc                 0                      0.3       0     0        0.0128</span></span>
+<span id="cb12-37"><a href="#cb12-37" tabindex="-1"></a><span class="co">#&gt; 11 ol_bdc                 0                      0.3       0.5   0        0.0478</span></span>
+<span id="cb12-38"><a href="#cb12-38" tabindex="-1"></a><span class="co">#&gt; 12 ol_bdc                 0                      0.3       1     0       -0.0121</span></span>
+<span id="cb12-39"><a href="#cb12-39" tabindex="-1"></a><span class="co">#&gt; 13 ol_bdc                 0.35                   0.3       0     0.1      0.275 </span></span>
+<span id="cb12-40"><a href="#cb12-40" tabindex="-1"></a><span class="co">#&gt; 14 ol_bdc                 0.35                   0.3       0.5   0.4      0.435 </span></span>
+<span id="cb12-41"><a href="#cb12-41" tabindex="-1"></a><span class="co">#&gt; 15 ol_bdc                 0.35                   0.3       1     0.2      0.124 </span></span>
+<span id="cb12-42"><a href="#cb12-42" tabindex="-1"></a><span class="co">#&gt; 16 ol_bdc                 0.65                   0.3       0     1        0.862 </span></span>
+<span id="cb12-43"><a href="#cb12-43" tabindex="-1"></a><span class="co">#&gt; 17 ol_bdc                 0.65                   0.3       0.5   0.4      0.506 </span></span>
+<span id="cb12-44"><a href="#cb12-44" tabindex="-1"></a><span class="co">#&gt; 18 ol_bdc                 0.65                   0.3       1     0.1      0.108 </span></span>
+<span id="cb12-45"><a href="#cb12-45" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: sd_effect &lt;dbl&gt;, n &lt;int&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Save outputs</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>output_dir <span class="ot">&lt;-</span> <span class="st">&quot;../analysis/output&quot;</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(output_dir)) <span class="fu">dir.create</span>(output_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">save</span>(</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  results, summary_results, param_grid,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">file =</span> <span class="fu">file.path</span>(output_dir, <span class="st">&quot;vignette_simulation_results.RData&quot;</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>)</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Results saved to:&quot;</span>, output_dir, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; Results saved to: ../analysis/output</span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;- vignette_simulation_results.RData</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co">#&gt; - vignette_simulation_results.RData</span></span></code></pre></div>
+</div>
+<div id="session-info" class="section level2">
+<h2>Session Info</h2>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Tahoe 26.2</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib </span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt; time zone: America/Los_Angeles</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="co">#&gt;  [1] conflicted_1.2.0 MASS_7.3-65      nlme_3.1-168     lubridate_1.9.4 </span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="co">#&gt;  [5] forcats_1.0.0    stringr_1.6.0    dplyr_1.2.0      purrr_1.2.1     </span></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt;  [9] readr_2.1.5      tidyr_1.3.1      tibble_3.3.1     ggplot2_4.0.1   </span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; [13] tidyverse_2.0.0 </span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt;  [1] gtable_0.3.6       jsonlite_2.0.0     compiler_4.5.2     tidyselect_1.2.1  </span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt;  [5] parallel_4.5.2     jquerylib_0.1.4    scales_1.4.0       yaml_2.3.12       </span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt;  [9] fastmap_1.2.0      lattice_0.22-7     R6_2.6.1           generics_0.1.4    </span></span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt; [13] knitr_1.51         tzdb_0.5.0         bslib_0.10.0       pillar_1.11.1     </span></span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt; [17] RColorBrewer_1.1-3 rlang_1.1.7        utf8_1.2.6         stringi_1.8.7     </span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co">#&gt; [21] cachem_1.1.0       xfun_0.56          sass_0.4.10        S7_0.2.1          </span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt; [25] otel_0.2.0         memoise_2.0.1      timechange_0.3.0   cli_3.6.5         </span></span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a><span class="co">#&gt; [29] withr_3.0.2        magrittr_2.0.4     digest_0.6.39      grid_4.5.2        </span></span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="co">#&gt; [33] hms_1.1.3          lifecycle_1.0.5    vctrs_0.7.1        evaluate_1.0.5    </span></span>
+<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a><span class="co">#&gt; [37] glue_1.8.0         farver_2.1.2       rmarkdown_2.30     tools_4.5.2       </span></span>
+<span id="cb14-36"><a href="#cb14-36" tabindex="-1"></a><span class="co">#&gt; [41] pkgconfig_2.0.3    htmltools_0.5.9</span></span></code></pre></div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Hendrickson RC, Thomas RG, Schork NJ, Raskind MA (2020). Optimizing
+Aggregated N-Of-1 Trial Designs for Predictive Biomarker Validation:
+Statistical Methods and Theoretical Findings. <em>Frontiers in Digital
+Health</em>, 2:13. doi: 10.3389/fdgth.2020.00013</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

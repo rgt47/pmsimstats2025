@@ -1,0 +1,31 @@
+
+> cat("Running CLUSTERED designs simulation...\n")
+Running CLUSTERED designs simulation...
+
+> cat("Carryover Model: EXTENDED TWO-WEEK WINDOW (Alternative 2)\n")
+Carryover Model: EXTENDED TWO-WEEK WINDOW (Alternative 2)
+
+> cat("Designs: Hybrid, OL+BDC (8 measurement points with clusters)\n")
+Designs: Hybrid, OL+BDC (8 measurement points with clusters)
+
+> cat("Treatment effect =", treatment_effect, "\n")
+Treatment effect = 0.5 
+
+> cat("Participants =", n_participants, "\n")
+Participants = 70 
+
+> cat("Iterations per condition =", n_iterations, "\n")
+Iterations per condition = 50 
+
+> cat("Carryover parameters: carryover1 (week 1), carryover2 (week 2)\n\n")
+Carryover parameters: carryover1 (week 1), carryover2 (week 2)
+
+
+> results <- tibble()
+
+> for (i in 1:nrow(param_grid)) {
++   params <- as.list(param_grid[i, ])
++   cat(sprintf(
++     "Condition %d: design=%s, bm_mod=%.2f, carr1=%.2f, car ..." ... [TRUNCATED] 
+Condition 1: design=ol_bdc, bm_mod=0.25, carr1=0.00, carr2=0.00
+

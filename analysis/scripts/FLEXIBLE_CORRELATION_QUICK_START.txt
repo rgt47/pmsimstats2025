@@ -1,0 +1,151 @@
+================================================================================
+FLEXIBLE CORRELATION STRUCTURE - QUICK START
+================================================================================
+
+TWO NEW ENHANCED SIMULATION SCRIPTS CREATED:
+
+1. simulation_clustered_flexible_correlation.R
+   - Hybrid and OL+BDC designs (8 measurement points with clusters)
+   - Supports 5 correlation structures
+   - Outputs include correlation structure in filename
+
+2. simulation_evenly_spaced_flexible_correlation.R
+   - OL, Crossover, Parallel designs (4 evenly-spaced measurement points)
+   - Supports 5 correlation structures
+   - Outputs include correlation structure in filename
+
+================================================================================
+HOW TO CHANGE CORRELATION STRUCTURE
+================================================================================
+
+In EITHER script, find this line (around line 20):
+
+    correlation_structure <- "ar1"  # <-- CHANGE THIS
+
+Replace "ar1" with ONE of:
+  - "ar1"                    (geometric decay: ρ^time)
+  - "exponential"            (smooth decay: exp(-λ*time))
+  - "power_law"              (slow decay: 1/(1+α*time)^β)
+  - "matern"                 (flexible: Matérn covariance)
+  - "rational_quadratic"     (smooth rational: (1+t²/(2αλ²))^-α)
+
+================================================================================
+COMPARISON: WHICH TO USE?
+================================================================================
+
+CLUSTERED DESIGNS (8 points):
+  ✓ Exponential - Excellent match with pharmacokinetics
+  ✓ All structures work due to clustering
+
+EVENLY-SPACED DESIGNS (4 points):
+  ✓ Rational Quadratic - Best conditioning (κ ≈ 10)
+  ✓ Power Law - Excellent, realistic decay (κ ≈ 12)
+  ✓ Exponential - Good, biologically motivated (κ ≈ 18)
+  ⚠ AR(1) - Poor conditioning (κ ≈ 600)
+
+WHEN UNCERTAIN:
+  → Use EXPONENTIAL (good balance of realism and stability)
+
+BEST OVERALL:
+  → RATIONAL QUADRATIC (numerical stability champion)
+
+================================================================================
+ADJUSTING PARAMETERS
+================================================================================
+
+Each structure has tunable parameters in the switch() statement:
+
+AR(1):
+  rho = 0.75          (0.70 = slower, 0.85 = faster)
+
+EXPONENTIAL:
+  lambda = 0.10       (0.08 = slower, 0.12 = faster)
+
+POWER LAW:
+  alpha = 0.1, beta = 1.0   (increase alpha = slower)
+
+MATÉRN:
+  nu = 1.5 (smoothness)     (0.5 = rough, 2.5 = smooth)
+  rho = 5.0 (length scale)  (increase = slower decay)
+
+RATIONAL QUADRATIC:
+  alpha = 1.0, lambda = 2.0  (increase lambda = slower)
+
+================================================================================
+OUTPUT FILES
+================================================================================
+
+Results are automatically named by correlation structure:
+
+  power_heatmap_clustered_exponential.pdf
+  simulation_clustered_exponential_results.RData
+  simulation_clustered_exponential_log.txt
+
+Same pattern for evenly_spaced variant.
+
+The .RData files contain:
+  - results (individual iterations)
+  - summary_results (power aggregated)
+  - correlation_structure (selected structure name)
+  - correlation_params (parameters used)
+
+================================================================================
+EXAMPLE WORKFLOW
+================================================================================
+
+1. Test with exponential (good starting point):
+
+   Edit: correlation_structure <- "exponential"
+   Run: Rscript analysis/scripts/simulation_clustered_flexible_correlation.R
+
+2. Check condition number in log file:
+
+   cat analysis/output/simulation_clustered_exponential_log.txt | grep "κ"
+
+3. Try rational_quadratic if you want even better stability:
+
+   Edit: correlation_structure <- "rational_quadratic"
+   Run: Rscript analysis/scripts/simulation_clustered_flexible_correlation.R
+
+4. Compare results:
+
+   load("analysis/output/simulation_clustered_exponential_results.RData")
+   exp_power <- summary_results
+   load("analysis/output/simulation_clustered_rational_quadratic_results.RData")
+   rq_power <- summary_results
+   # Compare exp_power vs rq_power
+
+================================================================================
+FULL DOCUMENTATION
+================================================================================
+
+See: FLEXIBLE_CORRELATION_GUIDE.md
+
+Contains:
+  - Detailed explanation of each correlation structure
+  - When to use each one
+  - How to modify parameters
+  - Troubleshooting guide
+  - Adding custom correlation structures
+
+================================================================================
+KEY INSIGHT FROM EARLIER DISCUSSION
+================================================================================
+
+AR(1) with evenly-spaced timepoints creates severe eigenvalue imbalances:
+  - Correlation at 6-week gap:  0.75^6 ≈ 0.178
+  - Correlation at 18-week gap: 0.75^18 ≈ 0.0056
+  - Ratio: 32:1 → Condition number κ ≈ 14,621 (ill-conditioned!)
+
+Exponential decay avoids this:
+  - Correlation at 6-week gap:  exp(-0.10*6) ≈ 0.549
+  - Correlation at 18-week gap: exp(-0.10*18) ≈ 0.165
+  - Ratio: 3.3:1 → Condition number κ ≈ 18 (well-conditioned!)
+
+This is why clustering helps with AR(1) but exponential works with uniform spacing.
+
+================================================================================
+QUESTIONS?
+================================================================================
+
+Check FLEXIBLE_CORRELATION_GUIDE.md for comprehensive documentation.

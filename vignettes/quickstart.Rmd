@@ -1,0 +1,251 @@
+---
+title: "Quickstart Guide: pmsimstats2025"
+author: "Rebecca C. Hendrickson, Ronald G. Thomas"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quickstart Guide: pmsimstats2025}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+**pmsimstats2025** is an N-of-1 clinical trial simulation study comparing
+multiple trial designs with a focus on statistical power when biomarker-
+treatment interactions exist and carryover effects are present.
+
+The project implements methodology from **Hendrickson et al. (2020)** with
+extensions for explicit biomarker moderation and carryover effect modeling.
+
+## Installation
+
+```{r install}
+# Clone the repository
+# git clone https://github.com/rgt47/pmsimstats2025.git
+# cd pmsimstats2025
+
+# Restore R environment
+renv::restore()
+```
+
+## Quick Start
+
+### Run a Simulation
+
+The simulation is organized into two main scripts based on measurement
+schedule type:
+
+```{r run-simulation}
+# Clustered measurement schedule designs (Hybrid, OL+BDC)
+source("analysis/scripts/simulation_clustered.R")
+
+# Evenly-spaced designs (OL, Crossover, Parallel)
+source("analysis/scripts/simulation_evenly_spaced.R")
+```
+
+### Generate Visualizations
+
+```{r visualize}
+# Power heatmaps from simulation results
+source("analysis/scripts/visualize_hendrickson_style.R")
+source("analysis/scripts/visualize_power_heatmaps_4panel.R")
+```
+
+## Trial Designs
+
+The project supports five trial designs:
+
+| Design | Points | Structure |
+|:-------|:-------|:----------|
+| Hybrid | 8 | Dense cluster at treatment transition |
+| OL+BDC | 8 | Dense cluster at biomarker discontinuation |
+| Open-Label | 4 | Evenly spaced (6-week gaps) |
+| Crossover | 4 | Evenly spaced (6-week gaps) |
+| Parallel | 4 | Evenly spaced (6-week gaps) |
+
+### Measurement Schedule Rationale
+
+Clustered schedules enable more measurement points (8) within a 20-week trial
+by grouping observations around key transition times. Evenly-spaced designs
+are limited to 4 points to maintain positive definite covariance matrices.
+
+## Core Functions
+
+### Parameter Grid Validation
+
+Before running simulations, validate parameter combinations:
+```{r validate}
+source("analysis/scripts/pm_functions.R")
+
+# Define parameter grid
+param_grid <- expand.grid(
+  biomarker_moderation = c(0.2, 0.4),
+  carryover_t1half = c(0, 1.0, 2.0),
+  n_participants = 70
+)
+
+# Validate all combinations
+validation <- validate_parameter_grid(param_grid)
+report_parameter_validation(validation)
+```
+
+### Build Sigma Matrix
+
+```{r sigma}
+# Construct covariance matrix for a trial design
+sigma <- build_sigma_matrix(
+  n_timepoints = 8,
+  c.br = 0.75,
+  c.tr = 0.75,
+  c.er = 0.75
+)
+```
+
+### Generate Trial Data
+
+```{r generate}
+# Generate data for one participant
+trial_data <- generate_data(
+  sigma = sigma,
+  n_timepoints = 8,
+  treatment_schedule = c(0, 0, 1, 1, 1, 1, 0, 0)
+)
+```
+
+## Carryover Modeling
+
+The simulation compares two analysis scenarios using `nlme::lme` with
+continuous-time AR(1) correlation (`corCAR1`) to properly match the DGP:
+
+### With Explicit Carryover (effective_drug_weeks)
+
+```{r model-with}
+library(nlme)
+
+fit_with <- lme(
+  response ~ effective_drug_weeks * bm_centered + week,
+  random = ~ 1 | participant_id,
+  correlation = corCAR1(form = ~ week | participant_id),
+  data = trial_data
+)
+```
+
+### Without Carryover Term
+
+```{r model-without}
+fit_without <- lme(
+  response ~ treatment * bm_centered + week,
+  random = ~ 1 | participant_id,
+  correlation = corCAR1(form = ~ week | participant_id),
+  data = trial_data
+)
+```
+
+### Effective Drug Weeks Computation
+
+Effective drug weeks incorporates exponential decay carryover:
+
+```{r carryover}
+# On treatment: cumulative weeks on drug
+# Off treatment: weeks_at_discontinuation * (0.5)^(time_since_discont / t_half)
+effective_drug_weeks <- weeks_on_drug * (0.5)^(tsd / t_half)
+```
+
+Where:
+
+- `tsd` is time since discontinuation (weeks)
+- `t_half` is the carryover half-life in weeks (0, 0.5, 1.0, or 2.0)
+
+## Output Files
+
+### Simulation Results
+
+Results are saved as RData files:
+
+- `analysis/output/simulation_clustered_results.RData`
+- `analysis/output/simulation_evenly_spaced_results.RData`
+
+Each file contains:
+
+- `simulation_results` - One row per iteration with p-values and effect sizes
+- `simulation_summary` - Aggregated power by condition
+- `param_grid` - Parameter specifications
+
+### Visualizations
+
+Power heatmaps are saved as PDF files:
+
+- `analysis/output/power_heatmap_clustered.pdf`
+- `analysis/output/power_heatmap_evenly_spaced.pdf`
+- `analysis/output/power_heatmap_4panel.pdf`
+
+## Docker Workflow
+
+For reproducibility, run simulations in Docker:
+
+```bash
+# Start container with all dependencies
+make r
+
+# Inside container, run simulations
+Rscript analysis/scripts/simulation_clustered.R
+```
+
+## Modifying Parameters
+
+### Change Biomarker Correlation Grid
+
+Edit the parameter grid in simulation files:
+
+```{r param-grid}
+param_grid <- expand_grid(
+  biomarker_moderation = c(0.2, 0.4, 0.6),
+  carryover_t1half = c(0, 1.0, 2.0),
+  n_participants = 70
+)
+```
+
+### Adjust Iteration Count
+
+Change `n_iterations` in simulation files:
+
+```{r iterations}
+n_iterations <- 100  # More stable estimates (slower)
+```
+
+## Troubleshooting
+
+### Non-Positive Definite Matrix
+
+If you see "Non-positive definite matrix rejected", this is normal behavior
+for invalid parameter combinations. Check:
+
+1. Biomarker correlation values (>0.4 may cause issues)
+2. Measurement schedule spacing
+3. Condition number output
+
+### Convergence Warnings
+
+Occasional mixed model convergence warnings are expected. Monitor the `error`
+column in results if >20% of iterations fail.
+
+## References
+
+Hendrickson, E., et al. (2020). N-of-1 trials with multiple randomization
+structures for individualized treatment. *Statistics in Medicine*,
+39(25), 3581-3599.
+
+## Next Steps
+
+- `analysis/scripts/README.md` - Detailed workflow guide
+- `docs/simulation_white_paper.md` - Methodology documentation
+- `docs/sigma_matrix_derivation.tex` - Mathematical foundations

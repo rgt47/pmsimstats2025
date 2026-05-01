@@ -1,0 +1,61 @@
+Package: pmsimstats2025
+Title: N-of-1 Clinical Trial Simulation with Biomarker Interactions
+Version: 0.1.0
+Authors@R: c(
+    person("Rebecca C.", "Hendrickson", email = "rebecca.hendrickson@va.gov",
+           role = "aut"),
+    person("Ronald G.", "Thomas", email = "rgthomas@ucsd.edu",
+           role = c("aut", "cre"))
+    )
+Description: Monte Carlo simulation framework for comparing N-of-1 clinical
+    trial designs (Hybrid, Crossover, Open-Label, Parallel) with focus on
+    statistical power when biomarker-treatment interactions and carryover
+    effects are present. Based on Hendrickson et al. (2020) methodology.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    renv,
+    bookdown,
+    conflicted,
+    corpcor,
+    covr,
+    DBI,
+    devtools,
+    digest,
+    doParallel,
+    dplyr,
+    emmeans,
+    foreach,
+    furrr,
+    future,
+    ggplot2,
+    here,
+    janitor,
+    knitr,
+    lme4,
+    lmerTest,
+    MASS,
+    naniar,
+    nlme,
+    odbc,
+    palmerpenguins,
+    patchwork,
+    readr,
+    rmarkdown,
+    RMySQL,
+    RPostgres,
+    RSQLite,
+    scales,
+    sessioninfo,
+    skimr,
+    testthat,
+    tidyverse,
+    viridis,
+    visdat,
+    zoo,
+    jsonlite,
+    tibble
+Config/testthat/edition: 3
+VignetteBuilder: knitr

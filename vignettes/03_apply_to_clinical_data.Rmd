@@ -1,0 +1,562 @@
+---
+title: "Vignette 3: Apply to Actual Clinical Trial Data"
+author: "Rebecca C. Hendrickson, Ronald G. Thomas"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Vignette 3: Apply to Actual Clinical Trial Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  eval = TRUE
+)
+```
+
+## Overview
+
+This vignette demonstrates how to apply the pmsimstats2025 analysis methodology
+to actual clinical trial data. The workflow covers:
+
+1. Preparing clinical trial data for analysis
+2. Defining the trial design structure
+3. Fitting mixed-effects models with biomarker moderation
+4. Generating personalized treatment response predictions
+5. Visualizing individual patient outcomes
+
+## Setup
+
+```{r load-packages, message=FALSE}
+rm(list = ls())
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(nlme)
+  library(MASS)
+  library(conflicted)
+})
+
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::lag)
+```
+
+## Part 1: Define Trial Design
+
+### Trial Structure
+
+Before analyzing clinical data, define the measurement schedule and treatment
+assignment structure used in the trial.
+
+```{r define-trial-design}
+# ============================================================================
+# TRIAL DESIGN SPECIFICATION
+# ============================================================================
+
+# Example: Hybrid N-of-1 design with 8 measurement points
+measurement_weeks <- c(4, 8, 9, 10, 11, 12, 16, 20)
+
+# Define treatment paths (4-path randomization)
+# Path determines treatment assignment at each timepoint
+treatment_paths <- tibble(
+  path = 1:4,
+  description = c(
+    "Path 1: On -> Off -> On -> Off",
+    "Path 2: On -> Off -> Off -> On",
+    "Path 3: On -> Off (early) -> On -> Off",
+    "Path 4: On -> Off (early) -> Off -> On"
+  )
+)
+
+cat("Trial Design: Hybrid N-of-1\n")
+cat("Measurement weeks:", paste(measurement_weeks, collapse = ", "), "\n")
+cat("Number of paths:", nrow(treatment_paths), "\n")
+```
+
+### Create Design Matrix
+
+```{r design-matrix}
+# ============================================================================
+# CREATE DESIGN MATRIX
+# ============================================================================
+
+create_trial_design_matrix <- function(measurement_weeks, n_paths = 4) {
+  # Create full factorial of weeks and paths
+  design <- expand_grid(
+    path = 1:n_paths,
+    week = measurement_weeks
+  ) |>
+    mutate(
+      # Hybrid design treatment assignment rules
+      treatment = case_when(
+        week %in% c(4, 8) ~ 1,
+        week == 9 ~ 1,
+        week == 10 & path %in% c(1, 2) ~ 1,
+        week == 10 & path %in% c(3, 4) ~ 0,
+        week %in% c(11, 12) ~ 0,
+        week == 16 & path %in% c(1, 3) ~ 1,
+        week == 16 & path %in% c(2, 4) ~ 0,
+        week == 20 & path %in% c(1, 3) ~ 0,
+        week == 20 & path %in% c(2, 4) ~ 1,
+        TRUE ~ NA_real_
+      ),
+      # Expectancy (blinding) status
+      expectancy = if_else(week %in% c(4, 8), 1.0, 0.5),
+      # Timepoint index
+      timepoint = match(week, measurement_weeks)
+    )
+
+  return(design)
+}
+
+design_matrix <- create_trial_design_matrix(measurement_weeks)
+
+cat("\nDesign Matrix Preview:\n")
+print(head(design_matrix, 16))
+```
+
+## Part 2: Prepare Clinical Data
+
+### Required Data Format
+
+Clinical trial data must be in long format with the following columns:
+
+| Column | Description |
+|:-------|:------------|
+| participant_id | Unique participant identifier |
+| biomarker | Baseline biomarker value |
+| baseline | Baseline symptom severity |
+| path | Randomization path (1-4) |
+| week | Measurement week |
+| response | Symptom score at measurement |
+
+```{r load-clinical-data}
+# ============================================================================
+# LOAD CLINICAL DATA
+# ============================================================================
+
+# Example: Load clinical trial data
+# In practice, replace with your actual data file
+# clinical_data <- read_csv("path/to/clinical_data.csv")
+
+# For demonstration, generate synthetic clinical data
+set.seed(42)
+n_participants <- 50
+
+# Generate participant-level data
+participant_info <- tibble(
+  participant_id = 1:n_participants,
+  biomarker = rnorm(n_participants, mean = 5, sd = 2),
+  baseline = rnorm(n_participants, mean = 10, sd = 2),
+  path = sample(1:4, n_participants, replace = TRUE)
+)
+
+# Merge with design matrix
+clinical_data <- participant_info |>
+  left_join(design_matrix, by = "path", relationship = "many-to-many") |>
+  mutate(
+    # Simulate responses based on model
+    bm_centered = (biomarker - mean(biomarker)) / sd(biomarker),
+    BR_rate = 0.5 * (1 + 0.3 * bm_centered),
+    weeks_on_drug = cumsum(treatment),
+    response = baseline +
+      weeks_on_drug * BR_rate * treatment +
+      0.2 * week * expectancy +
+      0.1 * week +
+      rnorm(n(), 0, 1.5)
+  ) |>
+  select(participant_id, biomarker, baseline, path, week, response)
+
+cat("Clinical data dimensions:", nrow(clinical_data), "rows x",
+    ncol(clinical_data), "columns\n")
+cat("\nFirst few observations:\n")
+print(head(clinical_data))
+```
+
+### Data Quality Checks
+
+```{r data-quality}
+# ============================================================================
+# DATA QUALITY CHECKS
+# ============================================================================
+
+cat("\n")
+cat("=" %+% strrep("=", 59) %+% "\n")
+cat("DATA QUALITY CHECKS\n")
+cat("=" %+% strrep("=", 59) %+% "\n\n")
+
+# Check for missing values
+missing_summary <- clinical_data |>
+  summarize(across(everything(), ~sum(is.na(.)))) |>
+  pivot_longer(everything(), names_to = "column", values_to = "n_missing")
+
+cat("Missing values:\n")
+print(missing_summary)
+
+# Check participant counts
+cat("\nParticipants per path:\n")
+participant_paths <- clinical_data |>
+  distinct(participant_id, path) |>
+  count(path)
+print(participant_paths)
+
+# Check timepoints per participant
+cat("\nTimepoints per participant (should be 8):\n")
+timepoints_check <- clinical_data |>
+  count(participant_id) |>
+  count(n, name = "n_participants")
+print(timepoints_check)
+```
+
+## Part 3: Fit Mixed-Effects Model
+
+### Model Specification
+
+The analysis uses a linear mixed-effects model with:
+
+- Fixed effects: treatment, biomarker, treatment × biomarker interaction, week
+- Random effects: participant-specific intercept
+- Correlation structure: CAR(1) for repeated measures
+
+```{r fit-model}
+# ============================================================================
+# FIT MIXED-EFFECTS MODEL
+# ============================================================================
+
+# Prepare data for modeling
+model_data <- clinical_data |>
+  left_join(design_matrix, by = c("path", "week")) |>
+  mutate(
+    bm_centered = biomarker - mean(biomarker),
+    participant_id = factor(participant_id)
+  )
+
+# Fit LME model with biomarker × treatment interaction
+model_fit <- lme(
+  response ~ treatment * bm_centered + week,
+  random = ~ 1 | participant_id,
+  correlation = corCAR1(form = ~ week | participant_id),
+  data = model_data,
+  control = lmeControl(opt = "optim")
+)
+
+cat("\n")
+cat("=" %+% strrep("=", 59) %+% "\n")
+cat("MODEL RESULTS\n")
+cat("=" %+% strrep("=", 59) %+% "\n\n")
+
+# Model summary
+summary(model_fit)
+```
+
+### Extract Coefficients
+
+```{r extract-coefs}
+# ============================================================================
+# EXTRACT AND INTERPRET COEFFICIENTS
+# ============================================================================
+
+coef_table <- summary(model_fit)$tTable
+coef_df <- as.data.frame(coef_table) |>
+  rownames_to_column("term") |>
+  as_tibble()
+
+cat("\nFixed Effects:\n")
+print(coef_df)
+
+# Test for biomarker × treatment interaction
+interaction_p <- coef_df |>
+  filter(term == "treatment:bm_centered") |>
+  pull(`p-value`)
+
+cat("\n")
+cat("=" %+% strrep("=", 59) %+% "\n")
+cat("BIOMARKER MODERATION TEST\n")
+cat("=" %+% strrep("=", 59) %+% "\n\n")
+
+cat(sprintf("Interaction p-value: %.4f\n", interaction_p))
+if (interaction_p < 0.05) {
+  cat("Result: SIGNIFICANT biomarker moderation of treatment effect\n")
+  cat("Interpretation: Treatment response varies by biomarker level\n")
+} else {
+  cat("Result: No significant biomarker moderation detected\n")
+  cat("Interpretation: Treatment effect is consistent across biomarker levels\n")
+}
+```
+
+## Part 4: Generate Predictions
+
+### Predicted Treatment Response
+
+```{r generate-predictions}
+# ============================================================================
+# GENERATE PREDICTIONS
+# ============================================================================
+
+# Create prediction grid over biomarker range
+biomarker_range <- seq(
+  min(clinical_data$biomarker),
+  max(clinical_data$biomarker),
+  length.out = 50
+)
+
+# Predictions for treatment ON vs OFF
+prediction_grid <- expand_grid(
+  bm_centered = biomarker_range - mean(clinical_data$biomarker),
+  treatment = c(0, 1),
+  week = max(measurement_weeks)
+) |>
+  mutate(
+    biomarker = bm_centered + mean(clinical_data$biomarker)
+  )
+
+# Get population-level predictions (fixed effects only)
+prediction_grid$predicted <- predict(
+  model_fit,
+  newdata = prediction_grid,
+  level = 0  # Population level (no random effects)
+)
+
+# Calculate treatment effect as function of biomarker
+treatment_effect_by_bm <- prediction_grid |>
+  select(biomarker, treatment, predicted) |>
+  pivot_wider(
+    names_from = treatment,
+    values_from = predicted,
+    names_prefix = "trt_"
+  ) |>
+  mutate(
+    treatment_effect = trt_1 - trt_0
+  )
+
+cat("\nPredicted Treatment Effect by Biomarker Level:\n")
+print(head(treatment_effect_by_bm, 10))
+```
+
+## Part 5: Visualize Results
+
+### Treatment Effect by Biomarker
+
+```{r plot-treatment-effect}
+# ============================================================================
+# VISUALIZATION: TREATMENT EFFECT BY BIOMARKER
+# ============================================================================
+
+p_treatment_effect <- ggplot(
+  treatment_effect_by_bm,
+  aes(x = biomarker, y = treatment_effect)
+) +
+  geom_line(linewidth = 1.2, color = "#1a9850") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_rug(
+    data = clinical_data |> distinct(participant_id, biomarker),
+    aes(x = biomarker),
+    inherit.aes = FALSE,
+    sides = "b",
+    alpha = 0.5
+  ) +
+  labs(
+    title = "Predicted Treatment Effect by Biomarker Level",
+    subtitle = "Positive values indicate symptom improvement with treatment",
+    x = "Biomarker Value",
+    y = "Treatment Effect\n(change in symptom score)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "grey40")
+  )
+
+print(p_treatment_effect)
+```
+
+### Individual Patient Trajectories
+
+```{r plot-trajectories}
+# ============================================================================
+# VISUALIZATION: INDIVIDUAL TRAJECTORIES
+# ============================================================================
+
+# Select subset of participants for visualization
+sample_participants <- sample(unique(clinical_data$participant_id), 12)
+
+# Add predictions to full model_data first, then filter
+model_data$predicted <- predict(model_fit)
+
+trajectory_data <- model_data |>
+  filter(participant_id %in% sample_participants) |>
+  mutate(
+    treatment_label = if_else(treatment == 1, "On Drug", "Off Drug")
+  )
+
+p_trajectories <- ggplot(
+  trajectory_data,
+  aes(x = week, y = response, group = participant_id)
+) +
+  geom_line(alpha = 0.5) +
+  geom_point(aes(color = treatment_label), size = 2) +
+  geom_line(aes(y = predicted), linetype = "dashed", alpha = 0.7) +
+  facet_wrap(~participant_id, ncol = 4) +
+  scale_color_manual(
+    values = c("On Drug" = "#1a9850", "Off Drug" = "#d73027"),
+    name = "Treatment"
+  ) +
+  labs(
+    title = "Individual Patient Trajectories",
+    subtitle = "Solid = observed, Dashed = model predicted",
+    x = "Week",
+    y = "Symptom Score"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    legend.position = "bottom",
+    strip.text = element_text(size = 8)
+  )
+
+print(p_trajectories)
+```
+
+### Personalized Response Prediction
+
+```{r personalized-prediction}
+# ============================================================================
+# PERSONALIZED PREDICTION FOR NEW PATIENT
+# ============================================================================
+
+predict_patient_response <- function(model, biomarker_value, baseline_value,
+                                     treatment_weeks = c(4, 8, 9, 10)) {
+  # Prepare prediction data
+  mean_biomarker <- mean(clinical_data$biomarker)
+
+  pred_data <- tibble(
+    week = measurement_weeks,
+    bm_centered = biomarker_value - mean_biomarker,
+    treatment = if_else(week %in% treatment_weeks, 1, 0)
+  )
+
+  # Generate predictions
+  pred_data$predicted <- predict(model, newdata = pred_data, level = 0)
+
+  # Adjust for baseline
+  baseline_adjustment <- baseline_value - pred_data$predicted[1]
+  pred_data$predicted <- pred_data$predicted + baseline_adjustment
+
+  return(pred_data)
+}
+
+# Example: Predict for a new patient
+new_patient <- predict_patient_response(
+  model = model_fit,
+  biomarker_value = 7.5,
+  baseline_value = 12.0
+)
+
+cat("\n")
+cat("=" %+% strrep("=", 59) %+% "\n")
+cat("PERSONALIZED PREDICTION EXAMPLE\n")
+cat("=" %+% strrep("=", 59) %+% "\n\n")
+
+cat("New patient profile:\n")
+cat("  Biomarker: 7.5\n")
+cat("  Baseline symptom: 12.0\n\n")
+
+cat("Predicted trajectory:\n")
+print(new_patient)
+```
+
+## Part 6: Model Diagnostics
+
+```{r diagnostics}
+# ============================================================================
+# MODEL DIAGNOSTICS
+# ============================================================================
+
+# Residual plot
+residuals_df <- tibble(
+  fitted = fitted(model_fit),
+  residuals = residuals(model_fit),
+  participant_id = model_data$participant_id
+)
+
+p_resid <- ggplot(residuals_df, aes(x = fitted, y = residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
+  labs(
+    title = "Residuals vs Fitted Values",
+    x = "Fitted Values",
+    y = "Residuals"
+  ) +
+  theme_minimal(base_size = 11)
+
+print(p_resid)
+
+# QQ plot
+p_qq <- ggplot(residuals_df, aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(
+    title = "Normal Q-Q Plot of Residuals",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles"
+  ) +
+  theme_minimal(base_size = 11)
+
+print(p_qq)
+
+# Autocorrelation check
+cat("\nEstimated AR(1) correlation:\n")
+cat(sprintf("  rho = %.3f\n", coef(model_fit$modelStruct$corStruct, unconstrained = FALSE)))
+```
+
+## Part 7: Export Results
+
+```{r export-results}
+# ============================================================================
+# EXPORT RESULTS
+# ============================================================================
+
+output_dir <- "../analysis/output"
+if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+
+# Save model object
+saveRDS(model_fit, file.path(output_dir, "clinical_model_fit.rds"))
+
+# Save coefficient table
+write_csv(coef_df, file.path(output_dir, "clinical_model_coefficients.csv"))
+
+# Save predictions
+write_csv(treatment_effect_by_bm, file.path(output_dir, "treatment_effect_predictions.csv"))
+
+cat("\n")
+cat("=" %+% strrep("=", 59) %+% "\n")
+cat("EXPORT COMPLETE\n")
+cat("=" %+% strrep("=", 59) %+% "\n\n")
+
+cat("Saved to:", output_dir, "\n")
+cat("  - clinical_model_fit.rds\n")
+cat("  - clinical_model_coefficients.csv\n")
+cat("  - treatment_effect_predictions.csv\n")
+```
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```
+
+## References
+
+Hendrickson RC, Thomas RG, Schork NJ, Raskind MA (2020). Optimizing Aggregated
+N-Of-1 Trial Designs for Predictive Biomarker Validation: Statistical Methods
+and Theoretical Findings. *Frontiers in Digital Health*, 2:13.
+doi: 10.3389/fdgth.2020.00013

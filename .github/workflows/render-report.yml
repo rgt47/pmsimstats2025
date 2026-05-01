@@ -1,0 +1,106 @@
+# =============================================================================
+# Render Report Workflow (Optional)
+# =============================================================================
+# This workflow is for research compendia that have analysis/report/report.Rmd
+# It renders the manuscript in a fresh environment to verify reproducibility.
+#
+# NOTE: This workflow is OPTIONAL and separate from r-package.yml
+# Only include this in projects with analysis/report/report.Rmd
+# =============================================================================
+
+name: Render Report
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'analysis/**'
+      - 'R/**'
+      - 'DESCRIPTION'
+      - '.github/workflows/render-report.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'analysis/**'
+      - 'R/**'
+      - 'DESCRIPTION'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    container: rocker/verse:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            pandoc \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            lmodern
+
+      - name: Cache R packages
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/lib/R/site-library
+          key: r-render-${{ hashFiles('DESCRIPTION') }}
+
+      - name: Install dependencies
+        run: |
+          Rscript -e "install.packages(c('remotes', 'rmarkdown', 'bookdown'), repos = 'https://cloud.r-project.org')"
+          Rscript -e "remotes::install_deps(dependencies = TRUE)"
+
+      - name: Check for report
+        id: check
+        run: |
+          if [ -f analysis/report/report.Rmd ]; then
+            echo "has_report=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_report=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No analysis/report/report.Rmd found - skipping render"
+          fi
+
+      - name: Render report
+        if: steps.check.outputs.has_report == 'true'
+        run: |
+          Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
+
+      - name: Check output
+        if: steps.check.outputs.has_report == 'true'
+        run: |
+          if [ -f analysis/report/report.pdf ]; then
+            echo "✅ Report rendered successfully"
+            ls -lh analysis/report/report.pdf
+          elif [ -f analysis/report/report.html ]; then
+            echo "✅ Report rendered successfully (HTML)"
+            ls -lh analysis/report/report.html
+          else
+            echo "❌ Report rendering failed - no output generated"
+            exit 1
+          fi
+
+      - name: Upload report
+        if: steps.check.outputs.has_report == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-report
+          path: |
+            analysis/report/report.pdf
+            analysis/report/report.html
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Add workflow summary
+        if: success() && steps.check.outputs.has_report == 'true'
+        run: |
+          echo "## ✅ Report Rendered Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The manuscript was rendered in a fresh computational environment." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Download**: Click 'Summary' → 'Artifacts' → 'rendered-report'" >> $GITHUB_STEP_SUMMARY

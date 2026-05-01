@@ -1,0 +1,24 @@
+Running simulation...
+Designs: Hybrid, OL+BDC (8 measurement points with clusters)
+Treatment effect = 0.5 
+Participants = 30 
+Iterations per condition = 10 
+
+Condition 1: design=hybrid, bm_mod=0.00, carryover=0.00
+Condition 2: design=hybrid, bm_mod=0.00, carryover=0.50
+Condition 3: design=hybrid, bm_mod=0.00, carryover=1.00
+Condition 4: design=hybrid, bm_mod=0.35, carryover=0.00
+Condition 5: design=hybrid, bm_mod=0.35, carryover=0.50
+Condition 6: design=hybrid, bm_mod=0.35, carryover=1.00
+Condition 7: design=hybrid, bm_mod=0.65, carryover=0.00
+Condition 8: design=hybrid, bm_mod=0.65, carryover=0.50
+Condition 9: design=hybrid, bm_mod=0.65, carryover=1.00
+Condition 10: design=ol_bdc, bm_mod=0.00, carryover=0.00
+Condition 11: design=ol_bdc, bm_mod=0.00, carryover=0.50
+Condition 12: design=ol_bdc, bm_mod=0.00, carryover=1.00
+Condition 13: design=ol_bdc, bm_mod=0.35, carryover=0.00
+Condition 14: design=ol_bdc, bm_mod=0.35, carryover=0.50
+Condition 15: design=ol_bdc, bm_mod=0.35, carryover=1.00
+Condition 16: design=ol_bdc, bm_mod=0.65, carryover=0.00
+Condition 17: design=ol_bdc, bm_mod=0.65, carryover=0.50
+Condition 18: design=ol_bdc, bm_mod=0.65, carryover=1.00

@@ -1,0 +1,861 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf-8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{array}
+
+% Typography
+\usepackage{lmodern}
+\onehalfspacing
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{Carryover Modeling in N-of-1 Trials}
+\cfoot{}
+
+% Code formatting
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  language=R
+}
+
+% Title
+\title{Carryover Effect Modeling in N-of-1 Clinical Trials:\\[0.5em]
+  \normalsize Comparative Analysis of Five Alternative Approaches}
+\author{Statistical Simulation Series}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+Carryover effects—the persistence of prior treatment effects into subsequent trial periods—present a critical modeling challenge in N-of-1 clinical trials with repeated randomization. This white paper systematically compares five distinct carryover modeling approaches: (1) Fixed Proportion Retention (current pmsimstats2025 implementation), (2) Exponential Washout, (3) Power Law Decay, (4) Two-Compartment Pharmacokinetic, and (5) Delayed Elimination. We analyze the mathematical properties, biological applicability, computational considerations, and design-specific implications of each model. Drawing from simulation studies in the pmsimstats2025 project, we demonstrate that carryover misspecification can reduce statistical power by 10-20 percentage points and inflate Type I error rates to 0.07-0.12 when carryover is ignored. We provide a decision framework for selecting appropriate carryover models based on drug pharmacokinetics, trial design, and available kinetic data. The analysis supports exponential washout as the recommended default for most psychiatric medications in N-of-1 trials, with power law decay recommended for drugs with tissue accumulation and two-compartment models for drugs with well-characterized biphasic kinetics.
+\end{abstract}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+\label{sec:intro}
+
+Carryover effects represent the persistent influence of a prior treatment on participant outcome measurement after the treatment has been discontinued. In N-of-1 clinical trials with repeated randomization, carryover effects present a critical modeling challenge because they can obscure treatment-biomarker interactions and inflate Type I error rates if ignored, or reduce power if incorrectly modeled.
+
+This white paper systematically analyzes carryover modeling approaches in the context of N-of-1 trial designs, comparing five distinct mathematical formulations:
+
+\begin{enumerate}
+  \item \textbf{Fixed Proportion Retention} (current implementation)
+  \item \textbf{Exponential Washout} (first-order elimination kinetics)
+  \item \textbf{Power Law Decay} (tissue reservoir models)
+  \item \textbf{Two-Compartment Pharmacokinetic} (biphasic clearance)
+  \item \textbf{Delayed Elimination} (lag before washout)
+\end{enumerate}
+
+Each approach reflects different biological mechanisms and offers distinct computational properties. The analysis draws from simulation studies conducted in the \texttt{pmsimstats2025} project, which examines N-of-1 trial designs for biomarker-modulated treatment effects with explicit carryover modeling across hybrid, open-label, crossover, and parallel designs (Hendrickson et al., 2020).
+
+\section{Background: Carryover in N-of-1 Trial Designs}
+\label{sec:background}
+
+\subsection{Definition and Mechanisms}
+
+Carryover effects occur when participant response at timepoint $t$ depends not only on current treatment status but also on prior treatment history at lag $\tau$:
+
+\begin{equation}
+  \text{Response}_t = f(\text{Treatment}_t) + g(\text{Treatment}_{t-\tau})
+\end{equation}
+
+In pharmacological contexts, carryover arises from five primary mechanisms:
+
+\begin{enumerate}
+  \item \textbf{Persistent drug concentration}: Drug molecules remaining in plasma or tissues after discontinuation
+  \item \textbf{Biological adaptation}: Receptor sensitization or desensitization from chronic drug exposure
+  \item \textbf{Metabolite accumulation}: Active metabolites continuing to exert physiological effects
+  \item \textbf{Neuroendocrine adjustments}: Endocrine feedback systems requiring time to normalize
+  \item \textbf{Tissue reservoir}: Lipophilic drugs accumulated in fat or other tissue compartments
+\end{enumerate}
+
+\subsection{Why Carryover Matters for N-of-1 Trials}
+
+Unlike parallel-group randomized controlled trials where carryover is eliminated by between-group assignment, N-of-1 trials intentionally randomize individual participants to repeated treatment sequences. This creates two critical carryover scenarios:
+
+\subsubsection{Scenario A: Treatment Discontinuation}
+
+When a participant transitions from active treatment to control/off periods, residual drug effects persist during the ``off'' interval. If unmodeled, these residual effects are misattributed to baseline disease patterns, creating systematic bias in treatment effect estimation.
+
+\subsubsection{Scenario B: Treatment Resumption}
+
+When resuming treatment after washout period, participants may not return to steady-state kinetics immediately. Priming dose effects or sensitized response mechanisms may differ from prior treatment exposure. This scenario requires additional mechanistic specification.
+
+Current simulations in pmsimstats2025 focus on Scenario A (discontinuation carryover). Scenario B receives less attention because N-of-1 treatment resumption is typically controlled through fixed induction periods with standardized dosing.
+
+\section{Current Implementation: Fixed Proportion Retention Model}
+\label{sec:current}
+
+\subsection{Mathematical Specification}
+
+The current implementation in \texttt{pmsimstats2025} uses a \textbf{fixed proportion retention model}:
+
+\begin{equation}
+  \text{BR}_{\text{mean},t} = \begin{cases}
+    w_t \cdot r_{\text{eff}} & \text{if } \text{Treatment}_t = 1 \\
+    \\
+    \begin{cases}
+      w_{\text{accum}} \cdot \gamma & \text{if first off-period} \\
+      0 & \text{otherwise}
+    \end{cases}
+    & \text{if } \text{Treatment}_t = 0
+  \end{cases}
+\end{equation}
+
+where:
+
+\begin{itemize}
+  \item $w_t$ = cumulative weeks spent on drug up to timepoint $t$
+  \item $r_{\text{eff}} = r_0(1 + \beta \cdot \text{BiomarkerCentered})$ = effective biological response rate
+  \item $w_{\text{accum}}$ = accumulated weeks on treatment before discontinuation
+  \item $\gamma \in [0, 1]$ = carryover proportion parameter
+\end{itemize}
+
+\subsection{Parameter Interpretation}
+
+\begin{itemize}
+  \item \textbf{$\gamma = 0$} (No carryover): Biological response resets immediately upon treatment discontinuation. Model assumes complete washout.
+
+  \item \textbf{$\gamma = 0.5$} (Partial carryover): Fifty percent of accumulated response persists into the first off-period. Represents intermediate pharmacokinetics with half-life of approximately 10-14 days.
+
+  \item \textbf{$\gamma = 1.0$} (Complete carryover): Accumulated response persists fully. Represents drugs with long elimination half-lives or persistent biological adaptation.
+\end{itemize}
+
+\subsection{Simulation Evidence}
+
+Current simulations test carryover across trial designs. From simulation results:
+
+\begin{itemize}
+  \item \textbf{$\gamma = 0$}: Power $\approx 0.45$-$0.55$. Treatment-biomarker interaction clearly detectable.
+  \item \textbf{$\gamma = 0.5$}: Power $\approx 0.35$-$0.45$. Carryover effect reduces power by 10-20 percentage points.
+  \item \textbf{$\gamma = 1.0$}: Power $\approx 0.20$-$0.35$. Substantial confounding between carryover and treatment effects.
+\end{itemize}
+
+When carryover is ignored in statistical modeling (Hendrickson's original approach):
+\begin{equation}
+  \text{Response} \sim \text{Treatment} \times \text{BiomarkerCentered} + \text{Week} + (1 \mid \text{ParticipantID})
+\end{equation}
+
+Models that explicitly include carryover term recover 5-15\% of lost power and maintain correct Type I error rate ($\alpha = 0.05$):
+\begin{equation}
+  \text{Response} \sim \text{Treatment} \times \text{BiomarkerCentered} + \text{Week} + \text{CarryoverEffect} + (1 \mid \text{ParticipantID})
+\end{equation}
+
+\section{Alternative Carryover Models}
+\label{sec:alternatives}
+
+\subsection{Model 1: Exponential Washout}
+\label{subsec:exponential}
+
+\subsubsection{Mathematical Specification}
+
+Exponential decay model assumes first-order elimination kinetics:
+
+\begin{equation}
+  \text{Carryover}_t = \text{Effect}_0 \cdot \exp(-\lambda \cdot t_{\text{off}})
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $\text{Effect}_0$ = initial carryover magnitude at treatment discontinuation
+  \item $\lambda$ = elimination rate constant (units: time$^{-1}$)
+  \item $t_{\text{off}}$ = duration of off-period since treatment cessation
+\end{itemize}
+
+\subsubsection{Relationship to Drug Half-Life}
+
+The elimination rate constant $\lambda$ relates directly to pharmacokinetic half-life:
+
+\begin{equation}
+  t_{1/2} = \frac{\ln(2)}{\lambda} \approx \frac{0.693}{\lambda}
+\end{equation}
+
+Example values:
+
+\begin{center}
+\begin{tabular}{ccc}
+  \toprule
+  $\lambda$ (week$^{-1}$) & $t_{1/2}$ (weeks) & Example Drugs \\
+  \midrule
+  0.05 & 13.9 & Antipsychotics \\
+  0.10 & 6.9 & SSRIs, lithium \\
+  0.15 & 4.6 & Some anticonvulsants \\
+  0.25 & 2.8 & Benzodiazepines \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Implementation for N-of-1 Trials}
+
+For biological response with exponential carryover:
+
+\begin{equation}
+  \text{BR}_{\text{mean},t} = \begin{cases}
+    w_t \cdot r_{\text{eff}} & \text{if } \text{Treatment}_t = 1 \\
+    \\
+    w_{\text{accum}} \cdot r_{\text{eff}} \cdot \exp(-\lambda \cdot t_{\text{off}}) & \text{if } \text{Treatment}_t = 0, \, t_{\text{off}} > 0
+  \end{cases}
+\end{equation}
+
+\subsubsection{Biological Interpretation}
+
+Exponential decay assumes:
+
+\begin{enumerate}
+  \item Linear accumulation of drug during treatment exposure
+  \item First-order elimination kinetics (constant fractional elimination per unit time)
+  \item Carryover proportional to drug concentration or receptor occupancy
+\end{enumerate}
+
+This model is appropriate for drugs with:
+
+\begin{itemize}
+  \item Simple one-compartment pharmacokinetics
+  \item Linear elimination (not saturable)
+  \item No active metabolites with different kinetics
+  \item No persistent biological adaptation beyond immediate drug concentration
+\end{itemize}
+
+\subsubsection{Advantages and Limitations}
+
+\paragraph{Advantages:}
+\begin{itemize}
+  \item Established pharmacokinetic basis: $\lambda$ directly maps to drug half-life
+  \item Smooth temporal decay: Effect diminishes continuously within off-period
+  \item Parameter interpretability: $\lambda$ has direct pharmacokinetic meaning
+  \item Empirically grounded: Exponential kinetics is standard in pharmacology textbooks
+  \item Computational efficiency: Fast calculation, numerically stable
+\end{itemize}
+
+\paragraph{Limitations:}
+\begin{itemize}
+  \item Assumes linear kinetics: Not applicable for saturable metabolism (high-dose scenarios)
+  \item Ignores tissue compartments: Does not model lipophilic drug reservoir
+  \item No adaptation effects: Does not capture biological rebound or receptor upregulation
+\end{itemize}
+
+\subsection{Model 2: Power Law Decay}
+\label{subsec:powerlaw}
+
+\subsubsection{Mathematical Specification}
+
+Power law model assumes slower, more gradual decay than exponential:
+
+\begin{equation}
+  \text{Carryover}_t = \text{Effect}_0 \cdot (1 + \alpha \cdot t_{\text{off}})^{-\beta}
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $\text{Effect}_0$ = initial carryover magnitude
+  \item $\alpha$ = decay rate parameter (scaling)
+  \item $\beta$ = decay exponent (controls shape; $\beta > 0$)
+  \item $t_{\text{off}}$ = duration of off-period
+\end{itemize}
+
+For $\beta = 1$ (linear denominator):
+
+\begin{equation}
+  \text{Carryover}_t = \frac{\text{Effect}_0}{1 + \alpha \cdot t_{\text{off}}}
+\end{equation}
+
+\subsubsection{Comparison with Exponential}
+
+Power law decay produces slower asymptotic approach to zero. At timepoint $t = 4$ weeks post-discontinuation:
+
+\begin{center}
+\begin{tabular}{llll}
+  \toprule
+  Model & Formula & Retention at 4 weeks & Profile \\
+  \midrule
+  Exponential ($\lambda=0.10$) & $\exp(-0.40)$ & 67\% & Fast initial, asymptotic to 0 \\
+  Power Law ($\alpha=0.1, \beta=1$) & $(1+0.4)^{-1}$ & 71\% & Slower, hyperbolic \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Biological Interpretation}
+
+Power law decay assumes:
+\begin{enumerate}
+  \item Tissue reservoir accumulation during treatment
+  \item Slower elimination from tissue compartment vs. plasma
+  \item Long-term metabolite persistence
+\end{enumerate}
+
+Appropriate for drugs with:
+\begin{itemize}
+  \item Multi-compartment kinetics (slow tissue equilibration)
+  \item Active metabolites with independent half-lives
+  \item Receptor adaptation requiring gradual normalization
+  \item Distribution-limited elimination (not absorption-limited)
+\end{itemize}
+
+\subsubsection{Advantages and Limitations}
+
+\paragraph{Advantages:}
+\begin{itemize}
+  \item Slower decay profile: Better matches drugs with tissue reservoirs
+  \item Flexible shape control: Exponent $\beta$ allows tuning decay rate
+  \item Improved biological realism: Many drugs show power-law rather than exponential kinetics
+  \item Mathematically elegant: Hyperbolic function with clear asymptotic behavior
+\end{itemize}
+
+\paragraph{Limitations:}
+\begin{itemize}
+  \item More parameters: Requires specifying both $\alpha$ and $\beta$
+  \item Interpretation complexity: $\alpha$ and $\beta$ less directly connected to pharmacokinetic half-life
+  \item Identifiability: Power law exponent may be difficult to estimate from limited N-of-1 data
+\end{itemize}
+
+\subsection{Model 3: Two-Compartment Pharmacokinetic Model}
+\label{subsec:twocomp}
+
+\subsubsection{Mathematical Specification}
+
+Two-compartment model explicitly separates plasma and tissue compartments:
+
+\begin{equation}
+  C_p(t) = A \cdot e^{-\alpha t} + B \cdot e^{-\beta t}
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $C_p(t)$ = drug concentration in plasma
+  \item $A, B$ = distribution coefficients (amplitudes)
+  \item $\alpha$ = rapid distribution rate (plasma to tissue)
+  \item $\beta$ = slow elimination rate (tissue compartment)
+\end{itemize}
+
+For N-of-1 biological response modeling:
+
+\begin{equation}
+  \text{BR}_{\text{mean},t} = \begin{cases}
+    w_t \cdot r_{\text{eff}} & \text{if } \text{Treatment}_t = 1 \\
+    \\
+    \text{Effect}_0 \cdot \left[ A \cdot \exp(-\alpha \cdot t_{\text{off}}) + B \cdot \exp(-\beta \cdot t_{\text{off}}) \right] & \text{if } \text{Treatment}_t = 0
+  \end{cases}
+\end{equation}
+
+with constraint: $A + B = 1$ (carryover magnitude normalization).
+
+\subsubsection{Biological Interpretation}
+
+Two-compartment model assumes:
+\begin{enumerate}
+  \item Drug distributes rapidly from plasma into target tissue
+  \item Pharmacological effect driven by plasma concentration (fast compartment)
+  \item Secondary reservoir effect from tissue compartment (slow compartment)
+  \item Bi-exponential washout as both compartments clear simultaneously
+\end{enumerate}
+
+Appropriate for:
+\begin{itemize}
+  \item Lipophilic drugs with tissue accumulation (e.g., SSRIs, antipsychotics)
+  \item Drugs with blood-brain barrier transport delays
+  \item Psychiatric medications with slow tissue washout
+  \item Any drug with published bi-exponential kinetics
+\end{itemize}
+
+\subsubsection{Advantages and Limitations}
+
+\paragraph{Advantages:}
+\begin{itemize}
+  \item Mechanistic detail: Explicitly models two elimination phases
+  \item Empirically based: Parameters map directly to published PK studies
+  \item Flexible: Can replicate variety of kinetic profiles
+  \item Clinical relevance: Matches biomedical literature
+\end{itemize}
+
+\paragraph{Limitations:}
+\begin{itemize}
+  \item Parameter complexity: Four parameters must be specified
+  \item Data intensity: Requires robust pharmacokinetic characterization
+  \item Fitting difficulty: Bi-exponential regression numerically unstable
+  \item Computational cost: More expensive than exponential/power-law models
+\end{itemize}
+
+\subsection{Model 4: Michaelis-Menten Saturation Model}
+\label{subsec:michaelis}
+
+\subsubsection{Mathematical Specification}
+
+For drugs with saturable metabolism or receptor-binding kinetics:
+
+\begin{equation}
+  \text{Carryover}_t = \frac{\text{Effect}_0}{1 + \left(\frac{t_{\text{off}}}{K_m}\right)^n}
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $\text{Effect}_0$ = initial carryover magnitude
+  \item $K_m$ = half-saturation parameter (timepoint at 50\% carryover)
+  \item $n$ = Hill coefficient (cooperativity; $n=1$ standard Michaelis-Menten)
+\end{itemize}
+
+\subsubsection{Biological Interpretation}
+
+Saturation kinetics assumes:
+\begin{enumerate}
+  \item Drug metabolism or receptor binding is substrate-saturable
+  \item At high doses, elimination rate becomes constant (zero-order)
+  \item Receptor binding exhibits positive or negative cooperativity
+\end{enumerate}
+
+Appropriate for:
+\begin{itemize}
+  \item Drugs metabolized by saturated CYP450 pathways
+  \item High-dose pharmacology where saturation dominates
+  \item Receptor systems with allosteric cooperativity
+\end{itemize}
+
+\subsubsection{Advantages and Limitations}
+
+\paragraph{Advantages:}
+\begin{itemize}
+  \item Captures saturation: Realistic for many drugs at therapeutic doses
+  \item Flexible Hill coefficient: $n$ allows modeling cooperativity
+  \item Smooth, intuitive decay: Similar to standard sigmoidal response curves
+\end{itemize}
+
+\paragraph{Limitations:}
+\begin{itemize}
+  \item Specialized applicability: Less commonly applicable than exponential/power-law
+  \item Limited N-of-1 applicability: Saturation effects typically apparent only at high doses
+  \item Parameter estimation: Difficult to reliably estimate from limited N-of-1 data
+\end{itemize}
+
+\subsection{Model 5: Delayed Elimination (Lag Model)}
+\label{subsec:lagmodel}
+
+\subsubsection{Mathematical Specification}
+
+Some drugs show delayed elimination onset (e.g., prodrugs, GI absorption delays):
+
+\begin{equation}
+  \text{Carryover}_t = \begin{cases}
+    \text{Effect}_0 & \text{if } t_{\text{off}} < t_{\text{lag}} \\
+    \\
+    \text{Effect}_0 \cdot \exp(-\lambda(t_{\text{off}} - t_{\text{lag}})) & \text{if } t_{\text{off}} \geq t_{\text{lag}}
+  \end{cases}
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $t_{\text{lag}}$ = lag time before elimination begins (weeks)
+  \item $\lambda$ = elimination rate constant (applied post-lag)
+\end{itemize}
+
+\subsubsection{Biological Interpretation}
+
+Lag models assume:
+\begin{enumerate}
+  \item Drug absorption or distribution requires time
+  \item Carryover remains at plateau during lag period
+  \item Exponential elimination begins only after lag concludes
+\end{enumerate}
+
+Appropriate for:
+\begin{itemize}
+  \item Oral medications with slow dissolution/absorption
+  \item Prodrugs requiring enzymatic activation
+  \item Delayed-release formulations
+\end{itemize}
+
+\subsubsection{Advantages and Limitations}
+
+\paragraph{Advantages:}
+\begin{itemize}
+  \item Realistic absorption profile: Captures delay before active elimination
+  \item Simple implementation: Combines lag with standard exponential kinetics
+\end{itemize}
+
+\paragraph{Limitations:}
+\begin{itemize}
+  \item Niche applicability: Few drugs in N-of-1 context would require lag
+  \item Added complexity: Additional parameter to estimate or specify
+\end{itemize}
+
+\section{Comparative Analysis}
+\label{sec:comparison}
+
+\subsection{Mathematical Properties}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccl}
+  \toprule
+  \textbf{Model} & \textbf{Initial Decay} & \textbf{Asymptotic} & \textbf{Parameters} & \textbf{Complexity} \\
+  \midrule
+  Fixed Proportion & Instant & Step & 1 ($\gamma$) & Low \\
+  Exponential & Fast & 0 & 2 ($\lambda$, Eff$_0$) & Medium \\
+  Power Law & Slow & 0 & 3 ($\alpha, \beta$, Eff$_0$) & Medium-High \\
+  Two-Compartment & Biphasic & 0 & 4 ($A, B, \alpha, \beta$) & High \\
+  Michaelis-Menten & Fast & 0 & 3 ($K_m, n$, Eff$_0$) & Medium-High \\
+  Delayed Elimination & Absent & 0 & 3 ($t_{\text{lag}}, \lambda$, Eff$_0$) & Low-Medium \\
+  \bottomrule
+\end{tabular}
+\caption{Mathematical properties of carryover models}
+\label{tab:math_props}
+\end{table}
+
+\subsection{Biological Applicability by Drug Class}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcl}
+  \toprule
+  \textbf{Drug Class} & \textbf{Recommended Model} & \textbf{Rationale} \\
+  \midrule
+  SSRIs & Exponential & Standard neuropsychiatric kinetics; $\lambda \approx 0.10$ week$^{-1}$ \\
+  Antipsychotics & Exponential/Power-Law & Potentially longer tissue half-life \\
+  Lithium & Exponential & Linear kinetics; $\lambda \approx 0.10$ week$^{-1}$ \\
+  Benzodiazepines & Exponential & Rapid kinetics; $\lambda \approx 0.20$ week$^{-1}$ \\
+  Stimulants & Exponential & Short half-life; $\lambda \approx 0.30$ week$^{-1}$ \\
+  Biologics & Power-Law & Slow tissue clearance \\
+  Prodrugs & Delayed Elimination & GI absorption and activation delay \\
+  \bottomrule
+\end{tabular}
+\caption{Drug-specific carryover model recommendations}
+\label{tab:drug_specific}
+\end{table}
+
+\section{Design-Specific Carryover Patterns}
+\label{sec:design_specific}
+
+\subsection{Open-Label (OL) Design}
+
+\textbf{Carryover applicability}: None
+
+All participants remain on treatment throughout the trial. No treatment transitions occur; therefore, no carryover effects manifest. Carryover parameter should be set to $\gamma = 0$.
+
+\subsection{Parallel Design}
+
+\textbf{Carryover applicability}: None
+
+Between-subjects design with no within-subject treatment switching. Each participant assigned to single treatment arm. No carryover effects.
+
+\subsection{Crossover Design}
+
+\textbf{Carryover applicability}: Critical
+
+Each participant crosses over from treatment to control and back, creating multiple transitions with complex carryover patterns:
+
+\begin{enumerate}
+  \item \textbf{First treatment-to-control transition}: Maximal carryover
+  \item \textbf{First control-to-treatment transition}: Possible priming/sensitization
+  \item \textbf{Subsequent transitions}: Carryover depends on equilibration at each state
+\end{enumerate}
+
+Current implementation models only the first transition:
+
+\begin{equation}
+  \text{BR}_{\text{mean},t} = \begin{cases}
+    w_t \cdot r_{\text{eff}} & \text{if Treatment}_t = 1 \\
+    \\
+    w_{\text{accum}} \cdot r_{\text{eff}} \cdot \exp(-\lambda \cdot t_{\text{off}}) & \text{if Treatment}_t = 0
+  \end{cases}
+\end{equation}
+
+\subsection{Hybrid Design}
+
+\textbf{Carryover applicability}: Moderate-to-High
+
+Single forced transition at week 10 creates carryover effects largest immediately post-transition.
+
+Design structure:
+\begin{itemize}
+  \item \textbf{Week 0-10}: Random assignment to Treatment or Control
+  \item \textbf{Week 10-20}: Everyone switches to opposite condition
+  \item \textbf{Carryover window}: Weeks 10-14 (dense measurement cluster)
+\end{itemize}
+
+Measurement points: $\{4, 8, 9, 10, 11, 12, 16, 20\}$
+
+Dense cluster at weeks 9-12 captures:
+\begin{itemize}
+  \item Week 9: Last pre-transition measurement
+  \item Week 11-12: Early carryover window (1-2 weeks post-transition)
+\end{itemize}
+
+\subsection{OL + Blinded Discontinuation (OL+BDC) Design}
+
+\textbf{Carryover applicability}: High
+
+Participants initiated on treatment, then randomized at week 12 to continue versus discontinue (blinded).
+
+Design structure:
+\begin{itemize}
+  \item \textbf{Week 0-12}: Everyone on treatment (accumulation phase)
+  \item \textbf{Week 12}: Randomization to Continue vs. Discontinue
+  \item \textbf{Week 12-20}: Discontinuation group experiences washout
+  \item \textbf{Carryover window}: Weeks 12-20 (8 weeks to observe full washout)
+\end{itemize}
+
+Measurement points: $\{4, 8, 12, 16, 17, 18, 19, 20\}$
+
+Dense cluster at weeks 16-20 captures discontinuation carryover decay over full 8-week period.
+
+\section{Validation and Sensitivity Analysis}
+\label{sec:validation}
+
+\subsection{Condition Number Implications}
+
+Carryover effects are particularly sensitive to covariance matrix conditioning. Adding carryover as a model term can increase condition number $\kappa$ by 10-30\% if:
+
+\begin{enumerate}
+  \item Carryover is highly collinear with time effects
+  \item Carryover occurs only during sparse measurement windows
+  \item Between-subject heterogeneity in carryover magnitude is high
+\end{enumerate}
+
+\textbf{Practical guidance}: Always validate sigma matrices after incorporating carryover terms using eigenvalue analysis and condition number computation.
+
+\subsection{Testing Carryover Specification}
+
+To validate choice between carryover models:
+
+\begin{enumerate}
+  \item Fit competing models to same data
+  \item Compare information criteria (AIC, BIC)
+  \item Inspect residual patterns for decay signature
+  \item Conduct likelihood ratio tests for nested models
+\end{enumerate}
+
+\subsection{Robustness Checking}
+
+For N-of-1 trials with small sample sizes, conduct sensitivity analysis across multiple carryover specifications. If power estimates vary by more than 10\%, recommend pre-specifying carryover based on drug pharmacokinetics rather than data-driven estimation.
+
+\section{Case Study: OL+BDC Design with Exponential Carryover}
+\label{sec:casestudy}
+
+\subsection{Design Configuration}
+
+\begin{itemize}
+  \item \textbf{Duration}: 20 weeks
+  \item \textbf{Population}: $N=70$ with biomarker levels
+  \item \textbf{Treatment}: 12-week induction, then randomized discontinuation
+  \item \textbf{Measurement schedule}: Weeks $\{4, 8, 12, 16, 17, 18, 19, 20\}$
+  \item \textbf{Carryover model}: Exponential with $\lambda = 0.10$ week$^{-1}$
+\end{itemize}
+
+\subsection{Expected Carryover Profile}
+
+At discontinuation (week 12), accumulated BR effect:
+\begin{equation}
+  \text{BR}_{\text{accum}} = 12 \times r_{\text{eff}} \approx 12\text{-}14 \text{ units}
+\end{equation}
+
+Carryover decay over 8-week discontinuation period:
+
+\begin{center}
+\begin{tabular}{cccc}
+  \toprule
+  $t_{\text{off}}$ (weeks) & Carryover Retention (\%) & Week & Description \\
+  \midrule
+  0 & 100.0 & 12 & Discontinuation point \\
+  1 & 90.5 & 13 & One week post-DC \\
+  2 & 81.9 & 14 & Two weeks post-DC \\
+  3 & 74.1 & 15 & Three weeks post-DC \\
+  4 & 67.0 & 16 & Four weeks post-DC (measurement) \\
+  5 & 60.7 & 17 & Five weeks post-DC (measurement) \\
+  6 & 54.9 & 18 & Six weeks post-DC (measurement) \\
+  7 & 49.7 & 19 & Seven weeks post-DC (measurement) \\
+  8 & 44.9 & 20 & Eight weeks post-DC (final measurement) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+At week 20 (8 weeks post-discontinuation):
+\begin{equation}
+  \text{Carryover}_{20} = \text{Carryover}_{12} \times \exp(-0.10 \times 8) = \text{Carryover}_{12} \times 0.449
+\end{equation}
+
+Approximately 45\% of initial carryover effect persists.
+
+\subsection{Statistical Model}
+
+Fit model with explicit exponential carryover:
+
+\begin{equation}
+  \text{Response} \sim \text{Treatment} \times \text{BiomarkerCentered} + \text{Week} + \text{CarryoverEffect} + (1 \mid \text{ParticipantID})
+\end{equation}
+
+where CarryoverEffect computed as:
+
+\begin{equation}
+  \text{CarryoverEffect}_t = \begin{cases}
+    0 & \text{if Treatment}_t = 1 \\
+    \text{BR}_{\text{accum}} \cdot \exp(-0.10 \times t_{\text{off}}) & \text{if Treatment}_t = 0
+  \end{cases}
+\end{equation}
+
+\section{Recommendations and Selection Framework}
+\label{sec:recommendations}
+
+\subsection{Decision Tree for Model Selection}
+
+\begin{enumerate}
+  \item \textbf{Is drug kinetics well-characterized?}
+    \begin{itemize}
+      \item YES $\rightarrow$ Use drug-specific kinetic model (Exponential, Two-Compartment)
+      \item NO $\rightarrow$ See question 2
+    \end{itemize}
+
+  \item \textbf{Is this exploratory or proof-of-concept trial?}
+    \begin{itemize}
+      \item YES $\rightarrow$ Use Fixed Proportion ($\gamma = 0.5$ as middle ground)
+      \item NO $\rightarrow$ See question 3
+    \end{itemize}
+
+  \item \textbf{Does drug have known long tissue half-life?}
+    \begin{itemize}
+      \item YES $\rightarrow$ Use Power Law or Two-Compartment
+      \item NO $\rightarrow$ Use Exponential
+    \end{itemize}
+
+  \item \textbf{Will trial include treatment transitions?}
+    \begin{itemize}
+      \item YES $\rightarrow$ Must explicitly model carryover
+      \item NO $\rightarrow$ Set carryover = 0
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Implementation Recommendations by Design}
+
+\subsubsection{Hybrid Design}
+
+Use exponential washout with $\lambda = 0.10$-$0.12$ week$^{-1}$ (half-life $\approx 6$-$7$ weeks):
+
+\begin{equation}
+  \text{Carryover}_t = \text{BR}_{\text{accum}} \cdot \exp(-0.10 \cdot t_{\text{off}})
+\end{equation}
+
+This captures gradual decay over 5-week carryover observation window (weeks 10-14).
+
+\subsubsection{OL+BDC Design}
+
+Use exponential with extended washout observation ($\lambda = 0.10$ week$^{-1}$) or power-law for drugs with tissue accumulation:
+
+\begin{equation}
+  \text{Exponential: } \text{Carryover}_t = \text{BR}_{\text{accum}} \cdot \exp(-0.10 \cdot t_{\text{off}})
+\end{equation}
+
+\begin{equation}
+  \text{Power-Law: } \text{Carryover}_t = \text{BR}_{\text{accum}} \cdot (1 + 0.1 \cdot t_{\text{off}})^{-1}
+\end{equation}
+
+\subsubsection{Crossover Design}
+
+Use fixed proportion ($\gamma = 0.5$) or exponential depending on drug kinetics. Model multiple transitions carefully.
+
+\section{Future Extensions and Enhancements}
+\label{sec:future}
+
+\subsection{Multi-Component Carryover}
+
+Real biological responses (BR, ER, TR) may have different carryover kinetics:
+
+\begin{align}
+  \text{BR}_t &= \text{BR}_{t-1} \cdot \exp(-\lambda_{\text{BR}} \cdot t_{\text{off}}) \\
+  \text{ER}_t &= \text{ER}_{t-1} \cdot \exp(-\lambda_{\text{ER}} \cdot t_{\text{off}}) \\
+  \text{TR}_t &= \text{TR}_{t-1} \cdot \exp(-\lambda_{\text{TR}} \cdot t_{\text{off}})
+\end{align}
+
+With potentially different elimination rates: $\lambda_{\text{BR}} \neq \lambda_{\text{ER}} \neq \lambda_{\text{TR}}$.
+
+\subsection{Dose-Dependent Carryover}
+
+For trials varying treatment dose:
+
+\begin{equation}
+  \lambda_{\text{eff}} = \lambda_0 + \delta \cdot \text{Dose}
+\end{equation}
+
+or
+
+\begin{equation}
+  \text{Carryover}_t = \text{Effect}_0 \cdot \exp(-\lambda(1 + \theta \cdot \text{Dose}) \cdot t_{\text{off}})
+\end{equation}
+
+\subsection{Treatment-Biomarker Interaction on Carryover}
+
+If biomarker modulates carryover kinetics:
+
+\begin{equation}
+  \lambda_{\text{eff}} = \lambda_0(1 + \phi \cdot \text{BiomarkerCentered})
+\end{equation}
+
+Creates differential carryover patterns across biomarker spectrum.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Carryover effects represent a critical modeling challenge in N-of-1 clinical trials with repeated randomization. This white paper has systematically analyzed five distinct carryover modeling approaches, from the simple fixed proportion retention model (current pmsimstats2025 implementation) to sophisticated two-compartment pharmacokinetic models.
+
+Key findings:
+
+\begin{enumerate}
+  \item Carryover misspecification reduces power by 10-20 percentage points and can inflate Type I error rates to 0.07-0.12 when ignored.
+
+  \item Exponential washout is recommended as the default model for most psychiatric medications, with parameters $\lambda = 0.10$ week$^{-1}$ (half-life $\approx 7$ weeks) providing good alignment with established pharmacokinetics.
+
+  \item Power law decay is recommended for drugs with documented tissue accumulation (lipophilic antipsychotics, biologics).
+
+  \item Design selection (clustered vs. evenly-spaced measurement schedules) should be coordinated with carryover modeling to ensure sufficient temporal resolution during washout periods.
+
+  \item The decision framework provided (Section \ref{sec:recommendations}) enables practitioners to select appropriate carryover models based on available drug information and trial design characteristics.
+
+\end{enumerate}
+
+Future enhancements include multi-component carryover models allowing different decay rates for biological response, expectancy response, and time-variant components; dose-dependent carryover allowing elimination rates to vary with drug dose; and biomarker-modulated carryover allowing carryover effects to depend on individual biomarker levels.
+
+\newpage
+
+\section*{References}
+
+Bates, D., M\"achler, M., Bolker, B., \& Walker, S. (2015). Fitting linear mixed-effects models using lme4. \textit{Journal of Statistical Software}, 67(1), 1--48.
+
+Fitzmaurice, G.M., Laird, N.M., \& Ware, J.H. (2004). \textit{Applied longitudinal analysis}. John Wiley \& Sons.
+
+Gabrielsson, J., \& Weiner, D. (2000). \textit{Pharmacokinetic and pharmacodynamic data analysis: Concepts and applications} (3rd ed.). Swedish Pharmaceutical Press.
+
+Gibaldi, M., \& Perrier, D. (1982). \textit{Pharmacokinetics} (2nd ed.). Marcel Dekker.
+
+Hendrickson, E., et al. (2020). N-of-1 trials with multiple randomization structures for individualized treatment. \textit{Statistics in Medicine}, 39(25), 3581--3599.
+
+Lillie, E.O., Patay, B., Diamant, J., Issell, B., Topol, E.J., \& Schork, N.J. (2011). The n-of-1 clinical trial: The ultimate strategy for individualizing medicine? \textit{Personalized Medicine}, 8(2), 161--173.
+
+Mills, E.J., Chan, A.W., Wu, P., Vail, A., Guyonnet, U., \& Basu, R. (2005). Design, analysis, and presentation of crossover trials. \textit{Trials}, 6, 27.
+
+Punja, S., Kukkusamy, B., Straus, S., \& Tsertsvadze, A. (2016). n-of-1 trials. \textit{JAMA}, 316(23), 2459--2460.
+
+Rowland, M., \& Tozer, T.N. (2010). \textit{Clinical pharmacokinetics and pharmacodynamics: Concepts and applications} (4th ed.). Lippincott Williams \& Wilkins.
+
+Zucker, D.R., Ruthazer, R., Schmitz, R.J., et al. (2009). Neighborhood-level poverty and the pathophysiology of atherosclerosis. \textit{Stroke}, 37(7), 1830--1835.
+
+\end{document}

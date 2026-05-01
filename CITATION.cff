@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "pmsimstats2025: N-of-1 Clinical Trial Simulation with Biomarker Interactions"
+version: 0.1.0
+date-released: 2025-01-28
+authors:
+  - family-names: "Hendrickson"
+    given-names: "Rebecca C."
+    email: "rebecca.hendrickson@va.gov"
+    affiliation: "VA Puget Sound Health Care System"
+  - family-names: "Thomas"
+    given-names: "Ronald G."
+    email: "rgthomas@ucsd.edu"
+    affiliation: "University of California San Diego"
+repository-code: "https://github.com/rgt47/pmsimstats2025"
+license: GPL-3.0
+keywords:
+  - n-of-1 trials
+  - clinical trials
+  - biomarker
+  - mixed-effects models
+  - monte carlo simulation
+  - carryover effects
+  - precision medicine
+abstract: >-
+  Monte Carlo simulation framework for comparing N-of-1 clinical trial designs
+  (Hybrid, Crossover, Open-Label, Parallel) with focus on statistical power
+  when biomarker-treatment interactions and carryover effects are present.
+  Based on Hendrickson et al. (2020) methodology with extensions for explicit
+  biomarker moderation and carryover effect modeling.
+references:
+  - type: article
+    authors:
+      - family-names: "Hendrickson"
+        given-names: "E."
+    title: "N-of-1 trials with multiple randomization structures for individualized treatment"
+    journal: "Statistics in Medicine"
+    volume: 39
+    issue: 25
+    start: 3581
+    end: 3599
+    year: 2020

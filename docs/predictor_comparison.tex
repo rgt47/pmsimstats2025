@@ -1,0 +1,721 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\title{Carryover Predictor Comparison in pmsimstats2025:\\
+  A \texttt{tsd} Computation Bug and the Original's\\
+  Open Power Question}
+\author{pmsimstats2025 Project Notes}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+\section{Context}
+
+The \texttt{carryover\_focus/} simulation isolates the effect of
+pharmacological carryover on statistical power for biomarker moderation
+detection in the Hybrid N-of-1 aggregated trial design
+\cite{hendrickson2020}. The simulation uses Hendrickson's binary drug
+exposure predictor \texttt{Dbc} (bounded $[0, 1]$), which equals~1
+when on drug and decays exponentially when off drug.
+
+This document reports two findings:
+
+\begin{enumerate}
+  \item The pmsimstats2025 reimplementation computes the
+    time-since-discontinuation variable (\texttt{tsd}) differently
+    from Hendrickson's original \texttt{buildtrialdesign()} function.
+    The 2025 code produces $t_{\text{sd}} = 0$ at every first off-drug
+    measurement, while the original produces $t_{\text{sd}} \geq 1$
+    (the interval width leading into that measurement). This
+    discrepancy causes a step-function power cliff in the 2025
+    simulation that does not exist in the original framework.
+
+  \item Independent of this bug, the original Hendrickson simulation
+    shows power declining more rapidly with increasing carryover
+    half-life than pharmacological reasoning would predict. The cause
+    of this behavior remains open and requires investigation after the
+    \texttt{tsd} computation is corrected to match the original.
+\end{enumerate}
+
+\section{The Two Analysis Models}
+
+The simulation compares two model specifications, toggled by the
+\texttt{model\_carryover} flag. Both follow Hendrickson et~al.'s
+\cite{hendrickson2020} binary predictor approach:
+
+\medskip
+\noindent\textbf{Model~A} (\texttt{model\_carryover = TRUE}):
+\begin{verbatim}
+response ~ Dbc * bm_centered + week
+\end{verbatim}
+
+\noindent\textbf{Model~B} (\texttt{model\_carryover = FALSE}):
+\begin{verbatim}
+response ~ treatment * bm_centered + week
+\end{verbatim}
+
+Both are fitted with \texttt{nlme::lme()} using a random intercept
+per participant and a continuous-time AR(1) correlation structure
+(\texttt{corCAR1(form = \~{} week | participant\_id)}), which models
+the decay of within-subject correlation as a function of the time gap
+between measurements. The difference between the two models lies
+entirely in the drug exposure predictor used in the interaction term.
+
+\subsection{Model Variable Definitions}
+
+\begin{description}[style=nextline, leftmargin=2em]
+  \item[\texttt{response}]
+    The simulated clinical outcome for each participant at each
+    measurement week. In the DGP, it is the sum of baseline status,
+    biological response to drug (BR), expectancy response (ER), and
+    time-in-trial trend (TR):
+    $\text{response} = \text{baseline} + \text{BR} + \text{ER}
+    + \text{TR}$.
+
+  \item[\texttt{week}]
+    The calendar week of the measurement within the trial schedule
+    (e.g., 4, 8, 9, 10, 11, 12, 16, 20 for the Hybrid design).
+    Included in the model as a fixed-effect covariate to absorb the
+    secular time trend.
+
+  \item[\texttt{bm\_centered}]
+    The participant's biomarker value, standardized to zero mean and
+    unit variance across the sample:
+    $\texttt{bm\_centered}_i
+    = (\text{biomarker}_i - \bar{\text{biomarker}})
+    / \text{SD}(\text{biomarker})$.
+    The drug-by-biomarker interaction term tests whether participants
+    with higher biomarker values respond differently to treatment.
+
+  \item[\texttt{participant\_id}]
+    Unique identifier for each participant ($i = 1, \ldots, 70$).
+    Defines the grouping structure for the random intercept and the
+    within-subject correlation.
+
+  \item[\texttt{treatment}]
+    Binary indicator: 1 if the participant is on drug at that
+    measurement week, 0 if off drug. Determined by the Hybrid design's
+    path assignment (4 paths with staggered discontinuation and
+    reinitiation schedules). In Model~B, this serves as the ``naive''
+    drug exposure predictor: it assumes zero carryover.
+\end{description}
+
+\subsection{The \texttt{Dbc} Predictor}
+
+The drug exposure predictor \texttt{Dbc} (``drug binary with
+carryover'') follows Hendrickson et~al.\ \cite{hendrickson2020}. It
+is bounded in $[0, 1]$:
+\[
+  \texttt{Dbc} =
+  \begin{cases}
+    1 & \text{if on drug} \\[4pt]
+    0 & \text{if off drug and } t_{1/2} = 0
+      \quad \text{(no carryover)} \\[4pt]
+    \left(\tfrac{1}{2}\right)^{t_{\text{sd}} / t_{1/2}}
+      & \text{if off drug and } t_{1/2} > 0
+  \end{cases}
+\]
+Here $t_{\text{sd}}$ is the time since discontinuation in weeks and
+$t_{1/2}$ is the carryover half-life (the time for the residual drug
+effect to decay to half its value at discontinuation). The critical
+question is how $t_{\text{sd}}$ is computed; the original and the 2025
+reimplementation differ on this point (Section~\ref{sec:bug}).
+
+\section{Hendrickson's Original \texttt{tsd} Computation}
+\label{sec:original}
+
+\subsection{The \texttt{buildtrialdesign()} Algorithm}
+
+In the original pmsimstats package, \texttt{tsd} is computed by
+\texttt{buildtrialdesign()} (\texttt{buildtrialdesign.R}, lines
+86--106). The algorithm accumulates off-drug interval widths:
+
+\begin{verbatim}
+t_wk <- c(4, 4, 1, 1, 1, 1, 4, 4)   # interval widths
+tsd  <- t_wk * (od != 1)              # seed: width if off-drug
+for (iTP in 2:nP) {
+  if (od_intervals[iTP] > 0)          # on drug
+    tod[iTP] <- tod[iTP] + tod[iTP-1]
+  else                                 # off drug
+    tsd[iTP] <- tsd[iTP] + tsd[iTP-1]
+}
+tsd <- everondrug * tsd
+\end{verbatim}
+
+The implicit assumption is that drug discontinuation occurs at the
+\emph{start} of the interval, so by the measurement at the end of the
+interval the participant has been off drug for the full interval
+duration. The first off-drug measurement therefore has
+$t_{\text{sd}} = t_{\text{wk}}$ (the interval width), never zero.
+
+\subsection{Original \texttt{tsd} Values for All Four Paths}
+
+The Hybrid design uses measurement weeks $(4, 8, 9, 10, 11, 12, 16,
+20)$ with interval widths $t_{\text{wk}} = (4, 4, 1, 1, 1, 1, 4, 4)$.
+The four \texttt{ondrug} vectors from the publication vignette:
+
+\begin{verbatim}
+Path A: c(1, 1, 1, 1, 0, 0, 1, 0)
+Path B: c(1, 1, 1, 1, 0, 0, 0, 1)
+Path C: c(1, 1, 1, 0, 0, 0, 1, 0)
+Path D: c(1, 1, 1, 0, 0, 0, 0, 1)
+\end{verbatim}
+
+\noindent These correspond to pmsimstats2025 Paths 1--4 respectively.
+Tracing the accumulation algorithm for each path yields:
+
+\begin{table}[h]
+\centering
+\caption{Original \texttt{tsd} values (in weeks) for all four
+  Hybrid design paths, computed by \texttt{buildtrialdesign()}.
+  On-drug rows show \texttt{tsd}~$= 0$; off-drug rows show
+  cumulative interval widths. The minimum off-drug \texttt{tsd}
+  is~1 (clustered phase) or~4 (spaced phase).}
+\label{tab:orig_tsd}
+\begin{tabular}{@{}ccccccccc@{}}
+\toprule
+ & \multicolumn{8}{c}{Week} \\
+\cmidrule(l){2-9}
+Path & 4 & 8 & 9 & 10 & 11 & 12 & 16 & 20 \\
+\midrule
+A (ondrug) & 1 & 1 & 1 & 1 & 0 & 0 & 1 & 0 \\
+A (tsd)    & 0 & 0 & 0 & 0 & 1 & 2 & 0 & 4 \\
+\midrule
+B (ondrug) & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 1 \\
+B (tsd)    & 0 & 0 & 0 & 0 & 1 & 2 & 6 & 0 \\
+\midrule
+C (ondrug) & 1 & 1 & 1 & 0 & 0 & 0 & 1 & 0 \\
+C (tsd)    & 0 & 0 & 0 & 1 & 2 & 3 & 0 & 4 \\
+\midrule
+D (ondrug) & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 1 \\
+D (tsd)    & 0 & 0 & 0 & 1 & 2 & 3 & 7 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Original \texttt{Dbc} in the Analysis Model}
+
+In \texttt{lme\_analysis.R} (lines 107--109), the original computes
+\texttt{Dbc} as:
+
+\begin{verbatim}
+data.m2[Db==TRUE,  Dbc := 1]
+data.m2[Db==FALSE, Dbc := (1/2)^(sf * tsd / t_half)]
+\end{verbatim}
+
+\noindent where \texttt{sf} is
+\texttt{op\$carryover\_scalefactor}, which defaults to~1 (not~7 as
+previously stated in an earlier version of this document). Note that
+the data-generating process in \texttt{generateData()} uses a separate
+\texttt{scalefactor} parameter that defaults to~2 (see
+Section~\ref{sec:open}).
+
+\subsection{Original \texttt{Dbc} at Boundary Measurements}
+
+With the original \texttt{tsd} values, the first off-drug measurement
+in the clustered phase has $t_{\text{sd}} = 1$~week:
+
+\begin{table}[h]
+\centering
+\caption{Original \texttt{Dbc} at off-drug measurements for a path~C
+  participant, using the original interval-based \texttt{tsd}.
+  Boundary measurements carry negligible carryover for short
+  half-lives.}
+\label{tab:orig_dbc}
+\begin{tabular}{@{}ccrr@{}}
+\toprule
+Week & Orig \texttt{tsd}
+  & Orig \texttt{Dbc} ($t_{1/2} = 0.1$)
+  & Orig \texttt{Dbc} ($t_{1/2} = 0.2$) \\
+\midrule
+10 & 1 & $(1/2)^{10} \approx 0.001$ & $(1/2)^{5} = 0.031$ \\
+11 & 2 & $(1/2)^{20} \approx 0$ & $(1/2)^{10} \approx 0.001$ \\
+12 & 3 & $(1/2)^{30} \approx 0$ & $(1/2)^{15} \approx 0$ \\
+20 & 4 & $(1/2)^{40} \approx 0$ & $(1/2)^{20} \approx 0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent For $t_{1/2} = 0.1$~weeks, the boundary \texttt{Dbc} is
+0.001---essentially zero carryover. Even at $t_{1/2} = 0.2$~weeks,
+the boundary value is only 0.031. These values produce a smooth,
+gradual decline in the on/off contrast as the half-life increases,
+not a step function.
+
+\section{The 2025 Reimplementation Discrepancy}
+\label{sec:bug}
+
+\subsection{The \texttt{carryover\_power\_simulation.R} Algorithm}
+
+The 2025 code computes \texttt{tsd} as the difference between the
+current calendar week and the week at which a treatment transition
+(on $\to$ off) is detected:
+
+\begin{verbatim}
+just_discontinued = treatment == 0 &
+  lag(treatment, default = 0) == 1
+discontinuation_week = if_else(
+  just_discontinued, week, NA_real_
+)
+discontinuation_week = zoo::na.locf(
+  discontinuation_week, na.rm = FALSE
+)
+tsd = if_else(
+  treatment == 0 & !is.na(discontinuation_week),
+  pmax(week - discontinuation_week, local_tsd_min),
+  0
+)
+\end{verbatim}
+
+The implicit assumption is that discontinuation occurs \emph{at} the
+measurement week. At the first off-drug measurement,
+\texttt{week == discontinuation\_week}, so
+$t_{\text{sd}} = 0$.
+
+\subsection{Side-by-Side \texttt{tsd} Comparison}
+
+Table~\ref{tab:tsd_compare} compares the original and 2025
+\texttt{tsd} values for all four paths. Only off-drug rows are shown.
+
+\begin{table}[h]
+\centering
+\caption{Original vs.\ 2025 \texttt{tsd} at off-drug measurements.
+  The 2025 value is systematically one interval width shorter at the
+  first off-drug measurement after each discontinuation. Boldface
+  marks mismatches.}
+\label{tab:tsd_compare}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+Path & Week & Orig \texttt{tsd} & 2025 \texttt{tsd} & Match? \\
+\midrule
+A & 11 & 1 & \textbf{0} & No \\
+A & 12 & 2 & \textbf{1} & No \\
+A & 20 & 4 & \textbf{0} & No \\
+\midrule
+B & 11 & 1 & \textbf{0} & No \\
+B & 12 & 2 & \textbf{1} & No \\
+B & 16 & 6 & \textbf{5} & No \\
+\midrule
+C & 10 & 1 & \textbf{0} & No \\
+C & 11 & 2 & \textbf{1} & No \\
+C & 12 & 3 & \textbf{2} & No \\
+C & 20 & 4 & \textbf{0} & No \\
+\midrule
+D & 10 & 1 & \textbf{0} & No \\
+D & 11 & 2 & \textbf{1} & No \\
+D & 12 & 3 & \textbf{2} & No \\
+D & 16 & 7 & \textbf{6} & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Every off-drug measurement is affected. The offset equals
+the interval width leading into the first off-drug timepoint: 1~week
+in the clustered phase (weeks 10--12) and 4~weeks in the spaced phase
+(weeks 16, 20). Re-discontinuation points (e.g., week~20 for paths~A
+and~C) show the largest discrepancy: original \texttt{tsd}~$= 4$
+versus 2025 \texttt{tsd}~$= 0$.
+
+\subsection{Consequence for \texttt{Dbc}}
+
+Table~\ref{tab:dbc_compare} shows the resulting \texttt{Dbc} values
+for a path~C participant at $t_{1/2} = 0.1$~weeks.
+
+\begin{table}[h]
+\centering
+\caption{\texttt{Dbc} under original vs.\ 2025 \texttt{tsd} for
+  path~C, $t_{1/2} = 0.1$~weeks. The 2025 code produces full
+  carryover (\texttt{Dbc}~$= 1$) at boundary measurements where the
+  original produces negligible carryover.}
+\label{tab:dbc_compare}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Week & Orig tsd & Orig Dbc & 2025 tsd & 2025 Dbc & Discrepancy \\
+\midrule
+10 & 1 & 0.001  & 0 & 1.000 & $\times$1000 \\
+11 & 2 & $\approx$0 & 1 & 0.001 & --- \\
+12 & 3 & $\approx$0 & 2 & $\approx$0 & --- \\
+20 & 4 & $\approx$0 & 0 & 1.000 & $\infty$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $t_{1/2} = 0.2$~weeks the pattern is the same:
+
+\begin{table}[h]
+\centering
+\caption{\texttt{Dbc} under original vs.\ 2025 \texttt{tsd} for
+  path~C, $t_{1/2} = 0.2$~weeks.}
+\label{tab:dbc_compare_02}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+Week & Orig tsd & Orig Dbc & 2025 tsd & 2025 Dbc & Discrepancy \\
+\midrule
+10 & 1 & 0.031  & 0 & 1.000 & $\times$32 \\
+11 & 2 & 0.001  & 1 & 0.031 & $\times$31 \\
+12 & 3 & $\approx$0 & 2 & 0.001 & --- \\
+20 & 4 & $\approx$0 & 0 & 1.000 & $\infty$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{The Step-Function Power Cliff (a 2025 Bug)}
+\label{sec:cliff}
+
+\subsection{Mathematical Origin}
+
+The step-function power cliff observed in the 2025 simulation arises
+because $t_{\text{sd}} = 0$ at boundary measurements. The exponential
+decay model evaluates as:
+\[
+  f(t_{1/2}) \big|_{t_{\text{sd}}=0} =
+  \begin{cases}
+    0 & \text{if } t_{1/2} = 0 \quad \text{(special case in code)} \\[4pt]
+    \left(\dfrac{1}{2}\right)^{0 / t_{1/2}}
+      = \left(\dfrac{1}{2}\right)^{0} = 1
+      & \text{if } t_{1/2} > 0
+  \end{cases}
+\]
+
+This is a step function: for \textbf{any} positive half-life, no
+matter how small, the carryover effect at the boundary equals~1.
+The parameter $t_{1/2}$ controls only the rate of subsequent decay,
+not the initial value. This behavior is specific to the 2025
+\texttt{tsd} computation and does not occur in the original, where
+$t_{\text{sd}} \geq 1$ at all boundary measurements.
+
+\subsection{Consequences for the 2025 Simulation}
+
+In the 2025 simulation with \texttt{tsd\_min}~$= 0$ (uncorrected),
+the naive model (\texttt{treatment}) shows a step-function collapse:
+
+\begin{table}[h]
+\centering
+\caption{2025 simulation results with uncorrected \texttt{tsd}
+  (\texttt{tsd\_min}~$= 0$, $N = 70$, 200 iterations). The naive
+  model collapses to $\sim$0.06 power at any nonzero half-life.
+  This behavior is caused by the \texttt{tsd} bug, not by a property
+  of the carryover decay model.}
+\label{tab:uncorrected}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+$t_{1/2}$ (wks) & \multicolumn{2}{c}{Power} &
+  \multicolumn{2}{c}{Mean $\hat{\beta}$} & Difference \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+  & Dbc & Treatment & Dbc & Treatment & (power) \\
+\midrule
+0.00 & 0.73 & ---  & 0.675 & ---   & ---    \\
+0.05 & 0.63 & 0.07 & 0.647 & 0.144 & +0.56  \\
+0.10 & 0.69 & 0.06 & 0.694 & 0.133 & +0.64  \\
+0.15 & 0.66 & 0.06 & 0.667 & 0.139 & +0.60  \\
+0.20 & 0.57 & 0.07 & 0.631 & 0.124 & +0.50  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The mechanism: at any nonzero $t_{1/2}$, weeks~10 and~20 (and their
+equivalents across all four paths) carry $\texttt{Dbc} = 1$---full
+drug effect---because the 2025 code assigns $t_{\text{sd}} = 0$. These
+boundary measurements constitute half of all off-drug timepoints.
+The naive model assigns \texttt{treatment}~$= 0$ to these timepoints
+while they still carry full biomarker-moderated drug response,
+collapsing the on/off contrast. The mean interaction estimate drops
+from $\hat{\beta} \approx 0.68$ to $\hat{\beta} \approx 0.13$---an
+80\% attenuation.
+
+\subsection{The \texttt{tsd\_min} Workaround}
+
+As part of the 2025 development, a minimum \texttt{tsd} floor was
+introduced to address the step-function cliff:
+\[
+  t_{\text{sd,eff}} = \max(t_{\text{sd}}, \; t_{\text{sd,min}})
+\]
+
+With $t_{\text{sd,min}} = 0.5$~weeks, the boundary carryover becomes
+a smooth function of $t_{1/2}$:
+
+\begin{table}[h]
+\centering
+\caption{Boundary carryover under three regimes: the buggy 2025
+  code (\texttt{tsd}~$= 0$), the \texttt{tsd\_min}~$= 0.5$
+  workaround, and the original interval-based \texttt{tsd}~$= 1$
+  (clustered phase).}
+\label{tab:boundary_three}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$t_{1/2}$ (wks)
+  & 2025 bug ($t_{\text{sd}} = 0$)
+  & Workaround ($t_{\text{sd}} = 0.5$)
+  & Original ($t_{\text{sd}} = 1$) \\
+\midrule
+0.00 & 0 & 0 & 0 \\
+0.05 & 1.000 & 0.001 & $\approx$0 \\
+0.10 & 1.000 & 0.031 & 0.001 \\
+0.15 & 1.000 & 0.101 & 0.010 \\
+0.20 & 1.000 & 0.177 & 0.031 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The workaround eliminates the step function and produces gradual
+power decline:
+
+\begin{table}[h]
+\centering
+\caption{2025 simulation results with \texttt{tsd\_min}~$= 0.5$
+  ($N = 70$, 200 iterations). The step function is eliminated, but
+  these results do not match the original's \texttt{tsd} computation,
+  where the effective minimum is 1~week (clustered) or 4~weeks
+  (spaced).}
+\label{tab:corrected}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+$t_{1/2}$ (wks) & \multicolumn{2}{c}{Power} &
+  \multicolumn{2}{c}{Mean $\hat{\beta}$} & Difference \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+  & Dbc & Treatment & Dbc & Treatment & (power) \\
+\midrule
+0.00 & 0.69 & ---  & 0.646 & ---   & ---    \\
+0.05 & 0.68 & 0.72 & 0.663 & 0.669 & $-$0.04  \\
+0.10 & 0.68 & 0.73 & 0.653 & 0.656 & $-$0.05  \\
+0.15 & 0.66 & 0.58 & 0.653 & 0.579 & +0.08  \\
+0.20 & 0.53 & 0.54 & 0.625 & 0.544 & $-$0.01  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+While the workaround eliminates the step-function artifact, it does
+not reproduce the original's \texttt{tsd} values.
+Table~\ref{tab:boundary_three} shows that the workaround
+($t_{\text{sd}} = 0.5$) produces systematically higher boundary
+carryover than the original ($t_{\text{sd}} = 1$) at every half-life.
+The correct fix is to adopt the original's interval-based accumulation
+logic (Section~\ref{sec:fix}).
+
+\section{Open Question: The Original's Power Behavior}
+\label{sec:open}
+
+Independent of the 2025 \texttt{tsd} bug, the published Hendrickson
+heatmaps \cite{hendrickson2020} show power declining with increasing
+carryover half-life. Whether this decline is steeper than
+pharmacologically expected is the motivating question for the
+\texttt{carryover\_focus/} analysis. Once the \texttt{tsd} bug is
+fixed, any remaining excessive power dropoff must have a different
+mechanism. Three candidates merit investigation.
+
+\subsection{Scale Factor Mismatch Between DGP and Analysis}
+
+The original code uses different scale factors for carryover in the
+data-generating process and the analysis model:
+
+\begin{itemize}[nosep]
+  \item \textbf{DGP} (\texttt{generateData.R}, line 96):
+    \texttt{scalefactor = 2} (default).
+    \[
+      \text{carryover}_{\text{DGP}} =
+        \text{br}_{\text{prev}} \times
+        \left(\tfrac{1}{2}\right)^{2 \cdot t_{\text{sd}} / t_{1/2}}
+    \]
+
+  \item \textbf{Analysis} (\texttt{lme\_analysis.R}, line 109):
+    \texttt{carryover\_scalefactor = 1} (default).
+    \[
+      \texttt{Dbc} =
+        \left(\tfrac{1}{2}\right)^{1 \cdot t_{\text{sd}} / t_{1/2}}
+    \]
+\end{itemize}
+
+The DGP generates faster decay (higher effective exponent) than the
+analysis model assumes. At $t_{\text{sd}} = 1$, $t_{1/2} = 0.2$:
+
+\begin{itemize}[nosep]
+  \item DGP carryover: $(1/2)^{2 \times 1/0.2} = (1/2)^{10}
+    \approx 0.001$
+  \item Analysis \texttt{Dbc}: $(1/2)^{1 \times 1/0.2} = (1/2)^{5}
+    = 0.031$
+\end{itemize}
+
+The analysis model overestimates the residual drug effect by a factor
+of $\sim$30 at this timepoint. This systematic misspecification could
+contribute to power loss by distorting the interaction contrast that
+Model~A attempts to estimate.
+
+\subsection{Cumulative Carryover in \texttt{generateData()}}
+
+In the DGP (\texttt{generateData.R}, lines 92--99), carryover is
+added to \texttt{brmeans} cumulatively:
+
+\begin{verbatim}
+for (p in 2:nP) {
+  if (!d[p]$onDrug) {
+    if (d[p]$tsd > 0) {
+      brmeans[p] <- brmeans[p] +
+        brmeans[p-1] * (1/2)^(sf * d$tsd[p] / t_half)
+    }
+  }
+}
+\end{verbatim}
+
+This recursive structure means the biological response at off-drug
+timepoints depends on the entire preceding on-drug trajectory, not
+just the value at discontinuation. The interaction with the Gompertz
+response curve (\texttt{modgompertz()}) and the multi-factor
+correlation structure may produce nonlinear contamination patterns
+that the analysis model cannot fully capture.
+
+\subsection{Correlation Structure Interaction}
+
+The original DGP generates correlated random components across
+timepoints via a multivariate normal draw with a structured
+correlation matrix (autocorrelation within factors, cross-correlation
+between factors). The carryover adjustment modifies the mean structure
+but not the correlation matrix. As $t_{1/2}$ increases, the mismatch
+between the adjusted means and the original correlation structure
+grows, potentially producing model misspecification that reduces the
+interaction estimate.
+
+\subsection{Status}
+
+These three candidates are not mutually exclusive. Determining their
+relative contributions requires running the corrected 2025 simulation
+(with original-matching \texttt{tsd}) and comparing its power curves
+against the published results. The scale factor mismatch
+(Section~6.1) is the most straightforward to test: it can be isolated
+by running simulations with matched scale factors (both set to~1 or
+both set to~2) and observing whether the power curve changes shape.
+
+\section{Recommended Path Forward}
+\label{sec:fix}
+
+\begin{enumerate}
+  \item \textbf{Fix \texttt{tsd} in
+    \texttt{carryover\_power\_simulation.R}.} Replace the
+    calendar-subtraction logic with the original's interval-based
+    accumulation. Verify that the corrected code produces identical
+    \texttt{tsd} values to \texttt{buildtrialdesign()} for all four
+    paths (Table~\ref{tab:orig_tsd}).
+
+  \item \textbf{Re-run the two-scenario comparison} with the corrected
+    \texttt{tsd} and \texttt{tsd\_min}~$= 0$ to establish a faithful
+    reproduction of Hendrickson's simulation as a baseline.
+
+  \item \textbf{Compare power curves} from the corrected simulation
+    against the published heatmaps. If power still drops more rapidly
+    than expected, investigate the scale factor mismatch by running
+    with matched scale factors.
+
+  \item \textbf{Evaluate \texttt{tsd\_min} as a design modification.}
+    If the original's power behavior proves excessive, a minimum
+    washout interval represents a pharmacologically defensible
+    improvement: in clinical practice, there is always a nonzero gap
+    between the last dose and the next assessment. This should be
+    evaluated as a deliberate modeling choice with its own simulation
+    results, not as a bug fix.
+\end{enumerate}
+
+\section{Conclusions}
+
+\begin{enumerate}
+  \item \textbf{The step-function power cliff in the 2025 simulation
+    is caused by a \texttt{tsd} computation bug.} The 2025 code
+    computes $t_{\text{sd}} = \text{week} - \text{discontinuation\_week}$,
+    producing $t_{\text{sd}} = 0$ at boundary measurements. The
+    original computes \texttt{tsd} as cumulative off-drug interval
+    widths, producing $t_{\text{sd}} \geq 1$ at all off-drug
+    timepoints. The step function does not exist in the original
+    framework.
+
+  \item \textbf{The \texttt{tsd\_min} workaround partially
+    compensates but does not match the original.} With
+    $t_{\text{sd,min}} = 0.5$, the boundary carryover at
+    $t_{1/2} = 0.1$ is 0.031; with the original \texttt{tsd}, it is
+    0.001. The correct fix is to adopt the original's interval-based
+    accumulation.
+
+  \item \textbf{The original's power behavior is a separate, open
+    question.} The published heatmaps show power declining with
+    increasing $t_{1/2}$. Whether this decline is excessive requires
+    investigation after the \texttt{tsd} bug is fixed. Leading
+    candidates include the scale factor mismatch between the DGP
+    (\texttt{scalefactor}~$= 2$) and the analysis model
+    (\texttt{carryover\_scalefactor}~$= 1$), and the cumulative
+    carryover structure in \texttt{generateData()}.
+
+  \item \textbf{The two-scenario comparison framework remains valid.}
+    Comparing Hendrickson's \texttt{Dbc} predictor against the naive
+    \texttt{treatment} indicator is the right experimental design.
+    The simulation results in
+    Tables~\ref{tab:uncorrected}--\ref{tab:corrected} document the
+    behavior of the buggy code and its workaround; new results with
+    the corrected \texttt{tsd} are needed.
+\end{enumerate}
+
+\section*{References}
+
+\begingroup
+\renewcommand{\section}[2]{}
+\begin{thebibliography}{9}
+
+\bibitem{hendrickson2020}
+Hendrickson RC, Thomas RG, Schork NJ.
+Optimizing aggregated N-of-1 trial designs for predictive biomarker
+validation: Statistical methods and theoretical findings.
+\textit{Frontiers in Digital Health}. 2020;2:13.
+doi:~\href{https://doi.org/10.3389/fdgth.2020.00013}%
+  {10.3389/fdgth.2020.00013}
+
+\bibitem{wang2019}
+Wang Y, Schork NJ.
+Power and design issues in crossover-based N-of-1 clinical trials with
+fixed data collection periods.
+\textit{Healthcare}. 2019;7(3):84.
+doi:~\href{https://doi.org/10.3390/healthcare7030084}%
+  {10.3390/healthcare7030084}
+
+\bibitem{yap2024}
+Yap C, Wang X, Harhay MO.
+Behavioral carry-over effect and power consideration in crossover
+trials.
+\textit{Biometrics}. 2024;80(2):ujae023.
+doi:~\href{https://doi.org/10.1093/biomtcs/ujae023}%
+  {10.1093/biomtcs/ujae023}
+
+\bibitem{blackston2019}
+Blackston JW, Chapple AG, McGree JM, McDonald S, Nikles J.
+Comparison of aggregated N-of-1 trials with parallel and crossover
+randomized controlled trials using simulation studies.
+\textit{Healthcare}. 2019;7(4):137.
+doi:~\href{https://doi.org/10.3390/healthcare7040137}%
+  {10.3390/healthcare7040137}
+
+\bibitem{senn2019}
+Senn S.
+Sample size considerations for n-of-1 trials.
+\textit{Statistical Methods in Medical Research}. 2019;28(2):372--383.
+doi:~\href{https://doi.org/10.1177/0962280217726801}%
+  {10.1177/0962280217726801}
+
+\end{thebibliography}
+\endgroup
+
+\bigskip
+\hrule
+\medskip
+{\small\itshape
+  Rendered on 2026-03-18 at 09:37 PDT.\\
+  Source: \texttt{\~/prj/alz/01-pmsimstats/pmsimstats2025/%
+    analysis/scripts/carryover\_focus/predictor\_comparison.tex}
+}
+
+\end{document}

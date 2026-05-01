@@ -1,0 +1,1533 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\lstset{
+    language=R,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+
+\title{Mathematical Foundations of N-of-1 Trial Simulation:\\
+A Comprehensive Analysis}
+\author{pmsimstats2025 Project Documentation}
+\date{December 17, 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides an in-depth, comprehensive synthesis of all mathematical
+elements underlying the \texttt{pmsimstats2025} N-of-1 clinical trial simulation
+framework. The analysis draws from extensive documentation and represents a
+unified treatment of the project's theoretical foundations, covering covariance
+matrix architecture, positive definiteness constraints, correlation structures,
+carryover modeling, and mixed-effects model specification.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%==============================================================================
+\part{Covariance Matrix Architecture}
+%==============================================================================
+
+\section{The Core Identity: $\Sigma = DRD$}
+
+The fundamental mathematical identity governing the simulation is the
+decomposition of the covariance matrix into correlation and variance components:
+
+\begin{equation}
+\boxed{\Sigma = D \cdot R \cdot D}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\Sigma$ is the full covariance matrix ($26 \times 26$ for 8-timepoint designs)
+    \item $R$ is the correlation matrix (dimensionless, all diagonal entries $= 1$)
+    \item $D$ is a diagonal matrix of standard deviations
+\end{itemize}
+
+This decomposition separates two distinct concerns:
+\begin{enumerate}
+    \item \textbf{Correlation structure ($R$)}: How variables relate to each other
+    (independent of scale)
+    \item \textbf{Variance magnitude ($D$)}: The scale of each variable's variability
+\end{enumerate}
+
+\section{Block Partitioning Strategy}
+
+The full covariance matrix is partitioned into blocks for computational
+efficiency:
+
+\begin{equation}
+\Sigma = \begin{bmatrix}
+\Sigma_{11} & \Sigma_{12} \\
+\Sigma_{12}' & \Sigma_{22}
+\end{bmatrix}
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Block Matrix Components}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Block} & \textbf{Dimension} & \textbf{Contents} \\
+\midrule
+$\Sigma_{11}$ & $(3n_{tp}) \times (3n_{tp})$ & Response components (BR, ER, TR) at all timepoints \\
+$\Sigma_{22}$ & $2 \times 2$ & Biomarker and baseline \\
+$\Sigma_{12}$ & $(3n_{tp}) \times 2$ & Cross-covariances \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For 8-timepoint designs: $\Sigma_{11}$ is $24 \times 24$, giving a full matrix
+of $26 \times 26$.
+
+\section{Intra-Block Structure}
+
+Within $\Sigma_{11}$, there is further structure:
+
+\begin{equation}
+\Sigma_{11} = \begin{bmatrix}
+\Sigma_{BR} & C_{BR,ER} & C_{BR,TR} \\
+C_{ER,BR} & \Sigma_{ER} & C_{ER,TR} \\
+C_{TR,BR} & C_{TR,ER} & \Sigma_{TR}
+\end{bmatrix}
+\end{equation}
+
+Each diagonal block (e.g., $\Sigma_{BR}$) is an $n_{tp} \times n_{tp}$ matrix with:
+\begin{itemize}
+    \item Diagonal entries $= 1$ (unit variance for correlation matrix)
+    \item Off-diagonal entries $=$ autocorrelation parameter (e.g., $c_{br} = 0.75$)
+\end{itemize}
+
+Cross-blocks (e.g., $C_{BR,ER}$) contain:
+\begin{itemize}
+    \item Diagonal entries $= c_{cf1t}$ (same-timepoint cross-correlation)
+    \item Off-diagonal entries $= c_{cfct}$ (different-timepoint cross-correlation)
+\end{itemize}
+
+%==============================================================================
+\part{Conditional Multivariate Normal Sampling}
+%==============================================================================
+
+\section{The Two-Stage Algorithm}
+
+Rather than inverting the full $26 \times 26$ matrix, the simulation uses the
+Schur complement to enable efficient two-stage sampling:
+
+\subsection{Stage 1: Generate Baseline Variables}
+
+Generate (biomarker, baseline) from $\Sigma_{22}$:
+\begin{equation}
+(x_2) \sim \mathcal{N}(\mu_2, \Sigma_{22})
+\end{equation}
+
+\subsection{Stage 2: Generate Response Components}
+
+Generate response components conditional on Stage 1:
+\begin{equation}
+x_1 | x_2 \sim \mathcal{N}(\mu_{1|2}, \Sigma_{cond})
+\end{equation}
+
+where:
+\begin{align}
+\mu_{1|2} &= \mu_1 + \Sigma_{12} \Sigma_{22}^{-1} (x_2 - \mu_2) \\
+\Sigma_{cond} &= \Sigma_{11} - \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{12}'
+\end{align}
+
+\section{Computational Advantages}
+
+This approach reduces computational complexity significantly:
+
+\begin{table}[h]
+\centering
+\caption{Computational Comparison}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Operation} & \textbf{Full Matrix} & \textbf{Two-Stage} \\
+\midrule
+Matrix inversion & $26 \times 26$ & $2 \times 2$ \\
+Cholesky decomposition & $O(26^3)$ & $O(2^3) + O(24^3)$ \\
+Numerical stability & Lower & Higher \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key insight is that $\Sigma_{22}$ is only $2 \times 2$, making its
+inversion trivial and numerically stable.
+
+\section{Conditional Covariance Requirements}
+
+The conditional covariance $\Sigma_{cond}$ is the central matrix for data
+generation. It must be:
+\begin{enumerate}
+    \item \textbf{Positive definite} (all eigenvalues $> 0$)
+    \item \textbf{Well-conditioned} (condition number $\kappa < 100$)
+    \item \textbf{Numerically stable} for Cholesky decomposition
+\end{enumerate}
+
+%==============================================================================
+\part{Positive Definiteness Constraints}
+%==============================================================================
+
+\section{Mathematical Definition}
+
+\begin{definition}[Positive Definiteness]
+A symmetric matrix $\Sigma$ is positive definite if and only if:
+\begin{equation}
+\mathbf{v}^T \Sigma \mathbf{v} > 0 \quad \forall \mathbf{v} \neq \mathbf{0}
+\end{equation}
+Equivalently: All eigenvalues $\lambda_i > 0$.
+\end{definition}
+
+\section{Verification Methods}
+
+Three methods are used to verify positive definiteness:
+
+\subsection{Method 1: Sylvester's Criterion}
+
+\begin{theorem}[Sylvester's Criterion]
+A symmetric matrix is positive definite if and only if all leading principal
+minors are positive:
+\begin{equation}
+\det(\Sigma_k) > 0 \quad \text{for } k = 1, 2, \ldots, n
+\end{equation}
+where $\Sigma_k$ is the $k \times k$ upper-left submatrix.
+\end{theorem}
+
+\subsection{Method 2: Eigenvalue Criterion}
+
+\begin{equation}
+\lambda_{min}(\Sigma) > 0
+\end{equation}
+
+This is the primary method used in \texttt{build\_sigma\_matrix()}.
+
+\subsection{Method 3: Cholesky Decomposition}
+
+If $\Sigma = LL^T$ exists (with $L$ lower triangular, positive diagonal),
+then $\Sigma$ is PD.
+
+\section{Gershgorin Circle Theorem}
+
+\begin{theorem}[Gershgorin]
+For eigenvalue bounds:
+\begin{equation}
+\lambda_i \in \bigcup_{j=1}^{n} \left\{ z \in \mathbb{C} : |z - a_{jj}| \leq R_j \right\}
+\end{equation}
+where $R_j = \sum_{k \neq j} |a_{jk}|$ is the off-diagonal row sum.
+\end{theorem}
+
+For correlation matrices (diagonal $= 1$):
+\begin{equation}
+\lambda_i \in [1 - R_j, 1 + R_j]
+\end{equation}
+
+This implies that if off-diagonal sums exceed 1, negative eigenvalues become
+possible.
+
+\section{The Correlation Hierarchy Constraint}
+
+The critical constraint for PD preservation is the correlation hierarchy:
+
+\begin{equation}
+\boxed{c_{cfct} < c_{cf1t} < \min(c_{tv}, c_{pb}, c_{br})}
+\end{equation}
+
+\begin{remark}
+Measurements at different times cannot be more correlated than measurements
+at the same time. Violating this creates impossible constraint systems.
+\end{remark}
+
+\textbf{Hendrickson's values satisfy this}:
+\begin{itemize}
+    \item $c_{cfct} = 0.05 < c_{cf1t} = 0.12 < c_{br} = 0.75$ \checkmark
+\end{itemize}
+
+\section{Biomarker Correlation Bound}
+
+Empirical analysis establishes:
+\begin{equation}
+c_{bm} \leq 0.6
+\end{equation}
+for designs with 8 timepoints. Higher values risk non-PD matrices.
+
+%==============================================================================
+\part{Condition Number Analysis}
+%==============================================================================
+
+\section{Definition and Interpretation}
+
+The condition number measures numerical stability:
+
+\begin{equation}
+\kappa = \frac{\lambda_{max}}{\lambda_{min}}
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Condition Number Interpretation}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{$\kappa$ Value} & \textbf{Status} & \textbf{Interpretation} \\
+\midrule
+$\kappa < 10$ & Excellent & Near-perfect numerical stability \\
+$10 < \kappa < 100$ & Good & Acceptable for most applications \\
+$100 < \kappa < 1000$ & Poor & Numerical precision concerns \\
+$\kappa > 1000$ & Severe & Cholesky decomposition unreliable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{The AR(1) Problem}
+
+AR(1) correlation structure: $\rho_{ij} = \rho^{|t_i - t_j|}$ with $\rho = 0.75$
+
+For evenly-spaced designs (weeks 2, 8, 14, 20), time gaps are 6, 12, 18 weeks:
+
+\begin{table}[h]
+\centering
+\caption{AR(1) Correlation Decay}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Time Gap} & \textbf{AR(1) Correlation} \\
+\midrule
+6 weeks & $0.75^6 \approx 0.178$ \\
+12 weeks & $0.75^{12} \approx 0.032$ \\
+18 weeks & $0.75^{18} \approx 0.0056$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Correlation ratio}: $0.178 / 0.0056 \approx 32:1$
+
+This extreme ratio creates condition numbers $\kappa \approx 600$--$14,621$ for
+evenly-spaced designs.
+
+\section{Why Clustering Solves This}
+
+Clustered designs (weeks 4, 8, 9, 10, 11, 12, 16, 20) have mixed gaps:
+\begin{itemize}
+    \item Short gaps: 1--4 weeks $\rightarrow$ correlations 0.32--0.75
+    \item Long gaps: 8--16 weeks $\rightarrow$ correlations 0.10--0.32
+\end{itemize}
+
+This creates \textbf{intermediate correlation values} spanning the correlation
+space more evenly, producing balanced eigenvalue distributions with
+$\kappa \approx 56$--$61$.
+
+\section{Alternative Correlation Structures}
+
+Five structures are implemented for flexible design:
+
+\begin{table}[h]
+\centering
+\caption{Correlation Structure Comparison}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Structure} & \textbf{Formula} & \textbf{Best For} \\
+\midrule
+AR(1) & $\rho^{|t_i - t_j|}$ & Clustered designs \\
+Exponential & $\exp(-\lambda|t_i - t_j|)$ & Evenly-spaced ($\kappa \approx 18$) \\
+Power Law & $(1 + \alpha|t_i - t_j|)^{-\beta}$ & Evenly-spaced ($\kappa \approx 13$) \\
+Mat\'ern & $(1 + \sqrt{3}d/\rho)\exp(-\sqrt{3}d/\rho)$ & Flexible smoothness \\
+Rational Quadratic & $(1 + t^2/(2\alpha\lambda^2))^{-\alpha}$ & Best stability ($\kappa \approx 10$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\part{Three-Factor Response Model}
+%==============================================================================
+
+\section{Response Decomposition}
+
+Each participant's response is decomposed into three components:
+
+\begin{equation}
+\text{Response}_t = \text{Baseline} + \text{BR}_t + \text{ER}_t + \text{TR}_t
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Response Component Definitions}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Component} & \textbf{Name} & \textbf{Meaning} & \textbf{Driver} \\
+\midrule
+BR & Biological Response & True pharmacological effect & Treatment, biomarker \\
+ER & Expectancy Response & Placebo/expectancy effect & Blinding status \\
+TR & Time-variant Response & Natural disease progression & Time, individual \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Component Mean Formulas}
+
+\subsection{Biological Response (BR)}
+
+\begin{equation}
+\text{BR}_{mean,t} = \begin{cases}
+w_t \cdot r_{eff} & \text{if on treatment} \\
+w_{accum} \cdot \gamma \cdot f(t_{off}) & \text{if off treatment (carryover)}
+\end{cases}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $w_t$ = weeks on drug up to timepoint $t$
+    \item $r_{eff} = r_0 (1 + \beta \cdot \text{BiomarkerCentered})$ = effective BR rate
+    \item $\gamma$ = carryover proportion
+    \item $f(t_{off})$ = decay function (exponential, power law, etc.)
+\end{itemize}
+
+\subsection{Expectancy Response (ER)}
+
+\begin{equation}
+\text{ER}_{mean,t} = e_t \cdot r_{exp}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $e_t \in \{0, 0.5, 1\}$ = expectancy factor (design-dependent)
+    \item $r_{exp}$ = expectancy response rate
+\end{itemize}
+
+\subsection{Time-variant Response (TR)}
+
+\begin{equation}
+\text{TR}_{mean,t} = f_{time}(t)
+\end{equation}
+
+representing natural disease trajectory independent of treatment.
+
+\section{Design-Specific Expectancy Patterns}
+
+\begin{table}[h]
+\centering
+\caption{Expectancy Allocation by Design}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Design} & \textbf{Weeks with $e=1.0$} & \textbf{Rationale} \\
+\midrule
+OL+BDC & Weeks $\leq 16$ & Open-label phase \\
+Hybrid & Weeks 4, 8 only & Unblinded baseline only \\
+Crossover & Varies by period & Blinding maintained \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\part{Biomarker$\times$Treatment Interaction}
+%==============================================================================
+
+\section{Two-Level Mechanism}
+
+The biomarker-treatment interaction operates at two levels:
+
+\subsection{Level 1: Covariance Structure ($c_{bm}$)}
+
+The correlation between biomarker and BR components:
+\begin{equation}
+\text{Corr}(\text{biomarker}, \text{BR}_t) = c_{bm}
+\end{equation}
+
+This creates covariance-level association: participants with high biomarker
+values tend to have correlated BR values.
+
+\subsection{Level 2: Mean Modulation (biomarker\_moderation)}
+
+The biomarker modifies treatment effect magnitude:
+\begin{equation}
+r_{eff} = r_0 (1 + \beta \cdot \text{BiomarkerCentered})
+\end{equation}
+
+where $\beta$ = \texttt{biomarker\_moderation} parameter.
+
+\section{Mathematical Relationship}
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Biomarker Effect Mechanisms}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Aspect} & \textbf{$c_{bm}$} & \textbf{biomarker\_moderation} \\
+\midrule
+Level & Covariance & Mean \\
+Effect & Correlation in draws & Scaling of treatment effect \\
+Parameter range & 0--0.6 (PD constraint) & 0--0.65 (power analysis) \\
+Impact & Noise structure & Signal magnitude \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Detectability}
+
+The biomarker$\times$treatment interaction is tested via:
+\begin{equation}
+H_0: \beta_{biomarker \times treatment} = 0
+\end{equation}
+
+in the mixed model:
+\begin{lstlisting}
+lmer(response ~ biomarker * treatment + week + (1|participant_id))
+\end{lstlisting}
+
+Power depends on both $c_{bm}$ and biomarker\_moderation values.
+
+%==============================================================================
+\part{Carryover Effect Modeling}
+%==============================================================================
+
+\section{The Fundamental Question}
+
+Should carryover effects modify correlation parameters in addition to means?
+
+\begin{proposition}
+Carryover affects means only, not correlations.
+\end{proposition}
+
+\section{Mathematical Argument}
+
+\textbf{Approach 1 (Incorrect)}: Carryover modifies correlations
+\begin{equation}
+\rho_{BR}(t_{on}, t_{off}) = \rho_0 \cdot g(\text{carryover})
+\end{equation}
+
+This would mean participants' BR correlations change based on their treatment
+history---biologically implausible for most drugs.
+
+\textbf{Approach 2 (Correct)}: Carryover affects means only
+\begin{equation}
+\mu_{BR}(t_{off}) = \mu_{BR}(t_{on}) \cdot h(t_{since\_discontinuation})
+\end{equation}
+
+The residual drug effect enters through the expected value, not the variance
+structure.
+
+\section{Double-Counting Problem}
+
+If carryover modified both means and correlations:
+\begin{enumerate}
+    \item Mean effect: $\text{BR}_{mean}$ higher during off-period
+    \item Correlation effect: BR draws more correlated during off-period
+\end{enumerate}
+
+This would count the same biological phenomenon twice, inflating carryover
+impact and biasing estimates.
+
+\section{Five Carryover Models}
+
+\begin{table}[h]
+\centering
+\caption{Carryover Model Comparison}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Model} & \textbf{Formula} & \textbf{Parameters} & \textbf{Best For} \\
+\midrule
+Fixed Proportion & $\gamma$ (constant) & 1 & Simple drugs \\
+Exponential & $\exp(-\lambda t)$ & 2 & Psychiatric drugs \\
+Power Law & $(1+\alpha t)^{-\beta}$ & 3 & Tissue accumulation \\
+Two-Compartment & $Ae^{-\alpha t} + Be^{-\beta t}$ & 4 & Biphasic kinetics \\
+Delayed Elimination & Lag + exponential & 3 & Prodrugs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Half-Life Relationship}
+
+For exponential decay:
+\begin{equation}
+t_{1/2} = \frac{\ln(2)}{\lambda} \approx \frac{0.693}{\lambda}
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Half-Life Examples}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{$\lambda$ (week$^{-1}$)} & \textbf{$t_{1/2}$ (weeks)} & \textbf{Application} \\
+\midrule
+0.05 & 13.9 & Slow-elimination drugs \\
+0.10 & 6.9 & Typical psychiatric medications \\
+0.15 & 4.6 & Faster clearance \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\part{Mixed-Effects Model Specification}
+%==============================================================================
+
+\section{Core Model Formula}
+
+\begin{align}
+\text{Response}_{it} &= \beta_0 + \beta_1 \cdot \text{Biomarker}_i +
+\beta_2 \cdot \text{Treatment}_{it} \notag \\
+&\quad + \beta_3 \cdot \text{Biomarker}_i \times \text{Treatment}_{it} +
+\beta_4 \cdot \text{Week}_{it} + u_i + \epsilon_{it}
+\end{align}
+
+where:
+\begin{itemize}
+    \item $\beta_3$ = biomarker$\times$treatment interaction (primary endpoint)
+    \item $u_i \sim N(0, \sigma_u^2)$ = random intercept
+    \item $\epsilon_{it} \sim N(0, \sigma^2)$ = residual error
+\end{itemize}
+
+\section{Model Variants}
+
+\textbf{With Carryover Term}:
+\begin{lstlisting}
+lmer(response ~ biomarker * treatment + week + carryover_effect +
+     (1|participant_id))
+\end{lstlisting}
+
+\textbf{Without Carryover (Hendrickson Original)}:
+\begin{lstlisting}
+lmer(response ~ biomarker * treatment + week + (1|participant_id))
+\end{lstlisting}
+
+\section{Random Effects Options}
+
+\begin{table}[h]
+\centering
+\caption{Random Effects Structures}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Structure} & \textbf{Formula} & \textbf{Interpretation} \\
+\midrule
+Random intercept & \texttt{(1|participant\_id)} & Individual baseline differences \\
+Random slope (drug) & \texttt{(1+treatment|participant\_id)} & Individual treatment response \\
+Random slope (time) & \texttt{(1+week|participant\_id)} & Individual trajectories \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\part{Design Comparison Framework}
+%==============================================================================
+
+\section{Five Trial Designs}
+
+\begin{table}[h]
+\centering
+\caption{Trial Design Comparison}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Design} & \textbf{Points} & \textbf{Schedule} & \textbf{Carryover} \\
+\midrule
+Hybrid & 8 & Clustered & Moderate-High \\
+OL+BDC & 8 & Clustered & High \\
+Open-Label & 4 & Evenly-spaced & None \\
+Crossover & 4 & Evenly-spaced & Critical \\
+Parallel & 4 & Evenly-spaced & None \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Measurement Schedules}
+
+\subsection{Clustered (Hybrid)}
+
+Weeks: $\{4, 8, 9, 10, 11, 12, 16, 20\}$
+\begin{itemize}
+    \item Dense cluster at transition (weeks 9--12)
+    \item Captures carryover decay dynamics
+    \item AR(1) works well ($\kappa \approx 56$--$61$)
+\end{itemize}
+
+\subsection{Clustered (OL+BDC)}
+
+Weeks: $\{4, 8, 12, 16, 17, 18, 19, 20\}$
+\begin{itemize}
+    \item Dense cluster at discontinuation (weeks 16--20)
+    \item Extended washout observation
+    \item AR(1) works well ($\kappa \approx 60$)
+\end{itemize}
+
+\subsection{Evenly-Spaced}
+
+Weeks: $\{2, 8, 14, 20\}$
+\begin{itemize}
+    \item Uniform 6-week gaps
+    \item Requires alternative correlation structures
+    \item Exponential or Power Law recommended ($\kappa \approx 13$--$18$)
+\end{itemize}
+
+\section{Expectancy Vulnerability Analysis}
+
+\textbf{OL+BDC}: MORE vulnerable to expectancy confounding
+\begin{itemize}
+    \item High expectancy ($e=1.0$) for 80\% of trial (weeks 0--16)
+    \item ER and BR effects coupled at randomization point
+    \item Sudden drop in both components at week 16
+\end{itemize}
+
+\textbf{Hybrid}: LESS vulnerable
+\begin{itemize}
+    \item High expectancy only for 20\% of trial (weeks 4--8)
+    \item Most measurements during blinded phase ($e=0.5$)
+    \item Cleaner separation of BR and ER effects
+\end{itemize}
+
+%==============================================================================
+\part{Statistical Power Analysis}
+%==============================================================================
+
+\section{Power Definition}
+
+\begin{equation}
+\text{Power} = P(\text{Reject } H_0 | H_1 \text{ true})
+\end{equation}
+
+Estimated via Monte Carlo simulation:
+\begin{equation}
+\hat{\text{Power}} = \frac{\#(\text{iterations with } p < 0.05)}{N_{iterations}}
+\end{equation}
+
+\section{Power Determinants (Ranked by Impact)}
+
+\begin{table}[h]
+\centering
+\caption{Parameter Impact Ranking}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Rank} & \textbf{Parameter} & \textbf{Impact Mechanism} \\
+\midrule
+1 & Design & Measurement schedule, carryover modeling \\
+2 & biomarker\_moderation & Signal magnitude \\
+3 & carryover\_t1half & Signal clarity during off-periods \\
+4 & $c_{bm}$ & Biomarker-response correlation \\
+5 & n\_participants & Statistical precision \\
+6 & Correlation structure & Numerical stability \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Carryover Cost Analysis}
+
+\begin{table}[h]
+\centering
+\caption{Power Loss from Ignoring Carryover}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Carryover} & \textbf{Without Term} & \textbf{With Term} & \textbf{Type I Error} \\
+\midrule
+$\gamma = 0$ & $\sim$0.50 & $\sim$0.50 & 0.05 \\
+$\gamma = 0.5$ & $\sim$0.35 & $\sim$0.45 & 0.07--0.10 (without) \\
+$\gamma = 1.0$ & $\sim$0.25 & $\sim$0.35 & 0.10--0.12 (without) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ignoring carryover leads to:
+\begin{itemize}
+    \item 10--20\% power reduction
+    \item Inflated Type I error
+    \item Biased treatment effect estimates
+\end{itemize}
+
+%==============================================================================
+\part{Alternative Summary Statistics for Interaction Testing}
+%==============================================================================
+
+\section{Motivation}
+
+The primary analysis in this simulation framework uses mixed-effects models to
+test the biomarker$\times$treatment interaction:
+\begin{lstlisting}
+lmer(response ~ biomarker * treatment + week + (1|participant_id))
+\end{lstlisting}
+
+While this approach is flexible and accounts for repeated measures, the test
+statistic (Wald $z$ or $t$) lacks a simple closed-form power expression. This
+section develops \textbf{alternative summary statistics} that:
+
+\begin{enumerate}
+    \item Permit closed-form power calculations
+    \item Provide intuition for optimal trial design
+    \item May sacrifice some efficiency for analytical tractability
+\end{enumerate}
+
+\section{The Correlation-Based Test Statistic}
+
+\subsection{Core Intuition}
+
+The biomarker$\times$treatment interaction implies that participants with
+higher biomarker values respond more strongly to treatment. This manifests as
+a correlation between:
+
+\begin{itemize}
+    \item \textbf{Biomarker level}: $X_i$ (baseline covariate)
+    \item \textbf{Treatment response differential}: $\Delta Y_i = \bar{Y}_{i,on} - \bar{Y}_{i,off}$
+\end{itemize}
+
+Under the null hypothesis of no interaction, this correlation should be zero.
+Under the alternative, it should be positive (assuming higher biomarker
+implies stronger treatment effect).
+
+\subsection{Definition}
+
+Define the test statistic:
+\begin{equation}
+\boxed{r = \text{Corr}(X_i, \Delta Y_i)}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $X_i$ = centered biomarker value for participant $i$
+    \item $\bar{Y}_{i,on}$ = mean response when participant $i$ is on treatment
+    \item $\bar{Y}_{i,off}$ = mean response when participant $i$ is off treatment
+    \item $\Delta Y_i = \bar{Y}_{i,on} - \bar{Y}_{i,off}$ = within-participant treatment effect
+\end{itemize}
+
+\subsection{Computation}
+
+For each participant $i = 1, \ldots, n$:
+\begin{align}
+\bar{Y}_{i,on} &= \frac{1}{n_{on,i}} \sum_{t: T_{it}=1} Y_{it} \\
+\bar{Y}_{i,off} &= \frac{1}{n_{off,i}} \sum_{t: T_{it}=0} Y_{it} \\
+\Delta Y_i &= \bar{Y}_{i,on} - \bar{Y}_{i,off}
+\end{align}
+
+Then compute the sample correlation:
+\begin{equation}
+r = \frac{\sum_{i=1}^{n}(X_i - \bar{X})(\Delta Y_i - \overline{\Delta Y})}
+{\sqrt{\sum_{i=1}^{n}(X_i - \bar{X})^2 \sum_{i=1}^{n}(\Delta Y_i - \overline{\Delta Y})^2}}
+\end{equation}
+
+\section{Distribution Under the Null}
+
+\subsection{Fisher's $z$-Transformation}
+
+Under $H_0: \rho = 0$ (no biomarker$\times$treatment interaction):
+\begin{equation}
+z = \frac{1}{2} \ln\left(\frac{1+r}{1-r}\right) \approx \mathcal{N}\left(0, \frac{1}{n-3}\right)
+\end{equation}
+
+This transformation stabilizes the variance, making it approximately
+independent of the true correlation.
+
+\subsection{Test Procedure}
+
+Reject $H_0$ at level $\alpha$ if:
+\begin{equation}
+|z| > z_{1-\alpha/2} / \sqrt{n-3}
+\end{equation}
+
+or equivalently, if:
+\begin{equation}
+|r| > \frac{z_{1-\alpha/2}}{\sqrt{n-3 + z_{1-\alpha/2}^2}}
+\end{equation}
+
+For $\alpha = 0.05$ and $n = 70$:
+\begin{equation}
+|r| > \frac{1.96}{\sqrt{67 + 3.84}} \approx 0.233
+\end{equation}
+
+\section{Distribution Under the Alternative}
+
+\subsection{True Correlation}
+
+Under $H_1$, the true correlation $\rho$ between biomarker and treatment
+differential depends on:
+
+\begin{equation}
+\rho = \frac{\text{Cov}(X_i, \Delta Y_i)}{\sqrt{\text{Var}(X_i) \cdot \text{Var}(\Delta Y_i)}}
+\end{equation}
+
+\subsection{Deriving $\text{Cov}(X_i, \Delta Y_i)$}
+
+Under the linear interaction model:
+\begin{equation}
+E[\Delta Y_i | X_i] = \tau + \beta \cdot X_i
+\end{equation}
+
+where $\beta$ is the biomarker$\times$treatment interaction coefficient.
+Therefore:
+\begin{equation}
+\text{Cov}(X_i, \Delta Y_i) = \beta \cdot \text{Var}(X_i)
+\end{equation}
+
+\subsection{Deriving $\text{Var}(\Delta Y_i)$}
+
+The variance of the treatment differential has two sources:
+\begin{align}
+\text{Var}(\Delta Y_i) &= \beta^2 \cdot \text{Var}(X_i) + \text{Var}(\epsilon_{\Delta,i}) \\
+&= \beta^2 \sigma_X^2 + \sigma_{\Delta}^2
+\end{align}
+
+where $\sigma_{\Delta}^2$ is the residual variance of the treatment effect
+(reflecting measurement error, within-person variability, etc.).
+
+\subsection{Closed-Form Expression for $\rho$}
+
+Combining these:
+\begin{equation}
+\boxed{\rho = \frac{\beta \sigma_X}{\sqrt{\beta^2 \sigma_X^2 + \sigma_{\Delta}^2}}
+= \frac{1}{\sqrt{1 + \frac{\sigma_{\Delta}^2}{\beta^2 \sigma_X^2}}}}
+\end{equation}
+
+This has a signal-to-noise interpretation:
+\begin{equation}
+\rho = \frac{1}{\sqrt{1 + 1/\text{SNR}^2}} \quad \text{where} \quad
+\text{SNR} = \frac{\beta \sigma_X}{\sigma_{\Delta}}
+\end{equation}
+
+\section{Closed-Form Power Expression}
+
+\subsection{Power via Fisher's $z$}
+
+Under the alternative with true correlation $\rho$:
+\begin{equation}
+z \sim \mathcal{N}\left(\zeta, \frac{1}{n-3}\right)
+\end{equation}
+
+where $\zeta = \frac{1}{2}\ln\left(\frac{1+\rho}{1-\rho}\right)$ is the
+population Fisher's $z$.
+
+\subsection{Power Formula}
+
+\begin{theorem}[Power for Correlation Test]
+The power to detect a biomarker$\times$treatment interaction with true
+correlation $\rho$ using $n$ participants at significance level $\alpha$ is:
+\begin{equation}
+\boxed{1 - \beta = \Phi\left(\zeta\sqrt{n-3} - z_{1-\alpha/2}\right)
++ \Phi\left(-\zeta\sqrt{n-3} - z_{1-\alpha/2}\right)}
+\end{equation}
+
+For one-sided tests (expected positive correlation):
+\begin{equation}
+1 - \beta = \Phi\left(\zeta\sqrt{n-3} - z_{1-\alpha}\right)
+\end{equation}
+\end{theorem}
+
+\subsection{Sample Size Formula}
+
+Inverting the power formula for required sample size:
+\begin{equation}
+\boxed{n = 3 + \left(\frac{z_{1-\alpha/2} + z_{1-\beta}}{\zeta}\right)^2}
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Required Sample Size for 80\% Power ($\alpha = 0.05$, two-sided)}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{True $\rho$} & \textbf{Fisher's $\zeta$} & \textbf{Required $n$} \\
+\midrule
+0.20 & 0.203 & 197 \\
+0.30 & 0.310 & 88 \\
+0.40 & 0.424 & 49 \\
+0.50 & 0.549 & 32 \\
+0.60 & 0.693 & 23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Relationship to Interaction Coefficient}
+
+\subsection{Converting Between $\rho$ and $\beta$}
+
+The regression coefficient $\beta$ (biomarker\_moderation) and correlation
+$\rho$ are related by:
+\begin{equation}
+\beta = \rho \cdot \frac{\sigma_{\Delta}}{\sigma_X}
+\end{equation}
+
+or equivalently:
+\begin{equation}
+\rho = \beta \cdot \frac{\sigma_X}{\sigma_{\Delta}}
+\end{equation}
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item $\beta$ measures the \textbf{unstandardized effect}: how many units
+    the treatment differential changes per unit increase in biomarker
+    \item $\rho$ measures the \textbf{standardized association}: the
+    correlation between biomarker and treatment response
+\end{itemize}
+
+For power calculations, $\rho$ is more useful because its distribution
+is known (via Fisher's $z$).
+
+\section{Design Implications}
+
+\subsection{What Determines $\rho$?}
+
+From the SNR formula, larger $\rho$ (easier detection) occurs when:
+
+\begin{enumerate}
+    \item \textbf{Larger $\beta$}: Stronger true interaction effect
+    \item \textbf{Larger $\sigma_X$}: More biomarker heterogeneity in sample
+    \item \textbf{Smaller $\sigma_{\Delta}$}: Less noise in treatment differential
+\end{enumerate}
+
+\subsection{Reducing $\sigma_{\Delta}$}
+
+The variance of the treatment differential can be decomposed:
+\begin{equation}
+\sigma_{\Delta}^2 = \frac{\sigma_{on}^2}{n_{on}} + \frac{\sigma_{off}^2}{n_{off}}
++ 2\sigma_{\text{within}}^2
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\sigma_{on}^2, \sigma_{off}^2$ = measurement error variance
+    \item $n_{on}, n_{off}$ = number of measurements in each condition
+    \item $\sigma_{\text{within}}^2$ = within-person variability
+\end{itemize}
+
+\textbf{Design implication}: More measurements per participant reduce
+$\sigma_{\Delta}^2$, increasing $\rho$ and power.
+
+\subsection{Balance Between Conditions}
+
+For fixed total measurements $n_{on} + n_{off} = m$, $\sigma_{\Delta}^2$ is
+minimized when $n_{on} = n_{off} = m/2$ (balanced allocation).
+
+\textbf{Design implication}: Balanced designs (equal on/off measurements)
+maximize power for detecting biomarker$\times$treatment interactions.
+
+\subsection{Recruitment Strategy}
+
+Power increases with $\sigma_X$ (biomarker variance). This suggests:
+
+\begin{enumerate}
+    \item Recruit from heterogeneous populations
+    \item Avoid restricting biomarker range
+    \item Consider stratified sampling to ensure biomarker spread
+\end{enumerate}
+
+\section{Comparison to Mixed-Effects Approach}
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Interaction Test Approaches}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Correlation Test} & \textbf{Mixed Model} \\
+\midrule
+Test statistic & $r$ (or Fisher's $z$) & Wald $z$ or $t$ \\
+Power formula & Closed-form (Fisher) & Monte Carlo only \\
+Repeated measures & Collapsed to $\Delta Y$ & Modeled explicitly \\
+Covariates & Not directly included & Easily added \\
+Efficiency & Lower (loses information) & Higher (uses all data) \\
+Robustness & Less model-dependent & Assumes linearity, normality \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{When to Use Each}
+
+\textbf{Correlation test}:
+\begin{itemize}
+    \item Power/sample size planning (closed-form calculations)
+    \item Quick exploratory analysis
+    \item When model assumptions are uncertain
+\end{itemize}
+
+\textbf{Mixed model}:
+\begin{itemize}
+    \item Primary confirmatory analysis
+    \item When covariates must be controlled
+    \item When repeated measures structure is important
+\end{itemize}
+
+\section{Extension: Slope-Based Statistics}
+
+\subsection{Regression of $\Delta Y$ on $X$}
+
+An alternative to correlation is the regression slope:
+\begin{equation}
+\Delta Y_i = \alpha + \beta X_i + \epsilon_i
+\end{equation}
+
+The OLS estimate:
+\begin{equation}
+\hat{\beta} = \frac{\sum_{i}(X_i - \bar{X})(\Delta Y_i - \overline{\Delta Y})}
+{\sum_{i}(X_i - \bar{X})^2}
+\end{equation}
+
+Under standard assumptions:
+\begin{equation}
+\hat{\beta} \sim \mathcal{N}\left(\beta, \frac{\sigma_{\Delta}^2}{\sum_{i}(X_i - \bar{X})^2}\right)
+\end{equation}
+
+\subsection{Power for Slope Test}
+
+\begin{equation}
+1 - \beta = \Phi\left(\frac{|\beta|\sqrt{\sum(X_i - \bar{X})^2}}{\sigma_{\Delta}}
+- z_{1-\alpha/2}\right)
+\end{equation}
+
+This is equivalent to the correlation test but expressed in terms of the
+regression coefficient rather than the correlation.
+
+\section{Summary of Key Formulas}
+
+\subsection{Test Statistic}
+\begin{equation}
+r = \text{Corr}(X_i, \Delta Y_i) = \text{Corr}(\text{Biomarker}, \bar{Y}_{on} - \bar{Y}_{off})
+\end{equation}
+
+\subsection{Signal-to-Noise Ratio}
+\begin{equation}
+\rho = \frac{1}{\sqrt{1 + \sigma_{\Delta}^2 / (\beta^2 \sigma_X^2)}}
+\end{equation}
+
+\subsection{Power}
+\begin{equation}
+1 - \beta = \Phi\left(\zeta\sqrt{n-3} - z_{1-\alpha/2}\right)
+\end{equation}
+
+\subsection{Sample Size}
+\begin{equation}
+n = 3 + \left(\frac{z_{1-\alpha/2} + z_{1-\beta}}{\zeta}\right)^2
+\end{equation}
+
+\subsection{Design Principle}
+\begin{quote}
+\textit{To maximize power for detecting biomarker$\times$treatment interactions:
+maximize biomarker heterogeneity ($\sigma_X$), increase measurements per
+condition ($n_{on}, n_{off}$), and maintain balanced allocation.}
+\end{quote}
+
+\section{Literature Review: Analytical Power Alternatives}
+
+This section surveys analytical approaches to power calculation in settings
+comparable to Hendrickson et al.\ (2020), where mixed-effects models test
+biomarker$\times$treatment interactions in N-of-1 or crossover designs.
+
+\subsection{Why Analytical Power Is Difficult}
+
+The mixed-effects model
+\begin{lstlisting}
+lmer(response ~ biomarker * treatment + week + (1|participant_id))
+\end{lstlisting}
+involves a Wald test statistic whose exact distribution depends on:
+\begin{enumerate}
+    \item The design matrix structure $X$
+    \item The variance-covariance matrix $V$
+    \item The variance components ($\sigma_u^2$, $\sigma^2$)
+\end{enumerate}
+
+Computing $\text{Var}(\hat{\beta}) = \sigma^2(X'V^{-1}X)^{-1}$ requires inverting
+a large block-diagonal matrix whose structure varies by design. For Hendrickson's
+clustered measurement schedules with AR(1) correlation, this inversion lacks a
+simple closed form.
+
+\subsection{Summary Measures Analysis}
+
+The most widely used analytical alternative collapses repeated measures to
+participant-level summaries.
+
+\textbf{Key references:}
+\begin{itemize}
+    \item Matthews, Altman, Campbell, Royston (1990) -- ``Analysis of serial
+    measurements in medical research'' (BMJ)
+    \item Frison \& Pocock (1992) -- ``Repeated measures in clinical trials:
+    analysis using mean summary statistics''
+\end{itemize}
+
+\textbf{Approach:} Compute a summary statistic per participant (mean, AUC,
+slope, change score), then apply standard between-subject tests. The correlation
+$r = \text{Corr}(X_i, \Delta Y_i)$ developed in this document is a summary
+measure approach.
+
+\textbf{Trade-off:} Loses efficiency (ignores within-person correlation structure)
+but gains analytical tractability. Efficiency loss is moderate when intraclass
+correlation (ICC) is high (0.5--0.8), which is typical in N-of-1 settings.
+
+\subsection{The ``Rule of $4\times$'' for Interactions}
+
+\textbf{Key reference:} Brookes et al.\ (2004) -- ``Subgroup analyses in
+randomised trials: risks of subgroup-specific analyses'' (Statistics in Medicine)
+
+\textbf{Key finding:} Detecting a treatment$\times$covariate interaction requires
+approximately \textbf{4 times the sample size} compared to detecting the main
+treatment effect of the same magnitude.
+
+\textbf{Mathematical basis:}
+\begin{equation}
+\text{Var}(\hat{\beta}_{interaction}) \approx 4 \cdot \text{Var}(\hat{\beta}_{treatment})
+\end{equation}
+
+This arises because the interaction term has reduced ``effective sample size''---only
+the covariance between biomarker and treatment contributes to the signal.
+
+\textbf{Implication:} If detecting a main treatment effect requires $n = 20$,
+detecting the same-sized interaction requires $n \approx 80$.
+
+\subsection{Asymptotic Mixed Model Formulas}
+
+\textbf{Key references:}
+\begin{itemize}
+    \item Shieh (2003) -- ``On power and sample size calculations for likelihood
+    ratio tests in generalized linear models''
+    \item Stroup (2002) -- ``Power analysis based on spatial effects mixed models''
+    \item Demidenko (2004) -- \textit{Mixed Models: Theory and Applications} (Chapter 10)
+\end{itemize}
+
+\textbf{Approach:} Use the noncentrality parameter of the Wald or likelihood
+ratio test:
+\begin{equation}
+\text{ncp} = \frac{\beta^2}{\text{Var}(\hat{\beta})} =
+\frac{\beta^2}{\sigma^2 (X'V^{-1}X)^{-1}_{jj}}
+\end{equation}
+
+Then:
+\begin{equation}
+\text{Power} = \Phi\left(\frac{|\beta|}{\text{SE}(\hat{\beta})} - z_{1-\alpha/2}\right)
+\end{equation}
+
+\textbf{Challenge:} Computing $(X'V^{-1}X)^{-1}$ requires specifying the design
+matrix, variance components, and correlation structure. For balanced designs
+with compound symmetry, closed forms exist. For Hendrickson's clustered designs
+with AR(1), the algebra becomes intractable.
+
+\subsection{GEE-Based Power}
+
+\textbf{Key references:}
+\begin{itemize}
+    \item Liu \& Liang (1997) -- ``Sample size calculations for studies with
+    correlated observations''
+    \item Rochon (1998) -- ``Application of GEE procedures for sample size
+    calculations in repeated measures experiments''
+\end{itemize}
+
+\textbf{Formula for treatment effect:}
+\begin{equation}
+n = \frac{2(z_{\alpha/2} + z_{\beta})^2 \sigma^2}{\delta^2} \times \text{Design Effect}
+\end{equation}
+
+where Design Effect $= \frac{1 + (m-1)\rho}{m}$ for compound symmetry with $m$
+measurements and correlation $\rho$.
+
+\textbf{Limitation:} Primarily developed for main effects, not
+treatment$\times$covariate interactions.
+
+\subsection{Crossover Trial Formulas}
+
+\textbf{Key references:}
+\begin{itemize}
+    \item Jones \& Kenward (2014) -- \textit{Design and Analysis of Cross-Over
+    Trials} (3rd edition)
+    \item Senn (2002) -- \textit{Cross-over Trials in Clinical Research} (2nd edition)
+\end{itemize}
+
+\textbf{For standard $2 \times 2$ crossover (treatment effect):}
+\begin{equation}
+n = \frac{2(z_{\alpha/2} + z_{\beta})^2 \sigma_d^2}{\delta^2}
+\end{equation}
+
+where $\sigma_d^2$ is the within-subject variance of differences.
+
+\textbf{For treatment$\times$period interaction} (analogous to
+treatment$\times$biomarker):
+\begin{equation}
+n_{interaction} \approx 4 \times n_{treatment}
+\end{equation}
+
+\textbf{Limitation:} These formulas assume balanced designs. Hendrickson's Hybrid
+and OL+BDC designs are unbalanced (different numbers of on/off measurements).
+
+\subsection{Design Effect Approach}
+
+\textbf{Key reference:} Diggle, Heagerty, Liang, Zeger (2002) --
+\textit{Analysis of Longitudinal Data} (Chapter 13)
+
+\textbf{Approach:} Express power in terms of a ``design effect'' that inflates variance:
+\begin{equation}
+\text{Var}(\hat{\beta}) = \text{Var}_{simple} \times DE
+\end{equation}
+
+For AR(1) correlation with $m$ equally-spaced timepoints:
+\begin{equation}
+DE = \frac{1}{m} \left[1 + 2\sum_{k=1}^{m-1}\left(1 - \frac{k}{m}\right)\rho^k\right]
+\end{equation}
+
+\textbf{For Hendrickson's clustered designs:} The unequal spacing
+(weeks 4, 8, 9, 10, 11, 12, 16, 20) requires computing:
+\begin{equation}
+DE = \frac{1}{m^2} \sum_{i,j} \rho^{|t_i - t_j|}
+\end{equation}
+
+This can be computed numerically but does not yield a simple closed form.
+
+\subsection{Bayesian Assurance}
+
+\textbf{Key reference:} O'Hagan \& Stevens (2001) -- ``Bayesian assessment of
+sample size for clinical trials of cost-effectiveness''
+
+\textbf{Approach:} Instead of frequentist power (probability of significance
+given fixed true effect), compute ``assurance'' (probability of significance
+averaging over prior uncertainty about true effect):
+\begin{equation}
+\text{Assurance} = \int \text{Power}(\theta) \cdot \pi(\theta) \, d\theta
+\end{equation}
+
+\textbf{Advantage:} More realistic when effect size is uncertain.
+
+\textbf{Disadvantage:} Requires specifying a prior; still often computed by
+simulation.
+
+\subsection{Comparison of Analytical Approaches}
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Power Calculation Methods}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Approach} & \textbf{Analytical?} & \textbf{Interaction?} &
+\textbf{Unbalanced?} & \textbf{Accuracy} \\
+\midrule
+Summary measures & Yes & Yes & Partial & Moderate \\
+Rule of $4\times$ & Yes & Yes & No & Approximate \\
+Asymptotic mixed & Semi & Yes & Numerical & Good \\
+GEE-based & Yes & Limited & Partial & Moderate \\
+Crossover formulas & Yes & Limited & No & Good (balanced) \\
+Design effect & Semi & Limited & Yes & Moderate \\
+Simulation & No & Yes & Yes & Excellent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The Efficiency-Tractability Trade-off}
+
+Three approaches represent different points on the efficiency-tractability
+spectrum:
+
+\begin{enumerate}
+    \item \textbf{Full mixed model} (Hendrickson approach): Uses all data optimally
+    but requires simulation for power.
+
+    \item \textbf{Summary correlation} (this document): Loses $\sim$15--30\%
+    efficiency but has closed-form power via Fisher's $z$.
+
+    \item \textbf{Rule of $4\times$}: Very rough approximation---if main effect
+    needs $n$, interaction needs $4n$.
+\end{enumerate}
+
+The summary approach is well-established in the literature (Matthews et al., 1990).
+It is particularly appropriate when ICC is high (typical in N-of-1: 0.5--0.8),
+where collapsing measurements loses minimal information.
+
+\subsection{Recommended Analytical Approximation}
+
+For Hendrickson-style power calculations, a practical analytical formula combines:
+
+\textbf{Step 1:} Estimate effective correlation from design parameters
+\begin{equation}
+\rho_{eff} = \frac{\beta \cdot \sigma_X}{\sqrt{\beta^2 \sigma_X^2 + \sigma_{\Delta}^2}}
+\end{equation}
+
+where $\sigma_{\Delta}^2 \approx \frac{\sigma^2}{n_{on}} + \frac{\sigma^2}{n_{off}}$
+(measurement noise reduced by averaging).
+
+\textbf{Step 2:} Apply Fisher's $z$ power formula
+\begin{equation}
+n = 3 + \left(\frac{z_{1-\alpha/2} + z_{1-\beta}}{\zeta}\right)^2
+\end{equation}
+
+\textbf{Step 3:} Apply design-specific inflation factor
+
+\begin{table}[h]
+\centering
+\caption{Design-Specific Inflation Factors}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Design} & \textbf{Inflation} & \textbf{Rationale} \\
+\midrule
+Hybrid & $\times 1.1$ & Near-balanced on/off measurements \\
+OL+BDC & $\times 1.2$ & Unbalanced (more on than off) \\
+Crossover & $\times 1.1$ & Balanced but carryover concerns \\
+Parallel & $\times 1.5$ & Between-subject comparison loses power \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This hybrid approach provides analytical tractability while acknowledging
+design-specific features through calibrated inflation factors.
+
+\subsection{Key References Summary}
+
+\begin{enumerate}
+    \item Matthews et al.\ (1990) -- Summary measures analysis (BMJ)
+    \item Frison \& Pocock (1992) -- Mean summary statistics
+    \item Brookes et al.\ (2004) -- Rule of $4\times$ for interactions
+    \item Shieh (2003) -- Asymptotic mixed model power
+    \item Liu \& Liang (1997) -- GEE-based power
+    \item Jones \& Kenward (2014) -- Crossover trial design
+    \item Senn (2002) -- Cross-over trials in clinical research
+    \item Diggle et al.\ (2002) -- Analysis of longitudinal data
+    \item Demidenko (2004) -- Mixed models theory
+    \item O'Hagan \& Stevens (2001) -- Bayesian assurance
+\end{enumerate}
+
+%==============================================================================
+\part{Key Mathematical Insights}
+%==============================================================================
+
+\section{The Eigenvalue-Conditioning Nexus}
+
+The condition number problem is fundamentally about eigenvalue balance:
+\begin{equation}
+\kappa = \frac{\lambda_{max}}{\lambda_{min}}
+\end{equation}
+
+\textbf{Good conditioning} requires eigenvalues to be similar in magnitude,
+which requires correlation values to span the correlation space evenly rather
+than clustering at extreme values.
+
+\section{The Clustering Insight}
+
+Clustered measurement schedules succeed because they create
+\textbf{intermediate correlations}:
+\begin{itemize}
+    \item AR(1) with 1-week gaps: $\rho = 0.75$
+    \item AR(1) with 4-week gaps: $\rho = 0.32$
+    \item AR(1) with 8-week gaps: $\rho = 0.10$
+\end{itemize}
+
+This natural variation from clustering balances eigenvalues.
+
+Evenly-spaced designs with uniform large gaps (6 weeks) create extreme
+correlation ratios (32:1), leading to extreme eigenvalue ratios.
+
+\section{The Carryover-Correlation Separation}
+
+The principle that carryover affects means only (not correlations) is
+essential for:
+\begin{enumerate}
+    \item \textbf{Avoiding double-counting} of carryover effects
+    \item \textbf{Maintaining interpretability} of correlation parameters
+    \item \textbf{Preserving positive definiteness}
+\end{enumerate}
+
+\section{The Hierarchy Constraint}
+
+The correlation hierarchy ($c_{cfct} < c_{cf1t} < c_{autocorr}$) encodes
+the temporal coherence principle:
+
+\begin{quote}
+\textit{Measurements at different times cannot be more correlated than
+measurements at the same time.}
+\end{quote}
+
+Violating this creates mathematically impossible constraint systems.
+
+%==============================================================================
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+%==============================================================================
+
+\section{Key Formulas Reference}
+
+\subsection{Covariance Matrix}
+\begin{equation}
+\Sigma = D \cdot R \cdot D
+\end{equation}
+
+\subsection{Conditional Mean}
+\begin{equation}
+\mu_{1|2} = \mu_1 + \Sigma_{12} \Sigma_{22}^{-1} (x_2 - \mu_2)
+\end{equation}
+
+\subsection{Conditional Covariance}
+\begin{equation}
+\Sigma_{cond} = \Sigma_{11} - \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{12}'
+\end{equation}
+
+\subsection{Condition Number}
+\begin{equation}
+\kappa = \frac{\lambda_{max}}{\lambda_{min}}
+\end{equation}
+
+\subsection{AR(1) Correlation}
+\begin{equation}
+\rho_{ij} = \rho^{|t_i - t_j|}
+\end{equation}
+
+\subsection{Exponential Correlation}
+\begin{equation}
+\rho_{ij} = \exp(-\lambda |t_i - t_j|)
+\end{equation}
+
+\subsection{Carryover Exponential Decay}
+\begin{equation}
+\text{Carryover}_t = \text{Effect}_0 \cdot \exp\left(-\frac{\ln(2)}{t_{1/2}}
+\cdot t_{off}\right)
+\end{equation}
+
+\subsection{Half-Life Relationship}
+\begin{equation}
+t_{1/2} = \frac{\ln(2)}{\lambda}
+\end{equation}
+
+\subsection{Hierarchy Constraint}
+\begin{equation}
+c_{cfct} < c_{cf1t} < \min(c_{tv}, c_{pb}, c_{br})
+\end{equation}
+
+\section{Document Sources}
+
+This synthesis draws from the following documentation files:
+\begin{enumerate}
+    \item \texttt{sigma\_matrix\_derivation.tex} -- Core $\Sigma = DRD$ derivation
+    \item \texttt{positive\_definiteness\_constraints.tex} -- PD analysis
+    \item \texttt{correlation\_structure\_design.tex} -- Block structure design
+    \item \texttt{carryover\_correlation\_theory.tex} -- Carryover separation
+    \item \texttt{correlation\_structure\_white\_paper.Rmd} -- AR(1) alternatives
+    \item \texttt{carryover\_modeling\_white\_paper.Rmd} -- Five carryover models
+    \item \texttt{mixed\_model\_comparison\_and\_best\_practices.md} -- Model guidance
+    \item \texttt{technical\_differences\_scaling\_and\_pd.tex} -- Implementation
+    \item \texttt{correlation\_parameters\_guide.tex} -- Parameter interpretation
+    \item \texttt{whitepaper.tex} -- Crossover vs N-of-1 comparison
+    \item Part XI (Alternative Summary Statistics) -- Original theoretical development
+    using Fisher's $z$-transformation for closed-form power analysis
+\end{enumerate}
+
+\vspace{1cm}
+\noindent\rule{\textwidth}{0.4pt}
+
+\noindent\textit{Document generated: December 17, 2025}\\
+\textit{Repository: pmsimstats2025}\\
+\textit{Total mathematical documentation reviewed: 10+ documents, $\sim$15,000 lines}
+
+\end{document}

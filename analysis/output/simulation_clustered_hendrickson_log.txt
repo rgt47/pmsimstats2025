@@ -1,0 +1,502 @@
+Running HENDRICKSON-ALIGNED simulation...
+Designs: N-of-1, OL, OL+BDC, CO 
+DGP scalefactor: 2
+Analysis scalefactor: 2
+Iterations: 75
+Conditions: 120
+Parallel: YES (9 cores)
+
+Parallel backend: 9 workers
+
+Condition 1/120: N-of-1 N=35 c.bm=0.0 t1half=0.0
+  2.5 sec (ETA: 293 sec)
+Condition 2/120: N-of-1 N=35 c.bm=0.0 t1half=0.1
+  3.2 sec (ETA: 188 sec)
+Condition 3/120: N-of-1 N=35 c.bm=0.0 t1half=0.2
+  3.7 sec (ETA: 145 sec)
+Condition 4/120: N-of-1 N=35 c.bm=0.0 t1half=1.0
+  4.2 sec (ETA: 123 sec)
+Condition 5/120: N-of-1 N=35 c.bm=0.0 t1half=2.0
+  4.8 sec (ETA: 110 sec)
+Condition 6/120: N-of-1 N=35 c.bm=0.3 t1half=0.0
+  5.2 sec (ETA: 98 sec)
+Condition 7/120: N-of-1 N=35 c.bm=0.3 t1half=0.1
+  5.7 sec (ETA: 93 sec)
+Condition 8/120: N-of-1 N=35 c.bm=0.3 t1half=0.2
+  6.2 sec (ETA: 87 sec)
+Condition 9/120: N-of-1 N=35 c.bm=0.3 t1half=1.0
+  6.8 sec (ETA: 84 sec)
+Condition 10/120: N-of-1 N=35 c.bm=0.3 t1half=2.0
+  7.3 sec (ETA: 80 sec)
+Condition 11/120: N-of-1 N=35 c.bm=0.6 t1half=0.0
+  7.7 sec (ETA: 76 sec)
+Condition 12/120: N-of-1 N=35 c.bm=0.6 t1half=0.1
+  8.2 sec (ETA: 74 sec)
+Condition 13/120: N-of-1 N=35 c.bm=0.6 t1half=0.2
+  8.8 sec (ETA: 72 sec)
+Condition 14/120: N-of-1 N=35 c.bm=0.6 t1half=1.0
+  9.3 sec (ETA: 71 sec)
+Condition 15/120: N-of-1 N=35 c.bm=0.6 t1half=2.0
+  9.9 sec (ETA: 70 sec)
+Condition 16/120: N-of-1 N=70 c.bm=0.0 t1half=0.0
+  10.6 sec (ETA: 69 sec)
+Condition 17/120: N-of-1 N=70 c.bm=0.0 t1half=0.1
+  11.4 sec (ETA: 69 sec)
+Condition 18/120: N-of-1 N=70 c.bm=0.0 t1half=0.2
+  12.2 sec (ETA: 69 sec)
+Condition 19/120: N-of-1 N=70 c.bm=0.0 t1half=1.0
+  13.0 sec (ETA: 69 sec)
+Condition 20/120: N-of-1 N=70 c.bm=0.0 t1half=2.0
+  13.7 sec (ETA: 69 sec)
+Condition 21/120: N-of-1 N=70 c.bm=0.3 t1half=0.0
+  14.3 sec (ETA: 68 sec)
+Condition 22/120: N-of-1 N=70 c.bm=0.3 t1half=0.1
+  15.2 sec (ETA: 68 sec)
+Condition 23/120: N-of-1 N=70 c.bm=0.3 t1half=0.2
+  16.0 sec (ETA: 68 sec)
+Condition 24/120: N-of-1 N=70 c.bm=0.3 t1half=1.0
+  16.9 sec (ETA: 68 sec)
+Condition 25/120: N-of-1 N=70 c.bm=0.3 t1half=2.0
+  17.7 sec (ETA: 67 sec)
+Condition 26/120: N-of-1 N=70 c.bm=0.6 t1half=0.0
+  18.4 sec (ETA: 67 sec)
+Condition 27/120: N-of-1 N=70 c.bm=0.6 t1half=0.1
+  19.3 sec (ETA: 66 sec)
+Condition 28/120: N-of-1 N=70 c.bm=0.6 t1half=0.2
+  20.1 sec (ETA: 66 sec)
+Condition 29/120: N-of-1 N=70 c.bm=0.6 t1half=1.0
+  20.9 sec (ETA: 66 sec)
+Condition 30/120: N-of-1 N=70 c.bm=0.6 t1half=2.0
+  21.7 sec (ETA: 65 sec)
+Condition 31/120: OL N=35 c.bm=0.0 t1half=0.0
+  22.2 sec (ETA: 64 sec)
+Condition 32/120: OL N=35 c.bm=0.0 t1half=0.1
+  22.6 sec (ETA: 62 sec)
+Condition 33/120: OL N=35 c.bm=0.0 t1half=0.2
+  23.1 sec (ETA: 61 sec)
+Condition 34/120: OL N=35 c.bm=0.0 t1half=1.0
+  23.6 sec (ETA: 60 sec)
+Condition 35/120: OL N=35 c.bm=0.0 t1half=2.0
+  24.1 sec (ETA: 58 sec)
+Condition 36/120: OL N=35 c.bm=0.3 t1half=0.0
+  24.5 sec (ETA: 57 sec)
+Condition 37/120: OL N=35 c.bm=0.3 t1half=0.1
+  25.0 sec (ETA: 56 sec)
+Condition 38/120: OL N=35 c.bm=0.3 t1half=0.2
+  25.4 sec (ETA: 55 sec)
+Condition 39/120: OL N=35 c.bm=0.3 t1half=1.0
+  26.0 sec (ETA: 54 sec)
+Condition 40/120: OL N=35 c.bm=0.3 t1half=2.0
+  26.5 sec (ETA: 53 sec)
+Condition 41/120: OL N=35 c.bm=0.6 t1half=0.0
+  27.1 sec (ETA: 52 sec)
+Condition 42/120: OL N=35 c.bm=0.6 t1half=0.1
+  27.4 sec (ETA: 51 sec)
+Condition 43/120: OL N=35 c.bm=0.6 t1half=0.2
+  27.8 sec (ETA: 50 sec)
+Condition 44/120: OL N=35 c.bm=0.6 t1half=1.0
+  28.2 sec (ETA: 49 sec)
+Condition 45/120: OL N=35 c.bm=0.6 t1half=2.0
+  28.6 sec (ETA: 48 sec)
+Condition 46/120: OL N=70 c.bm=0.0 t1half=0.0
+  29.3 sec (ETA: 47 sec)
+Condition 47/120: OL N=70 c.bm=0.0 t1half=0.1
+  29.9 sec (ETA: 46 sec)
+Condition 48/120: OL N=70 c.bm=0.0 t1half=0.2
+  30.6 sec (ETA: 46 sec)
+Condition 49/120: OL N=70 c.bm=0.0 t1half=1.0
+  31.3 sec (ETA: 45 sec)
+Condition 50/120: OL N=70 c.bm=0.0 t1half=2.0
+  31.9 sec (ETA: 45 sec)
+Condition 51/120: OL N=70 c.bm=0.3 t1half=0.0
+  32.5 sec (ETA: 44 sec)
+Condition 52/120: OL N=70 c.bm=0.3 t1half=0.1
+  33.2 sec (ETA: 43 sec)
+Condition 53/120: OL N=70 c.bm=0.3 t1half=0.2
+  33.8 sec (ETA: 43 sec)
+Condition 54/120: OL N=70 c.bm=0.3 t1half=1.0
+  34.5 sec (ETA: 42 sec)
+Condition 55/120: OL N=70 c.bm=0.3 t1half=2.0
+  35.2 sec (ETA: 42 sec)
+Condition 56/120: OL N=70 c.bm=0.6 t1half=0.0
+  35.9 sec (ETA: 41 sec)
+Condition 57/120: OL N=70 c.bm=0.6 t1half=0.1
+  36.6 sec (ETA: 40 sec)
+Condition 58/120: OL N=70 c.bm=0.6 t1half=0.2
+  37.3 sec (ETA: 40 sec)
+Condition 59/120: OL N=70 c.bm=0.6 t1half=1.0
+  37.9 sec (ETA: 39 sec)
+Condition 60/120: OL N=70 c.bm=0.6 t1half=2.0
+  38.7 sec (ETA: 39 sec)
+Condition 61/120: OL+BDC N=35 c.bm=0.0 t1half=0.0
+  39.1 sec (ETA: 38 sec)
+Condition 62/120: OL+BDC N=35 c.bm=0.0 t1half=0.1
+  39.7 sec (ETA: 37 sec)
+Condition 63/120: OL+BDC N=35 c.bm=0.0 t1half=0.2
+  40.2 sec (ETA: 36 sec)
+Condition 64/120: OL+BDC N=35 c.bm=0.0 t1half=1.0
+  40.8 sec (ETA: 36 sec)
+Condition 65/120: OL+BDC N=35 c.bm=0.0 t1half=2.0
+  41.3 sec (ETA: 35 sec)
+Condition 66/120: OL+BDC N=35 c.bm=0.3 t1half=0.0
+  41.8 sec (ETA: 34 sec)
+Condition 67/120: OL+BDC N=35 c.bm=0.3 t1half=0.1
+  42.4 sec (ETA: 34 sec)
+Condition 68/120: OL+BDC N=35 c.bm=0.3 t1half=0.2
+  43.0 sec (ETA: 33 sec)
+Condition 69/120: OL+BDC N=35 c.bm=0.3 t1half=1.0
+  43.5 sec (ETA: 32 sec)
+Condition 70/120: OL+BDC N=35 c.bm=0.3 t1half=2.0
+  44.1 sec (ETA: 31 sec)
+Condition 71/120: OL+BDC N=35 c.bm=0.6 t1half=0.0
+  44.5 sec (ETA: 31 sec)
+Condition 72/120: OL+BDC N=35 c.bm=0.6 t1half=0.1
+  45.2 sec (ETA: 30 sec)
+Condition 73/120: OL+BDC N=35 c.bm=0.6 t1half=0.2
+  45.8 sec (ETA: 29 sec)
+Condition 74/120: OL+BDC N=35 c.bm=0.6 t1half=1.0
+  46.3 sec (ETA: 29 sec)
+Condition 75/120: OL+BDC N=35 c.bm=0.6 t1half=2.0
+  47.1 sec (ETA: 28 sec)
+Condition 76/120: OL+BDC N=70 c.bm=0.0 t1half=0.0
+  47.7 sec (ETA: 28 sec)
+Condition 77/120: OL+BDC N=70 c.bm=0.0 t1half=0.1
+  48.5 sec (ETA: 27 sec)
+Condition 78/120: OL+BDC N=70 c.bm=0.0 t1half=0.2
+  49.3 sec (ETA: 27 sec)
+Condition 79/120: OL+BDC N=70 c.bm=0.0 t1half=1.0
+  50.1 sec (ETA: 26 sec)
+Condition 80/120: OL+BDC N=70 c.bm=0.0 t1half=2.0
+  50.9 sec (ETA: 25 sec)
+Condition 81/120: OL+BDC N=70 c.bm=0.3 t1half=0.0
+  51.5 sec (ETA: 25 sec)
+Condition 82/120: OL+BDC N=70 c.bm=0.3 t1half=0.1
+  52.4 sec (ETA: 24 sec)
+Condition 83/120: OL+BDC N=70 c.bm=0.3 t1half=0.2
+  53.2 sec (ETA: 24 sec)
+Condition 84/120: OL+BDC N=70 c.bm=0.3 t1half=1.0
+  54.0 sec (ETA: 23 sec)
+Condition 85/120: OL+BDC N=70 c.bm=0.3 t1half=2.0
+  54.8 sec (ETA: 23 sec)
+Condition 86/120: OL+BDC N=70 c.bm=0.6 t1half=0.0
+  55.4 sec (ETA: 22 sec)
+Condition 87/120: OL+BDC N=70 c.bm=0.6 t1half=0.1
+  56.2 sec (ETA: 21 sec)
+Condition 88/120: OL+BDC N=70 c.bm=0.6 t1half=0.2
+  57.0 sec (ETA: 21 sec)
+Condition 89/120: OL+BDC N=70 c.bm=0.6 t1half=1.0
+  57.8 sec (ETA: 20 sec)
+Condition 90/120: OL+BDC N=70 c.bm=0.6 t1half=2.0
+  58.6 sec (ETA: 20 sec)
+Condition 91/120: CO N=35 c.bm=0.0 t1half=0.0
+  59.0 sec (ETA: 19 sec)
+Condition 92/120: CO N=35 c.bm=0.0 t1half=0.1
+  59.6 sec (ETA: 18 sec)
+Condition 93/120: CO N=35 c.bm=0.0 t1half=0.2
+  60.1 sec (ETA: 17 sec)
+Condition 94/120: CO N=35 c.bm=0.0 t1half=1.0
+  60.7 sec (ETA: 17 sec)
+Condition 95/120: CO N=35 c.bm=0.0 t1half=2.0
+  61.3 sec (ETA: 16 sec)
+Condition 96/120: CO N=35 c.bm=0.3 t1half=0.0
+  61.7 sec (ETA: 15 sec)
+Condition 97/120: CO N=35 c.bm=0.3 t1half=0.1
+  62.3 sec (ETA: 15 sec)
+Condition 98/120: CO N=35 c.bm=0.3 t1half=0.2
+  62.9 sec (ETA: 14 sec)
+Condition 99/120: CO N=35 c.bm=0.3 t1half=1.0
+  63.4 sec (ETA: 13 sec)
+Condition 100/120: CO N=35 c.bm=0.3 t1half=2.0
+  64.0 sec (ETA: 13 sec)
+Condition 101/120: CO N=35 c.bm=0.6 t1half=0.0
+  64.5 sec (ETA: 12 sec)
+Condition 102/120: CO N=35 c.bm=0.6 t1half=0.1
+  65.0 sec (ETA: 11 sec)
+Condition 103/120: CO N=35 c.bm=0.6 t1half=0.2
+  65.5 sec (ETA: 11 sec)
+Condition 104/120: CO N=35 c.bm=0.6 t1half=1.0
+  66.1 sec (ETA: 10 sec)
+Condition 105/120: CO N=35 c.bm=0.6 t1half=2.0
+  66.7 sec (ETA: 10 sec)
+Condition 106/120: CO N=70 c.bm=0.0 t1half=0.0
+  67.4 sec (ETA: 9 sec)
+Condition 107/120: CO N=70 c.bm=0.0 t1half=0.1
+  68.2 sec (ETA: 8 sec)
+Condition 108/120: CO N=70 c.bm=0.0 t1half=0.2
+  69.0 sec (ETA: 8 sec)
+Condition 109/120: CO N=70 c.bm=0.0 t1half=1.0
+  69.9 sec (ETA: 7 sec)
+Condition 110/120: CO N=70 c.bm=0.0 t1half=2.0
+  70.7 sec (ETA: 6 sec)
+Condition 111/120: CO N=70 c.bm=0.3 t1half=0.0
+  71.3 sec (ETA: 6 sec)
+Condition 112/120: CO N=70 c.bm=0.3 t1half=0.1
+  72.1 sec (ETA: 5 sec)
+Condition 113/120: CO N=70 c.bm=0.3 t1half=0.2
+  72.8 sec (ETA: 5 sec)
+Condition 114/120: CO N=70 c.bm=0.3 t1half=1.0
+  73.5 sec (ETA: 4 sec)
+Condition 115/120: CO N=70 c.bm=0.3 t1half=2.0
+  74.3 sec (ETA: 3 sec)
+Condition 116/120: CO N=70 c.bm=0.6 t1half=0.0
+  75.0 sec (ETA: 3 sec)
+Condition 117/120: CO N=70 c.bm=0.6 t1half=0.1
+  75.8 sec (ETA: 2 sec)
+Condition 118/120: CO N=70 c.bm=0.6 t1half=0.2
+  76.6 sec (ETA: 1 sec)
+Condition 119/120: CO N=70 c.bm=0.6 t1half=1.0
+  77.5 sec (ETA: 1 sec)
+Condition 120/120: CO N=70 c.bm=0.6 t1half=2.0
+  78.4 sec (ETA: 0 sec)
+
+ ====================================================================== 
+RESULTS SUMMARY
+====================================================================== 
+
+# A tibble: 192 × 13
+    scenario    design     N  c.bm carryover_t1half  power mean_effect sd_effect
+    <chr>       <chr>  <dbl> <dbl>            <dbl>  <dbl>       <dbl>     <dbl>
+  1 S1_with_ca… CO        35   0                0.1 0.0133  -0.000130     0.0672
+  2 S1_with_ca… CO        35   0                0.2 0.0667   0.0154       0.0819
+  3 S1_with_ca… CO        35   0                1   0.0667   0.0151       0.0754
+  4 S1_with_ca… CO        35   0                2   0.0667  -0.000112     0.0804
+  5 S1_with_ca… CO        35   0.3              0.1 0.107    0.0172       0.0724
+  6 S1_with_ca… CO        35   0.3              0.2 0.0533   0.00392      0.0707
+  7 S1_with_ca… CO        35   0.3              1   0.0533   0.00472      0.0698
+  8 S1_with_ca… CO        35   0.3              2   0.0533   0.00445      0.0786
+  9 S1_with_ca… CO        35   0.6              0.1 0.0267  -0.00940      0.0708
+ 10 S1_with_ca… CO        35   0.6              0.2 0.0667  -0.00386      0.0716
+ 11 S1_with_ca… CO        35   0.6              1   0.0267   0.0130       0.0706
+ 12 S1_with_ca… CO        35   0.6              2   0.04    -0.00346      0.0745
+ 13 S1_with_ca… CO        70   0                0.1 0.04     0.00674      0.0488
+ 14 S1_with_ca… CO        70   0                0.2 0.107    0.00106      0.0554
+ 15 S1_with_ca… CO        70   0                1   0.0667   0.00336      0.0496
+ 16 S1_with_ca… CO        70   0                2   0.04     0.00482      0.0477
+ 17 S1_with_ca… CO        70   0.3              0.1 0.0533   0.00523      0.0494
+ 18 S1_with_ca… CO        70   0.3              0.2 0.0667  -0.000610     0.0530
+ 19 S1_with_ca… CO        70   0.3              1   0.0267  -0.000852     0.0497
+ 20 S1_with_ca… CO        70   0.3              2   0.0667  -0.000633     0.0557
+ 21 S1_with_ca… CO        70   0.6              0.1 0.04     0.00293      0.0474
+ 22 S1_with_ca… CO        70   0.6              0.2 0.0533   0.00476      0.0432
+ 23 S1_with_ca… CO        70   0.6              1   0.0533  -0.00220      0.0454
+ 24 S1_with_ca… CO        70   0.6              2   0.0667   0.00364      0.0523
+ 25 S1_with_ca… N-of-1    35   0                0.1 0.04    -0.00824      0.0649
+ 26 S1_with_ca… N-of-1    35   0                0.2 0.0267   0.0126       0.0753
+ 27 S1_with_ca… N-of-1    35   0                1   0.0533   0.0106       0.0852
+ 28 S1_with_ca… N-of-1    35   0                2   0.0267   0.00598      0.0839
+ 29 S1_with_ca… N-of-1    35   0.3              0.1 0.0533   0.0285       0.0724
+ 30 S1_with_ca… N-of-1    35   0.3              0.2 0.04     0.0230       0.0706
+ 31 S1_with_ca… N-of-1    35   0.3              1   0.0933   0.0475       0.0804
+ 32 S1_with_ca… N-of-1    35   0.3              2   0.04     0.0469       0.0884
+ 33 S1_with_ca… N-of-1    35   0.6              0.1 0.0533   0.0604       0.0631
+ 34 S1_with_ca… N-of-1    35   0.6              0.2 0.147    0.0658       0.0803
+ 35 S1_with_ca… N-of-1    35   0.6              1   0.133    0.0704       0.0809
+ 36 S1_with_ca… N-of-1    35   0.6              2   0.0933   0.0820       0.0940
+ 37 S1_with_ca… N-of-1    70   0                0.1 0.04     0.00282      0.0518
+ 38 S1_with_ca… N-of-1    70   0                0.2 0.04     0.00950      0.0527
+ 39 S1_with_ca… N-of-1    70   0                1   0.0267  -0.00812      0.0596
+ 40 S1_with_ca… N-of-1    70   0                2   0.04     0.00633      0.0648
+ 41 S1_with_ca… N-of-1    70   0.3              0.1 0.107    0.0339       0.0534
+ 42 S1_with_ca… N-of-1    70   0.3              0.2 0.107    0.0360       0.0542
+ 43 S1_with_ca… N-of-1    70   0.3              1   0.0667   0.0373       0.0598
+ 44 S1_with_ca… N-of-1    70   0.3              2   0.0667   0.0364       0.0630
+ 45 S1_with_ca… N-of-1    70   0.6              0.1 0.253    0.0669       0.0559
+ 46 S1_with_ca… N-of-1    70   0.6              0.2 0.213    0.0668       0.0501
+ 47 S1_with_ca… N-of-1    70   0.6              1   0.253    0.0758       0.0615
+ 48 S1_with_ca… N-of-1    70   0.6              2   0.187    0.0807       0.0695
+ 49 S1_with_ca… OL+BDC    35   0                0.1 0.08     0.0247       0.105 
+ 50 S1_with_ca… OL+BDC    35   0                0.2 0.0267  -0.00211      0.0889
+ 51 S1_with_ca… OL+BDC    35   0                1   0.0667  -0.00812      0.103 
+ 52 S1_with_ca… OL+BDC    35   0                2   0.12     0.0114       0.149 
+ 53 S1_with_ca… OL+BDC    35   0.3              0.1 0.0533   0.0232       0.0885
+ 54 S1_with_ca… OL+BDC    35   0.3              0.2 0.0933   0.0374       0.0973
+ 55 S1_with_ca… OL+BDC    35   0.3              1   0.0267   0.0213       0.0988
+ 56 S1_with_ca… OL+BDC    35   0.3              2   0.0533   0.0219       0.119 
+ 57 S1_with_ca… OL+BDC    35   0.6              0.1 0.0933   0.0509       0.0918
+ 58 S1_with_ca… OL+BDC    35   0.6              0.2 0.0533   0.0573       0.0915
+ 59 S1_with_ca… OL+BDC    35   0.6              1   0.08     0.0523       0.109 
+ 60 S1_with_ca… OL+BDC    35   0.6              2   0.0667   0.0990       0.115 
+ 61 S1_with_ca… OL+BDC    70   0                0.1 0.0267   0.00756      0.0598
+ 62 S1_with_ca… OL+BDC    70   0                0.2 0.0267  -0.00583      0.0625
+ 63 S1_with_ca… OL+BDC    70   0                1   0.04     0.00412      0.0709
+ 64 S1_with_ca… OL+BDC    70   0                2   0.04    -0.0103       0.0834
+ 65 S1_with_ca… OL+BDC    70   0.3              0.1 0.0667   0.0336       0.0576
+ 66 S1_with_ca… OL+BDC    70   0.3              0.2 0.12     0.0378       0.0606
+ 67 S1_with_ca… OL+BDC    70   0.3              1   0.0533   0.0211       0.0818
+ 68 S1_with_ca… OL+BDC    70   0.3              2   0.0267   0.0367       0.0724
+ 69 S1_with_ca… OL+BDC    70   0.6              0.1 0.16     0.0513       0.0626
+ 70 S1_with_ca… OL+BDC    70   0.6              0.2 0.16     0.0597       0.0624
+ 71 S1_with_ca… OL+BDC    70   0.6              1   0.187    0.0645       0.0748
+ 72 S1_with_ca… OL+BDC    70   0.6              2   0.213    0.0841       0.0953
+ 73 S2_no_carr… CO        35   0                0   0.04    -0.000752     0.0701
+ 74 S2_no_carr… CO        35   0                0.1 0.0133  -0.000130     0.0672
+ 75 S2_no_carr… CO        35   0                0.2 0.0667   0.0154       0.0819
+ 76 S2_no_carr… CO        35   0                1   0.0667   0.0152       0.0749
+ 77 S2_no_carr… CO        35   0                2   0.0667  -0.0000110    0.0779
+ 78 S2_no_carr… CO        35   0.3              0   0.0133  -0.00880      0.0611
+ 79 S2_no_carr… CO        35   0.3              0.1 0.107    0.0172       0.0724
+ 80 S2_no_carr… CO        35   0.3              0.2 0.0533   0.00392      0.0707
+ 81 S2_no_carr… CO        35   0.3              1   0.0267   0.00492      0.0691
+ 82 S2_no_carr… CO        35   0.3              2   0.0267   0.00513      0.0755
+ 83 S2_no_carr… CO        35   0.6              0   0.0533   0.00765      0.0807
+ 84 S2_no_carr… CO        35   0.6              0.1 0.0267  -0.00940      0.0708
+ 85 S2_no_carr… CO        35   0.6              0.2 0.0667  -0.00386      0.0716
+ 86 S2_no_carr… CO        35   0.6              1   0.0267   0.0132       0.0700
+ 87 S2_no_carr… CO        35   0.6              2   0.0533  -0.00140      0.0720
+ 88 S2_no_carr… CO        70   0                0   0.0667  -0.00394      0.0545
+ 89 S2_no_carr… CO        70   0                0.1 0.04     0.00674      0.0488
+ 90 S2_no_carr… CO        70   0                0.2 0.107    0.00106      0.0554
+ 91 S2_no_carr… CO        70   0                1   0.0667   0.00336      0.0493
+ 92 S2_no_carr… CO        70   0                2   0.0133   0.00534      0.0462
+ 93 S2_no_carr… CO        70   0.3              0   0.0133  -0.00123      0.0460
+ 94 S2_no_carr… CO        70   0.3              0.1 0.0533   0.00523      0.0494
+ 95 S2_no_carr… CO        70   0.3              0.2 0.0667  -0.000610     0.0530
+ 96 S2_no_carr… CO        70   0.3              1   0.0267  -0.000685     0.0495
+ 97 S2_no_carr… CO        70   0.3              2   0.0667   0.000823     0.0537
+ 98 S2_no_carr… CO        70   0.6              0   0.0533  -0.00231      0.0462
+ 99 S2_no_carr… CO        70   0.6              0.1 0.04     0.00293      0.0474
+100 S2_no_carr… CO        70   0.6              0.2 0.0533   0.00476      0.0432
+# ℹ 92 more rows
+# ℹ 5 more variables: n <int>, n_errors <int>, n_success <dbl>, ci_lower <dbl>,
+#   ci_upper <dbl>
+
+ ====================================================================== 
+SCENARIO COMPARISON: S1 (with carryover) vs S2 (without)
+====================================================================== 
+
+# A tibble: 64 × 8
+   design     N  c.bm carryover_t1half S1_with_carryover S2_no_carryover
+   <chr>  <dbl> <dbl>            <dbl>             <dbl>           <dbl>
+ 1 CO        35   0.3              0.1            0.107           0.107 
+ 2 CO        35   0.6              0.1            0.0267          0.0267
+ 3 CO        35   0.3              0.2            0.0533          0.0533
+ 4 CO        35   0.6              0.2            0.0667          0.0667
+ 5 CO        35   0.3              1              0.0533          0.0267
+ 6 CO        35   0.6              1              0.0267          0.0267
+ 7 CO        35   0.3              2              0.0533          0.0267
+ 8 CO        35   0.6              2              0.04            0.0533
+ 9 CO        70   0.3              0.1            0.0533          0.0533
+10 CO        70   0.6              0.1            0.04            0.04  
+11 CO        70   0.3              0.2            0.0667          0.0667
+12 CO        70   0.6              0.2            0.0533          0.0533
+13 CO        70   0.3              1              0.0267          0.0267
+14 CO        70   0.6              1              0.0533          0.0533
+15 CO        70   0.3              2              0.0667          0.0667
+16 CO        70   0.6              2              0.0667          0.0533
+17 N-of-1    35   0.3              0.1            0.0533          0.0533
+18 N-of-1    35   0.6              0.1            0.0533          0.0533
+19 N-of-1    35   0.3              0.2            0.04            0.04  
+20 N-of-1    35   0.6              0.2            0.147           0.147 
+21 N-of-1    35   0.3              1              0.0933          0.0933
+22 N-of-1    35   0.6              1              0.133           0.107 
+23 N-of-1    35   0.3              2              0.04            0.0267
+24 N-of-1    35   0.6              2              0.0933          0.0933
+25 N-of-1    70   0.3              0.1            0.107           0.107 
+26 N-of-1    70   0.6              0.1            0.253           0.253 
+27 N-of-1    70   0.3              0.2            0.107           0.107 
+28 N-of-1    70   0.6              0.2            0.213           0.213 
+29 N-of-1    70   0.3              1              0.0667          0.08  
+30 N-of-1    70   0.6              1              0.253           0.253 
+31 N-of-1    70   0.3              2              0.0667          0.0533
+32 N-of-1    70   0.6              2              0.187           0.213 
+33 OL        35   0.3              0.1           NA               0.08  
+34 OL        35   0.6              0.1           NA               0.173 
+35 OL        35   0.3              0.2           NA               0.08  
+36 OL        35   0.6              0.2           NA               0.147 
+37 OL        35   0.3              1             NA               0.08  
+38 OL        35   0.6              1             NA               0.213 
+39 OL        35   0.3              2             NA               0.0533
+40 OL        35   0.6              2             NA               0.32  
+41 OL        70   0.3              0.1           NA               0.147 
+42 OL        70   0.6              0.1           NA               0.52  
+43 OL        70   0.3              0.2           NA               0.16  
+44 OL        70   0.6              0.2           NA               0.453 
+45 OL        70   0.3              1             NA               0.16  
+46 OL        70   0.6              1             NA               0.413 
+47 OL        70   0.3              2             NA               0.12  
+48 OL        70   0.6              2             NA               0.56  
+49 OL+BDC    35   0.3              0.1            0.0533          0.0533
+50 OL+BDC    35   0.6              0.1            0.0933          0.0933
+51 OL+BDC    35   0.3              0.2            0.0933          0.0933
+52 OL+BDC    35   0.6              0.2            0.0533          0.0533
+53 OL+BDC    35   0.3              1              0.0267          0.0267
+54 OL+BDC    35   0.6              1              0.08            0.107 
+55 OL+BDC    35   0.3              2              0.0533          0.0533
+56 OL+BDC    35   0.6              2              0.0667          0.0667
+57 OL+BDC    70   0.3              0.1            0.0667          0.0667
+58 OL+BDC    70   0.6              0.1            0.16            0.16  
+59 OL+BDC    70   0.3              0.2            0.12            0.12  
+60 OL+BDC    70   0.6              0.2            0.16            0.16  
+61 OL+BDC    70   0.3              1              0.0533          0.0667
+62 OL+BDC    70   0.6              1              0.187           0.173 
+63 OL+BDC    70   0.3              2              0.0267          0.0267
+64 OL+BDC    70   0.6              2              0.213           0.16  
+# ℹ 2 more variables: power_gain <dbl>, pct_gain <dbl>
+
+ ====================================================================== 
+TYPE I ERROR RATES (c.bm = 0)
+====================================================================== 
+
+# A tibble: 64 × 7
+   scenario          design     N carryover_t1half  power ci_lower ci_upper
+   <chr>             <chr>  <dbl>            <dbl>  <dbl>    <dbl>    <dbl>
+ 1 S1_with_carryover CO        35              0.1 0.0133  0.00236   0.0717
+ 2 S1_with_carryover CO        35              0.2 0.0667  0.0288    0.147 
+ 3 S1_with_carryover CO        35              1   0.0667  0.0288    0.147 
+ 4 S1_with_carryover CO        35              2   0.0667  0.0288    0.147 
+ 5 S1_with_carryover CO        70              0.1 0.04    0.0137    0.111 
+ 6 S1_with_carryover CO        70              0.2 0.107   0.0550    0.197 
+ 7 S1_with_carryover CO        70              1   0.0667  0.0288    0.147 
+ 8 S1_with_carryover CO        70              2   0.04    0.0137    0.111 
+ 9 S1_with_carryover N-of-1    35              0.1 0.04    0.0137    0.111 
+10 S1_with_carryover N-of-1    35              0.2 0.0267  0.00734   0.0921
+11 S1_with_carryover N-of-1    35              1   0.0533  0.0209    0.129 
+12 S1_with_carryover N-of-1    35              2   0.0267  0.00734   0.0921
+13 S1_with_carryover N-of-1    70              0.1 0.04    0.0137    0.111 
+14 S1_with_carryover N-of-1    70              0.2 0.04    0.0137    0.111 
+15 S1_with_carryover N-of-1    70              1   0.0267  0.00734   0.0921
+16 S1_with_carryover N-of-1    70              2   0.04    0.0137    0.111 
+17 S1_with_carryover OL+BDC    35              0.1 0.08    0.0372    0.164 
+18 S1_with_carryover OL+BDC    35              0.2 0.0267  0.00734   0.0921
+19 S1_with_carryover OL+BDC    35              1   0.0667  0.0288    0.147 
+20 S1_with_carryover OL+BDC    35              2   0.12    0.0644    0.213 
+21 S1_with_carryover OL+BDC    70              0.1 0.0267  0.00734   0.0921
+22 S1_with_carryover OL+BDC    70              0.2 0.0267  0.00734   0.0921
+23 S1_with_carryover OL+BDC    70              1   0.04    0.0137    0.111 
+24 S1_with_carryover OL+BDC    70              2   0.04    0.0137    0.111 
+25 S2_no_carryover   CO        35              0   0.04    0.0137    0.111 
+26 S2_no_carryover   CO        35              0.1 0.0133  0.00236   0.0717
+27 S2_no_carryover   CO        35              0.2 0.0667  0.0288    0.147 
+28 S2_no_carryover   CO        35              1   0.0667  0.0288    0.147 
+29 S2_no_carryover   CO        35              2   0.0667  0.0288    0.147 
+30 S2_no_carryover   CO        70              0   0.0667  0.0288    0.147 
+31 S2_no_carryover   CO        70              0.1 0.04    0.0137    0.111 
+32 S2_no_carryover   CO        70              0.2 0.107   0.0550    0.197 
+33 S2_no_carryover   CO        70              1   0.0667  0.0288    0.147 
+34 S2_no_carryover   CO        70              2   0.0133  0.00236   0.0717
+35 S2_no_carryover   N-of-1    35              0   0.0667  0.0288    0.147 
+36 S2_no_carryover   N-of-1    35              0.1 0.04    0.0137    0.111 
+37 S2_no_carryover   N-of-1    35              0.2 0.0267  0.00734   0.0921
+38 S2_no_carryover   N-of-1    35              1   0.04    0.0137    0.111 
+39 S2_no_carryover   N-of-1    35              2   0.0267  0.00734   0.0921
+40 S2_no_carryover   N-of-1    70              0   0.0133  0.00236   0.0717
+41 S2_no_carryover   N-of-1    70              0.1 0.04    0.0137    0.111 
+42 S2_no_carryover   N-of-1    70              0.2 0.04    0.0137    0.111 
+43 S2_no_carryover   N-of-1    70              1   0.0267  0.00734   0.0921
+44 S2_no_carryover   N-of-1    70              2   0.04    0.0137    0.111 
+45 S2_no_carryover   OL        35              0   0.0267  0.00734   0.0921
+46 S2_no_carryover   OL        35              0.1 0.0133  0.00236   0.0717
+47 S2_no_carryover   OL        35              0.2 0.0133  0.00236   0.0717
+48 S2_no_carryover   OL        35              1   0.0133  0.00236   0.0717
+49 S2_no_carryover   OL        35              2   0.107   0.0550    0.197 
+50 S2_no_carryover   OL        70              0   0.04    0.0137    0.111 
+# ℹ 14 more rows
+
+ ====================================================================== 
+SIMULATION COMPLETE
+====================================================================== 
+Results saved to: analysis/output 
+Key output files:
+  - simulation_clustered_hendrickson_results.RData
+  - power_hendrickson_*_*.pdf/png (per design)
+  - simulation_clustered_hendrickson_log.txt

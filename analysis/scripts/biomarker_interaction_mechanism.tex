@@ -1,0 +1,519 @@
+\documentclass[12pt,oneside]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{xfrac}
+\usepackage{mathtools}
+\usepackage{hyperref}
+
+% R code formatting
+\lstset{
+  language=R,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  showstringspaces=false,
+  columns=flexible,
+  backgroundcolor=\color{gray!10}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Biomarker-Treatment Interaction}
+\lhead{Clustered N-of-1 Simulation}
+\cfoot{\thepage}
+
+\title{\textbf{Biomarker-Treatment Interaction Mechanism}}
+\author{Clustered N-of-1 Trial Simulation}
+\date{December 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides a comprehensive mathematical and computational explanation of how the clustered N-of-1 simulation generates biomarker-treatment interactions through two complementary mechanisms: (1) covariance structure via biomarker-response correlation, and (2) mean-level modulation via treatment effect scaling. These mechanisms work synergistically to create realistic pharmacogenomics scenarios and extend the Hendrickson et al.\ (2020) framework to explicitly study biomarker-driven heterogeneity in treatment response.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Overview}
+% ============================================================================
+
+The clustered simulation generates biomarker-treatment interactions through two distinct mechanisms:
+
+\begin{enumerate}
+  \item \textbf{Covariance structure}: Biomarker and responses are correlated in the sampling distribution via the cross-covariance matrix $\mathbf{\Sigma}_{12}$
+  \item \textbf{Mean-level modulation}: The drug response rate itself is scaled by the observed biomarker level through multiplicative modulation
+\end{enumerate}
+
+These mechanisms work together to produce realistic heterogeneous treatment responses where individual biomarker status fundamentally shapes the magnitude of treatment benefit.
+
+% ============================================================================
+\section{Terminology and Parameter Definitions}
+% ============================================================================
+
+To ensure clarity throughout, we establish consistent naming conventions:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Concept} & \textbf{Code Variable} & \textbf{param\_grid Name} & \textbf{Controls} \\
+\midrule
+Baseline response value & \texttt{baseline} & — & Random intercept per participant \\
+Biomarker value & \texttt{biomarker} & — & Individual characteristic (random) \\
+BM-treatment interaction & \texttt{bm\_mod} & \texttt{biomarker\_moderation} & Effect modulation (\textbf{MEANS}) \\
+BM-response correlation & \texttt{c.bm} & \texttt{biomarker\_correlation} & Covariance structure (\textbf{COVARIANCE}) \\
+\bottomrule
+\end{tabular}
+\caption{Consistent terminology used throughout the simulation.}
+\end{table}
+
+\begin{description}
+  \item[biomarker\_moderation ($\text{bm\_mod}$):] Controls the strength of biomarker modulation of the drug response rate. Affects \textbf{means only}.
+
+  \item[biomarker\_correlation ($c.bm$):] Controls the correlation between biomarker and response variables in the covariance matrix. Affects \textbf{covariance structure only}.
+\end{description}
+
+% ============================================================================
+\section{Two-Level Interaction Mechanism}
+% ============================================================================
+
+The interaction emerges from two complementary pathways:
+
+\subsection{Level 1: Covariance Structure via Biomarker-Response Correlation}
+
+The parameter $c.bm$ (biomarker\_correlation) creates correlation between the biomarker and responses through the cross-covariance matrix $\mathbf{\Sigma}_{12}$. This is implemented using conditional normal sampling:
+
+\begin{lstlisting}
+# Stage 1: Generate baseline values independently
+stage1 <- mvrnorm(1, mu = c(biomarker_mean, baseline_mean), Sigma = Sigma_22)
+biomarker <- stage1[1]
+baseline <- stage1[2]
+
+# Stage 2: Generate responses CONDITIONAL on biomarker
+z <- c(biomarker - biomarker_mean, baseline - baseline_mean)
+cond_mean <- as.vector(Sigma_12 %*% solve(Sigma_22) %*% z)
+responses <- mvrnorm(1, mu = cond_mean, Sigma = Sigma_cond)
+\end{lstlisting}
+
+\textbf{Effect:} Observed biomarker values shift the response distributions upward or downward proportionally to their deviation from the mean. Higher $c.bm$ creates stronger shifts.
+
+\subsection{Level 2: Treatment Effect Modulation via Biomarker-Treatment Interaction}
+
+The parameter $\text{bm\_mod}$ (biomarker\_moderation) scales the drug response rate multiplicatively:
+
+\begin{lstlisting}
+bm_centered = (biomarker - biomarker_mean) / biomarker_sd
+effective_BR_rate <- BR_rate * (1 + bm_mod * bm_centered)
+
+# Example: BR_rate = 0.5, bm_mod = 0.45, biomarker is 1 SD above mean
+# effective_BR_rate = 0.5 * (1 + 0.45 * 1) = 0.725
+
+BR_mean = weeks_on_drug * effective_BR_rate
+BR = BR_mean + br_random
+response = baseline + BR + ER + TR
+\end{lstlisting}
+
+\textbf{Effect:} The drug effect slope itself varies by biomarker value through multiplicative scaling. High biomarker individuals experience stronger drug effects; low biomarker individuals experience weaker effects.
+
+% ============================================================================
+\section{Block-Partitioned Covariance Matrix Structure}
+% ============================================================================
+
+The full 26-dimensional covariance matrix is structured as a $2 \times 2$ block matrix:
+
+\[
+\boldsymbol{\Sigma} =
+\begin{pmatrix}
+\mathbf{\Sigma}_{11} & \mathbf{\Sigma}_{12} \\
+\mathbf{\Sigma}_{12}^T & \mathbf{\Sigma}_{22}
+\end{pmatrix}
+\]
+
+where:
+\begin{align*}
+\mathbf{\Sigma}_{11} &: 24 \times 24 \text{ (response covariances)} \\
+\mathbf{\Sigma}_{12} &: 24 \times 2 \text{ (cross-covariance: responses and baseline)} \\
+\mathbf{\Sigma}_{22} &: 2 \times 2 \text{ (baseline covariances)}
+\end{align*}
+
+\subsection{Sigma\_22: Covariance of Baseline Factors}
+
+\[
+\mathbf{\Sigma}_{22} =
+\begin{pmatrix}
+\sigma_{\text{BM}}^2 & \rho_{\text{BM,BL}} \sigma_{\text{BM}} \sigma_{\text{BL}} \\
+\rho_{\text{BM,BL}} \sigma_{\text{BM}} \sigma_{\text{BL}} & \sigma_{\text{BL}}^2
+\end{pmatrix}
+\]
+
+In the simulation:
+\begin{lstlisting}
+Sigma_22 <- matrix(c(
+  biomarker_sd^2,  # = 4.0
+  c.bm_baseline * biomarker_sd * between_subject_sd,  # = 0.3 * 2 * 2 = 1.2
+  c.bm_baseline * biomarker_sd * between_subject_sd,
+  between_subject_sd^2  # = 4.0
+), 2, 2)
+\end{lstlisting}
+
+\subsection{Sigma\_11: Response Covariances}
+
+The $24 \times 24$ response covariance matrix consists of three response factors at 8 timepoints:
+
+\begin{align*}
+\text{BR (Biological Response)} &: \text{8 timepoints, } c.br = 0.8 \text{ autocorrelation} \\
+\text{ER (Expectancy Response)} &: \text{8 timepoints, } c.er = 0.8 \text{ autocorrelation} \\
+\text{TR (Time-Variant Response)} &: \text{8 timepoints, } c.tr = 0.8 \text{ autocorrelation}
+\end{align*}
+
+Within-factor blocks use time-based AR(1) structure:
+
+\[
+\Sigma_{\text{BR}}[i,j] = \sigma^2 \cdot \rho^{|t_i - t_j|}
+\]
+
+Cross-factor blocks use compound symmetry with same-time ($c.cf1t = 0.2$) and different-time ($c.cfct = 0.1$) correlations.
+
+\subsection{Sigma\_12: Cross-Covariance (Critical for Interaction)}
+
+This $24 \times 2$ matrix encodes correlations between responses and baseline factors:
+
+\begin{lstlisting}
+Sigma_12[br_idx, 1] <- c.bm * within_subject_sd * biomarker_sd
+Sigma_12[er_idx, 1] <- c.bm * 0.5 * within_subject_sd * biomarker_sd
+Sigma_12[tr_idx, 1] <- c.bm * 0.5 * within_subject_sd * biomarker_sd
+Sigma_12[br_idx, 2] <- c.baseline * within_subject_sd * between_subject_sd
+Sigma_12[er_idx, 2] <- c.baseline * within_subject_sd * between_subject_sd
+Sigma_12[tr_idx, 2] <- c.baseline * within_subject_sd * between_subject_sd
+\end{lstlisting}
+
+\textbf{Key observation:} Every element of $\mathbf{\Sigma}_{12}$ is scaled by $c.bm$ (biomarker\_correlation), making this matrix the locus of biomarker-response dependence.
+
+% ============================================================================
+\section{Concrete Example: How Biomarker Correlation Creates Response Shifts}
+% ============================================================================
+
+Assume:
+\begin{align*}
+c.bm &= 0.3 \text{ (biomarker\_correlation)} \\
+\sigma_{\text{within}} &= 1.8 \text{ (within-subject SD)} \\
+\sigma_{\text{BM}} &= 2.0 \text{ (biomarker SD)}
+\end{align*}
+
+The cross-covariance entry for biomarker $\to$ BR is:
+
+\[
+\mathbf{\Sigma}_{12}[\text{br\_idx}, 1] = 0.3 \times 1.8 \times 2.0 = 1.08
+\]
+
+\subsection{Scenario 1: High Biomarker (1 SD above mean)}
+
+\begin{align*}
+\text{biomarker} &= \mu_{\text{BM}} + 1 \sigma_{\text{BM}} = 5 + 2 = 7 \\
+\mathbf{z} &= \begin{pmatrix} 7 - 5 \\ \text{baseline} - 10 \end{pmatrix} = \begin{pmatrix} 2 \\ 0 \end{pmatrix}
+\end{align*}
+
+Response shift via conditional distribution:
+
+\[
+\text{shift} = \mathbf{\Sigma}_{12} \mathbf{\Sigma}_{22}^{-1} \mathbf{z} \approx 1.08 \times 0.5 \times 2 = +1.08 \text{ units}
+\]
+
+\textbf{Result:} BR responses are generated approximately 1.08 units \textbf{higher} for high-biomarker individuals.
+
+\subsection{Scenario 2: Low Biomarker (1 SD below mean)}
+
+\begin{align*}
+\text{biomarker} &= 5 - 2 = 3 \\
+\mathbf{z} &= \begin{pmatrix} -2 \\ 0 \end{pmatrix}
+\end{align*}
+
+Response shift:
+
+\[
+\text{shift} = 1.08 \times 0.5 \times (-2) = -1.08 \text{ units}
+\]
+
+\textbf{Result:} BR responses are generated approximately 1.08 units \textbf{lower} for low-biomarker individuals.
+
+% ============================================================================
+\section{How Both Mechanisms Create Synergistic Interaction}
+% ============================================================================
+
+The two interaction mechanisms amplify each other:
+
+\subsection{High Biomarker Individuals}
+
+\begin{enumerate}
+  \item \textbf{Covariance effect} ($c.bm$): Higher baseline response level
+  \begin{equation}
+    \text{response shift} = +1.08 \times \frac{\text{biomarker} - \mu_{\text{BM}}}{\sigma_{\text{BM}}}
+  \end{equation}
+
+  \item \textbf{Mean modulation effect} ($\text{bm\_mod}$): Stronger drug response
+  \begin{equation}
+    \text{effective\_BR\_rate} = 0.5 \times (1 + 0.45 \times 1) = 0.725
+  \end{equation}
+
+  \item \textbf{Combined result:} Higher baseline + stronger slope $\Rightarrow$ larger treatment effect $\Rightarrow$ easier to detect statistically
+\end{enumerate}
+
+\subsection{Low Biomarker Individuals}
+
+\begin{enumerate}
+  \item \textbf{Covariance effect:} Lower baseline response level
+  \item \textbf{Mean modulation effect:} Weaker drug response
+  \item \textbf{Combined result:} Lower baseline + weaker slope $\Rightarrow$ smaller treatment effect
+\end{enumerate}
+
+This synergy means that $c.bm$ (covariance correlation) and $\text{bm\_mod}$ (mean modulation) interact multiplicatively to determine effect sizes and statistical power.
+
+% ============================================================================
+\section{The Role of c.bm Parameter}
+% ============================================================================
+
+The parameter $c.bm$ controls the magnitude of covariance-based response shifts:
+
+\subsection{Case: $c.bm = 0$ (No Correlation)}
+
+\[
+\mathbf{\Sigma}_{12}[\text{br\_idx}, 1] = 0 \times 1.8 \times 2.0 = 0
+\]
+
+\begin{itemize}
+  \item Responses independent of biomarker in covariance structure
+  \item No shift in conditional means
+  \item Only mean-level interaction from $\text{bm\_mod}$
+\end{itemize}
+
+\subsection{Case: $c.bm = 0.3$ (Moderate Correlation)}
+
+\[
+\mathbf{\Sigma}_{12}[\text{br\_idx}, 1] = 0.3 \times 1.8 \times 2.0 = 1.08
+\]
+
+\begin{itemize}
+  \item Responses shift by $\approx \pm 1$ unit per SD of biomarker
+  \item Moderate covariance-based amplification
+  \item Combined with $\text{bm\_mod}$ creates synergistic interaction
+\end{itemize}
+
+\subsection{Case: $c.bm = 0.6$ (High Correlation)}
+
+\[
+\mathbf{\Sigma}_{12}[\text{br\_idx}, 1] = 0.6 \times 1.8 \times 2.0 = 2.16
+\]
+
+\begin{itemize}
+  \item Responses shift by $\approx \pm 2$ units per SD of biomarker
+  \item Strong covariance-based amplification
+  \item Powerful synergy with $\text{bm\_mod}$ produces largest effect sizes
+\end{itemize}
+
+% ============================================================================
+\section{Implications for Statistical Power}
+% ============================================================================
+
+The covariance structure ($c.bm$) amplifies the mean-level interaction ($\text{bm\_mod}$):
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{cccc}
+\toprule
+\textbf{$c.bm$} & \textbf{bm\_mod} & \textbf{Effect} & \textbf{Power} \\
+\midrule
+0 & 0.5 & Only mean-level; modest & Low–Moderate \\
+0.3 & 0.5 & Combined covariance + mean; larger & Moderate–High \\
+0.6 & 0.5 & Strong covariance + mean; largest & High \\
+\bottomrule
+\end{tabular}
+\caption{How $c.bm$ amplifies power to detect biomarker-treatment interaction.}
+\end{table}
+
+\subsection{Design of Parameter Grid}
+
+The simulation contains:
+\begin{align*}
+\text{3 unique sigma structures} &: \text{(design} \times c.bm \text{ combinations)} \\
+\text{36 parameter combinations} &: \text{including all } \text{bm\_mod} \text{ values}
+\end{align*}
+
+This design tests: \textit{Given a fixed covariance structure ($c.bm$), how does increasing biomarker\_moderation affect power to detect the interaction?}
+
+The fact that only 3 sigma structures exist (despite 36 conditions) means:
+\begin{itemize}
+  \item Each unique ($\text{design}, c.bm$) pair generates the same correlation structure
+  \item Different $\text{bm\_mod}$ values reuse the same sigma
+  \item This isolates the effect of mean-level modulation from covariance effects
+\end{itemize}
+
+% ============================================================================
+\section{Mathematical Formulation}
+% ============================================================================
+
+\subsection{Conditional Normal Distribution}
+
+The responses conditional on baseline factors follow:
+
+\begin{equation}
+\mathbf{X}_1 \mid \mathbf{X}_2 = \mathbf{x}_2 \sim \mathcal{N}
+\left(
+\boldsymbol{\mu}_1 + \mathbf{\Sigma}_{12} \mathbf{\Sigma}_{22}^{-1}(\mathbf{x}_2 - \boldsymbol{\mu}_2),
+\,
+\boldsymbol{\Sigma}_{\text{cond}}
+\right)
+\end{equation}
+
+where:
+\begin{align*}
+\mathbf{X}_1 &: \text{responses (24-dimensional)} \\
+\mathbf{X}_2 &: \text{baseline factors (2-dimensional)} \\
+\mathbf{\Sigma}_{12} \mathbf{\Sigma}_{22}^{-1}(\mathbf{x}_2 - \boldsymbol{\mu}_2) &: \text{shift dependent on observed biomarker} \\
+\boldsymbol{\Sigma}_{\text{cond}} &= \mathbf{\Sigma}_{11} - \mathbf{\Sigma}_{12} \mathbf{\Sigma}_{22}^{-1} \mathbf{\Sigma}_{12}^T : \text{conditional covariance}
+\end{align*}
+
+\subsection{Treatment Effect Modulation}
+
+The biological response rate is modulated as:
+
+\begin{equation}
+\text{BR}_{\text{rate}, i} = \text{BR}_{\text{base}} \times (1 + \text{bm\_mod} \times \tilde{x}_i)
+\end{equation}
+
+where:
+\begin{align*}
+\text{BR}_{\text{base}} &= 0.5 \quad \text{(fixed base rate)} \\
+\text{bm\_mod} &\in \{0, 0.25, 0.35, 0.45, 0.55, 0.65\} \quad \text{(biomarker\_moderation)} \\
+\tilde{x}_i &= \frac{x_i - \mu_x}{\sigma_x} \quad \text{(standardized biomarker for participant } i \text{)}
+\end{align*}
+
+The final response is:
+
+\begin{equation}
+Y_i = \text{baseline}_i + \text{BR}_i + \text{ER}_i + \text{TR}_i
+\end{equation}
+
+where $\text{BR}_i$, $\text{ER}_i$, $\text{TR}_i$ are generated from the conditional distribution with modulated mean for $\text{BR}_i$.
+
+% ============================================================================
+\section{Comparison to Hendrickson et al.\ (2020)}
+% ============================================================================
+
+Hendrickson et al.\ (2020) provided the foundational framework for N-of-1 trials with multiple randomization structures. The current simulation extends this work:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Aspect} & \textbf{Hendrickson} & \textbf{Current Simulation} \\
+\midrule
+Primary focus & Treatment detection & Biomarker $\times$ treatment \\
+Biomarker role & Fixed (if present) & Systematically varied \\
+BM-response correlation & Fixed/not studied & Varies: $\{0, 0.3\}$ \\
+Interaction type & Not emphasized & Explicit interaction \\
+Interaction mechanism & N/A & Multiplicative on effect rate \\
+Covariance structure & Fixed Hendrickson params & Extended with BM correlation \\
+Carryover modeling & Included & Included (extended) \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of Hendrickson et al.\ framework and current simulation.}
+\end{table}
+
+\subsection{Key Innovation}
+
+The current simulation adds \textbf{explicit modeling of biomarker-driven heterogeneity} in treatment response through two mechanisms:
+
+\begin{enumerate}
+  \item \textbf{Structural:} Biomarker and responses are correlated in the sampling distribution
+  \item \textbf{Functional:} Drug effect strength scales with biomarker value
+\end{enumerate}
+
+This enables power analysis for \textit{precision medicine} designs where treatment benefit is fundamentally linked to individual biomarker status—a core concept that Hendrickson's framework was not designed to study.
+
+% ============================================================================
+\section{Summary}
+% ============================================================================
+
+The biomarker-treatment interaction in the clustered N-of-1 simulation emerges from complementary mechanisms:
+
+\begin{enumerate}
+  \item \textbf{Covariance mechanism:} Parameter $c.bm$ creates correlation between biomarker and responses via $\mathbf{\Sigma}_{12}$, causing observed biomarker values to shift response distributions
+
+  \item \textbf{Mean mechanism:} Parameter $\text{bm\_mod}$ scales drug effect rates multiplicatively, causing biomarker to modulate treatment slope
+\end{enumerate}
+
+Together, these mechanisms create:
+
+\begin{itemize}
+  \item \textbf{High biomarker individuals:} Higher baseline + stronger drug effect = larger detectable treatment benefit
+  \item \textbf{Low biomarker individuals:} Lower baseline + weaker drug effect = smaller treatment benefit
+  \item \textbf{Overall:} Heterogeneous treatment responses where biomarker status predicts both the baseline level and treatment response magnitude
+\end{itemize}
+
+This realistic pharmacogenomics scenario enables rigorous power analysis for precision medicine designs where treatment efficacy depends on individual biomarker characteristics.
+
+% ============================================================================
+\appendix
+% ============================================================================
+
+\section{Parameter Grid Structure}
+
+\begin{lstlisting}
+param_grid <- bind_rows(
+  # OL+BDC power conditions
+  expand_grid(
+    design = "ol_bdc",
+    biomarker_moderation = c(0.25, 0.35, 0.45, 0.55, 0.65),  # 5 values
+    biomarker_correlation = c(0.3),                           # 1 value
+    carryover = c(0, 0.5, 1)                                  # 3 values
+  ),  # 15 combinations
+
+  # OL+BDC Type I error
+  expand_grid(
+    design = "ol_bdc",
+    biomarker_moderation = c(0),
+    biomarker_correlation = c(0),
+    carryover = c(0, 0.5, 1)
+  ),  # 3 combinations
+
+  # Hybrid design
+  expand_grid(
+    design = "hybrid",
+    biomarker_moderation = c(0, 0.25, 0.35, 0.45, 0.55, 0.65),  # 6 values
+    biomarker_correlation = c(0.3),                              # 1 value
+    carryover = c(0, 0.5, 1)                                     # 3 values
+  )   # 18 combinations
+)
+# Total: 36 combinations across 3 sigma structures
+\end{lstlisting}
+
+\section{Fixed Correlation Parameters}
+
+All following parameters are held constant (from Hendrickson et al., 2020):
+
+\begin{align*}
+c.br &= 0.8 \quad \text{(BR autocorrelation)} \\
+c.er &= 0.8 \quad \text{(ER autocorrelation)} \\
+c.tr &= 0.8 \quad \text{(TR autocorrelation)} \\
+c.cf1t &= 0.2 \quad \text{(same-time cross-correlation)} \\
+c.cfct &= 0.1 \quad \text{(different-time cross-correlation)} \\
+c.bm\_baseline &= 0.3 \quad \text{(biomarker-baseline correlation)} \\
+c.baseline\_resp &= 0.4 \quad \text{(baseline-response correlation)}
+\end{align*}
+
+\end{document}

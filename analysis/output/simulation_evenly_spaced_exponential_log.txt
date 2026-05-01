@@ -1,0 +1,65 @@
+Running EVENLY-SPACED designs simulation...
+Correlation structure: exponential
+Description: Exponential/OU: exp(-λ * time_gap)
+Designs: OL, Crossover, Parallel (4 measurement points)
+Schedule: weeks 2, 8, 14, 20 
+Treatment effect = 0.5 
+Participants = 70 
+Iterations per condition = 20 
+
+Condition 1: design=ol, bm_mod=0.25, carryover=0.00
+Condition 2: design=ol, bm_mod=0.35, carryover=0.00
+Condition 3: design=ol, bm_mod=0.45, carryover=0.00
+Condition 4: design=ol, bm_mod=0.55, carryover=0.00
+Condition 5: design=ol, bm_mod=0.65, carryover=0.00
+Condition 6: design=ol, bm_mod=0.00, carryover=0.00
+Condition 7: design=crossover, bm_mod=0.25, carryover=0.00
+Condition 8: design=crossover, bm_mod=0.25, carryover=0.50
+Condition 9: design=crossover, bm_mod=0.25, carryover=1.00
+Condition 10: design=crossover, bm_mod=0.35, carryover=0.00
+Condition 11: design=crossover, bm_mod=0.35, carryover=0.50
+Condition 12: design=crossover, bm_mod=0.35, carryover=1.00
+Condition 13: design=crossover, bm_mod=0.45, carryover=0.00
+Condition 14: design=crossover, bm_mod=0.45, carryover=0.50
+Condition 15: design=crossover, bm_mod=0.45, carryover=1.00
+Condition 16: design=crossover, bm_mod=0.55, carryover=0.00
+Condition 17: design=crossover, bm_mod=0.55, carryover=0.50
+  Error in iteration 5 : Singularity in backsolve at level 0, block 1 
+Condition 18: design=crossover, bm_mod=0.55, carryover=1.00
+Condition 19: design=crossover, bm_mod=0.65, carryover=0.00
+Condition 20: design=crossover, bm_mod=0.65, carryover=0.50
+Condition 21: design=crossover, bm_mod=0.65, carryover=1.00
+Condition 22: design=crossover, bm_mod=0.00, carryover=0.00
+Condition 23: design=crossover, bm_mod=0.00, carryover=0.50
+Condition 24: design=crossover, bm_mod=0.00, carryover=1.00
+Condition 25: design=parallel, bm_mod=0.00, carryover=0.00
+Condition 26: design=parallel, bm_mod=0.25, carryover=0.00
+Condition 27: design=parallel, bm_mod=0.35, carryover=0.00
+Condition 28: design=parallel, bm_mod=0.45, carryover=0.00
+Condition 29: design=parallel, bm_mod=0.55, carryover=0.00
+Condition 30: design=parallel, bm_mod=0.65, carryover=0.00
+
+ ================================================== 
+RESULTS - EVENLY-SPACED DESIGNS
+Correlation structure: exponential
+================================================== 
+
+# A tibble: 30 × 8
+   design biomarker_moderation biomarker_correlation carryover power mean_effect
+   <chr>                 <dbl>                 <dbl>     <dbl> <dbl>       <dbl>
+ 1 cross…                 0                      0         0    0        -0.0408
+ 2 cross…                 0                      0         0.5  0.05     -0.0168
+ 3 cross…                 0                      0         1    0.15     -0.0208
+ 4 cross…                 0.25                   0.3       0    0.15      0.137 
+ 5 cross…                 0.25                   0.3       0.5  0.2       0.0592
+ 6 cross…                 0.25                   0.3       1    0.15      0.0646
+ 7 cross…                 0.35                   0.3       0    0.1       0.114 
+ 8 cross…                 0.35                   0.3       0.5  0.05      0.0612
+ 9 cross…                 0.35                   0.3       1    0.1       0.139 
+10 cross…                 0.45                   0.3       0    0.05      0.148 
+# ℹ 20 more rows
+# ℹ 2 more variables: sd_effect <dbl>, n <int>
+
+Done! Results saved to ../output 
+- power_heatmap_evenly_spaced_exponential.pdf
+- simulation_evenly_spaced_exponential_results.RData
